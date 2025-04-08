@@ -1,8 +1,8 @@
 package com.dfn.lsf.model.responseMsg;
 
-/**
- * Created by manodyas on 2/8/2017.
- */
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
 public class AccountDeletionRequestState {
     private boolean isSent;
     private String failureReason;

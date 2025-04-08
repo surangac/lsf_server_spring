@@ -5,6 +5,10 @@ package com.dfn.lsf.util;
  * This replaces the original LsfConstants class
  */
 public class LsfConstants {
+
+    public static final int APP_LSF_CLIENT = 1;//"LSFCLIENT";
+
+    public static final int APP_LSF_ADMIN = 2;
     
     /*------------Admin-Client Message Types ---------------------------*/
     public static final int MESSAGE_TYPE_EXECUTE_CORE_PROCESS = 1;
@@ -177,4 +181,48 @@ public class LsfConstants {
     public static final String HTTP_PRODUCER_EMAIL_RELATED = "thirdPartyNotificationProducer";
     /*-----OMS Validation Related----*/
     public static final String HTTP_PRODUCER_OMS_VALIDATION_RELATED = "omsQueueProducer";
+
+    public static final int ERROR_ABNORMAL_ACTIVITY = 9018;
+    public static final int ERROR_IP_ADDRESS_IS_NOT_DETECTED = 9019;
+    public static final int ERROR_ERROR_WHILE_VALIDATING_THE_SSO_TOKEN = 9020;
+    public static final int ERROR_INVALID_SSO_TOKEN = 9021;
+    public static final int PREVIOUS_APP_PERMANTLY_REJECTED = -1;
+    /*----Admin Action Related---*/
+    public static final long MINIMUM_TIME_GAP_BETWEEN_ADMIN_APPROVALS = 3000;
+
+    public static final int SHARE_BLOCK_STATUS = 0;
+    public static final int SHARE_RELEASE_STATUS = 1;
+    public static final int SHARE_TRANSFERED_STATUS = 2;
+    public static final int SHARE_TRANSFER_FAILED_FROM_EXCHANGE = -1;
+
+    public static final int STATUS_ACCOUNT_DELETION_REQUEST_FAILED_TO_SEND_OMS_DUE_TO_CASH_TRANSFER = 1111;
+
+    public static final int STATUS_ACCOUNT_DELETION_REQUEST_FAILED_TO_SEND_OMS_DUE_TO_SHARE_TRANSFER = 1112;
+
+    public static final int STATUS_ACCOUNT_DELETION_REQUEST_SENT_TO_OMS = 113;
+
+    public static final int STATUS_ACCOUNT_DELETION_REQUEST_FAILED_DUE_TO_SHARE_TRANSFER_FAILURE_WITH_EXCHANGE = 1114;
+
+    public static final int STATUS_ACCOUNT_DELETION_REQUEST_FAILED_WITH_EXCHANGE = 1115;
+
+    public static final int STATUS_ACCOUNT_DELETION_SUCCEED_FROM_OMS = 116;
+
+    public static final int REQUEST_SENT_TO_OMS = 1;
+    public static final int REQUEST_DID_NOT_ACCEPTED_CASH_TRANSFER_FAILED = -1;
+    public static final int REQUEST_DID_NOT_ACCEPTED_SHARE_TRANSFER_FAILED = -2;
+    public static final int REQUEST_DID_NOT_ACCEPTED_SELL_PENDING_AVAILABLE=-3;
+
+    public static final String HTTP_PRODUCER_OMS_GET_LSF_CASH_ACCOUNT_USERID = "http_producer_oms_get_lsf_cash_account_userId";
+    public static final String HTTP_PRODUCER_OMS_GET_MASTER_CASH_ACCOUNT = "http_producer_oms_get_master_cash_account";
+    public static final String HTTP_PRODUCER_OMS_CASH_TRANSFER_MASTER_CASH_ACCOUNT = "http_producer_oms_cash_transfer_master_account";
+    public static final String HTTP_PRODUCER_OMS_LIQUIDATE_PORTFOLIO = "http_producer_oms_liquidate_portfolio";
+    public static final String HTTP_PRODUCER_OMS_REQ_GET_LSF_TYPE_TRADING_ACCOUNT = "http_producer_oms_req_get_lsf_type_trading_account";
+    public static final String HTTP_PRODUCER_OMS_REQ_HANDLER = "http_producer_oms_req_handler";
+    public static final String HTTP_PRODUCER_LSF_ADMIN_REPORT_ACK = "http_producer_lsf_admin_report_ack";
+
+    public static final int BASKET_TRANSFER_SENT = 1;
+    public static final int BASKET_TRANSFER_FAILED = -1;
+
+    public static final long MILISECONDS_TO_HOUR = 3600000;
+
 }

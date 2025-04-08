@@ -2,15 +2,9 @@ package com.dfn.lsf.model;
 
 import java.util.List;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
-
-/**
- * Created by surangac on 4/8/2015.
- */
+@NoArgsConstructor
 public class MurabahApplicationListResponse extends CommonResponse {
     public List<MurabahApplication> getApplicationList() {
         return applicationList;

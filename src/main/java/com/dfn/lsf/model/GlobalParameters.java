@@ -1,29 +1,42 @@
 package com.dfn.lsf.model;
 
+import java.time.LocalDateTime;
 
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * Created by Atchuthan on 5/27/2015.
- */
 @Getter
 @Setter
 public class GlobalParameters {
     private static GlobalParameters _instance;
+    private static LocalDateTime lastLoadTime;
+    private static final long REFRESH_INTERVAL_MINUTES = 15; // Refresh every 15 minutes
 
     private GlobalParameters() {
     }
 
     public static void reset(GlobalParameters globalParameters) {
         _instance = globalParameters;
+        lastLoadTime = LocalDateTime.now();
     }
 
     public static GlobalParameters getInstance() {
-        if (_instance == null) {
-            _instance = new GlobalParameters();
+        if (_instance == null || shouldRefresh()) {
+            return _instance == null ? new GlobalParameters() : _instance;
         }
         return _instance;
+    }
+    
+    private static boolean shouldRefresh() {
+        if (lastLoadTime == null) return true;
+        
+        LocalDateTime now = LocalDateTime.now();
+        return now.isAfter(lastLoadTime.plusMinutes(REFRESH_INTERVAL_MINUTES));
+    }
+
+    public static void refreshFromRepository() {
+        lastLoadTime = LocalDateTime.now();
+        // This will be called by a service
     }
 
     private Long maxGuidanceLimit;

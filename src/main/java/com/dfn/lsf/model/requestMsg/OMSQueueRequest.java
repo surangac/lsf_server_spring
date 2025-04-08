@@ -1,8 +1,12 @@
 package com.dfn.lsf.model.requestMsg;
 
-/**
- * Created by manodyas on 9/7/2015.
- */
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@NoArgsConstructor
+@Getter
+@Setter
 public class OMSQueueRequest {
     private int messageType;
     private int correlationId;

@@ -1,0 +1,80 @@
+# Compiled class files
+*.class
+target/
+build/
+out/
+bin/
+
+# Gradle
+.gradle/
+gradle/
+gradlew.bat
+gradlew
+!gradle/wrapper/gradle-wrapper.jar
+**/.gradle/**/*.lock
+**/.gradle/**/*.bin
+**/.gradle/**/*.ser
+**/.gradle/**/fileHashes/
+**/.gradle/**/nb-cache/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse
+.settings/
+.classpath
+.project
+.factorypath
+
+# VS Code
+.vscode/
+
+# Spring Boot
+spring-boot-*.jar
+application-*.yml
+application-*.properties
+!application.yml
+!application.properties
+
+# Logs
+logs/
+*.log
+log/
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Package Files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Docker
+docker/
+.env
+
+# Node.js
+node_modules/
+npm-debug.log
+
+# JVM crash logs
+hs_err_pid*
+
+# Application specific
+application-*.yml
+application-*.properties
+!application.yml
+!application.properties
+
+# Temporary files
+*~
+*.swp
+*.swo

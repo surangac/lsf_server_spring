@@ -1,13 +1,12 @@
 package com.dfn.lsf.model;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-/**
- * Created by surangac on 1/28/2016.
- */
+@NoArgsConstructor
 public class ExternalCollaterals {
     private int id;
     private int applicationId;

@@ -3,13 +3,12 @@ package com.dfn.lsf.model;
 import java.util.List;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
-/**
- * Created by surangac on 4/7/2015.
- */
+@NoArgsConstructor
 public class CommonResponse {
     private int responseCode;
     private int errorCode;

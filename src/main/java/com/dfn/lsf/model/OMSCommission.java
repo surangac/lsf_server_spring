@@ -5,7 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-
 public class OMSCommission {
     private double brokerCommission;
     private double exchangeCommission;

@@ -2,9 +2,13 @@ package com.dfn.lsf.model;
 
 import java.util.Date;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@NoArgsConstructor
+@Getter
+@Setter
 public class Comment {  
     private String commentID;
     private String reversedFrom;
