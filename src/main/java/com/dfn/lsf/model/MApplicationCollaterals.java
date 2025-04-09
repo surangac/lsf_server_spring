@@ -8,9 +8,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-/**
- * Created by surangac on 5/25/2015.
- */
 public class MApplicationCollaterals {
     private String id;
     private String applicationId;

@@ -851,7 +851,7 @@ public class LsfCoreService {
         return profitResponse;
     }
 
-    public Object initialValuation(String applicationId) {
+    public String initialValuation(String applicationId) {
         log.debug("===========LSF : (runInitialValuation)-REQUEST , applicationID:" + applicationId);
 
         CommonResponse response = new CommonResponse();
@@ -860,7 +860,7 @@ public class LsfCoreService {
         try {
             mApplicationCollaterals = lsfRepository.getApplicationCompleteCollateral(application.getId());
         } catch (Exception ex) {
-            return null;
+            throw new RuntimeException("Error getting application collateral", ex);
         }
         // get attached Marginability Group
         MarginabilityGroup marginabilityGroup = helper.getMarginabilityGroup(application.getMarginabilityGroup());

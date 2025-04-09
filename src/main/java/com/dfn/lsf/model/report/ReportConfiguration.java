@@ -2,12 +2,16 @@ package com.dfn.lsf.model.report;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-/**
- * Created by isurul on 9/2/2016.
- */
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
 public class ReportConfiguration {
     private int reportId;
     private String reportName;
@@ -22,7 +26,7 @@ public class ReportConfiguration {
     private String reportDestination;
     private String format;
 
-    HashMap<String, String> requestMap;
+    private Map<String, String> requestMap;
 
     public int getReportId() {
         return reportId;
@@ -140,11 +144,11 @@ public class ReportConfiguration {
         this.format = format;
     }
 
-    public HashMap<String, String> getRequestMap() {
+    public Map<String, String> getRequestMap() {
         return requestMap;
     }
 
-    public void setRequestMap(HashMap<String, String> requestMap) {
+    public void setRequestMap(Map<String, String> requestMap) {
         this.requestMap = requestMap;
     }
 }

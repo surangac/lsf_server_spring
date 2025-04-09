@@ -12,6 +12,9 @@ targetCompatibility = JavaVersion.VERSION_21
 
 repositories {
     mavenCentral()
+    // Add JasperReports repository
+    maven { url "https://jaspersoft.jfrog.io/artifactory/third-party-releases/" }
+    maven { url "https://jaspersoft.jfrog.io/artifactory/jr-ce-releases/" }
 }
 
 dependencies {
@@ -38,6 +41,11 @@ dependencies {
     // Logging
     implementation 'org.apache.logging.log4j:log4j-api:2.17.2'
     implementation 'org.apache.logging.log4j:log4j-core:2.17.2'
+    
+    // JasperReports for reporting functionality
+    implementation('net.sf.jasperreports:jasperreports:5.5.1') {
+        exclude group: 'com.lowagie', module: 'itext'
+    }
     
     // Lombok
     compileOnly 'org.projectlombok:lombok:1.18.30'

@@ -225,4 +225,49 @@ public class LsfConstants {
 
     public static final long MILISECONDS_TO_HOUR = 3600000;
 
+    public static final int ERROR_INVALID_DETAILS = 9003;
+    public static final int ERROR_ACCOUNT_CREATION_FAILED = 9004;
+    public static final int ERROR_PURCHASE_ORDERS_CANNOT_BE_SUBMITTED_AFTER_PLEASE_TRY_TOMORROW = 9005;
+
+    public static final int SETTLEMENT_PENDING = 0;
+    public static final int PROFIT_CALC_TENOR_BASED = 1;
+
+    public static final int ERROR_EXCHNAGE_ACCOUNT_NOT_YET_CREATED = 9006;
+    public static final int ERROR_SIGNING_ORDER_AGREEMENT_IS_NOT_ALLOWED_MARCCKET_CLOSED = 9007;
+    public static final int ERROR_ORDER_HAS_BEEN_lIQUIDATED_DUE_TO_NOT_ACCEPTANCE = 9008;
+
+    public static final int STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARGED = 109;
+    public static final int STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARG_FAILED = 1109;
+
+    public static final int STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_SENT = 110;
+    public static final int STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_FAILED_TO_OMS = 1110;
+    public static final int STATUS_PO_CREATED_WAITING_TO_ORDER_FILL = 102;
+    public static final int STATUS_PO_CREATION_FAILED = 1102;
+
+    public static final int STATUS_SENT_INVESTOR_ACCOUNT_CREATION = 104;
+    public static final int STATUS_ORDER_CONTRACT_REJECTED = 1104;
+    public static final int STATUS_INVESTOR_ACCOUNT_CREATED_AND_SENT_EXCHANGE_ACCOUNT_CREATION = 107;
+    public static final int STATUS_INVESTOR_ACCOUNT_CREATED_FAILED_TO_SUBMIT_EXCHANGE_ACCOUNT_CREATION = 1106;
+    public static final int STATUS_INVESTOR_ACCOUNT_CREATION_FAILED_OMS = 1121;
+
+    public static final int ERROR_ORDER_SEND_TO_OMS_FAILED = 9001;
+    public static final int ERROR_COLLATRAL_RELEASE_FAILED_FROM_OMS = 9002;
+    public static final int ACCOUNT_DELETION_SUCCESS = 1; /*---Share Transfer and Account Deletion Succeed----*/
+    public static final int EXCHANGE_ACCOUNT_DELETION_FAILED_FROM_EXCHANGE =  -1; /*--Share transfer with exchange succeed and account deletion failed from  exchange----*/
+    public static final int SHARE_TRANSFER_FAILED_WITH_EXCHANGE = -2;
+
+    public static final String MURABAH_APPLICATION = "murabahApplication";
+    public static final String SAVE_MSG_CONFIGURATION = "saveMsgConfiguration";
+    public static final String UPDATE_MSG_CONFIGURATION = "updateMsgConfiguration";
+    public static final String VIEW_MESSAGE_HISTORY = "viewMessageHistory";
+
+    //Report code
+    public static final int MARGIN_INFORMATION_REPORT = 2;
+    public static final int FINANCE_AND_BROKERAGE_REPORT = 3;
+    public static final int INVESTMENT_OFFER_LETTER_RPOERT = 4;
+    public static final int STOCK_CONCENTRATION_REPORT = 5;
+    public static final String CREDIT_PROPOSAL = "CP";
+    public static final String FACILITY_AGREEMENT_LETTER = "FAL";
+    public static final String INVESTMENT_OFFER_LETTER = "IOF";
+
 }

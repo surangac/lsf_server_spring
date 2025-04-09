@@ -50,12 +50,13 @@ import com.dfn.lsf.model.report.FinanceBrokerageInfo;
 import com.dfn.lsf.model.report.MarginInformation;
 import com.dfn.lsf.model.report.ReportConfiguration;
 import com.dfn.lsf.model.requestMsg.DepositWithdrawRequest;
+import com.dfn.lsf.model.responseMsg.CommissionDetail;
+import com.dfn.lsf.model.responseMsg.FTVInfo;
 import com.dfn.lsf.model.responseMsg.FtvSummary;
 import com.dfn.lsf.model.responseMsg.OrderContractCustomerInfo;
 import com.dfn.lsf.model.responseMsg.PendingActivity;
 import com.dfn.lsf.model.responseMsg.RiskwavierQuestionConfig;
 import com.dfn.lsf.model.responseMsg.SettlementSummaryResponse;
-
 /**
  * Repository interface for LSF operations
  * This replaces the original LSFDaoI interface
@@ -525,4 +526,8 @@ public interface LSFRepository {
     List<InstumentType> loadSymbolInstrumentTypes();
     List<Status> getApplicationStatus(String applicationID);
     List<MApplicationCollaterals> getApplicationCollateralFtvList();
+    List<CommissionDetail> getCommissionDetails(String reportDate);
+    List<FTVInfo> getDetailedFTVList(String fromDate, String toDate, int settlementSts);
+    List<MurabahApplication> getApprovedPurchaseOrderApplicationList(Object fromDate, Object toDate);
+    List<MurabahApplication> getBlackListedApplications();
 }
