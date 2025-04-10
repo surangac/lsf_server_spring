@@ -305,4 +305,8 @@ public class LsfConstants {
     public static final int ERROR_NET_COLLATRAL_VALUE_SHOULD_BE_GREATER_THAN_CONFIGURED_PERCENTAGE = 9013;
     public static final int ERROR_COLLATRAL_CANNOT_SUBMIT_DUE_TO_MARKET_CLOSED_STATE = 9014;
     public static final int ERROR_CASH_AMOUNT_VALIDATION_FAILED = 9015;
+
+    //document upload
+    public static final int ERROR_ALL_THE_DOCUMENTS_ARE_NOT_YET_UPLOADED = 9016;
+    public static final int ERROR_PLEASE_UPLOAD_DOCUMENT = 9017;
 }
