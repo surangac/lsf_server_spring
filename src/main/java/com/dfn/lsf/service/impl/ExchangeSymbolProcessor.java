@@ -29,7 +29,7 @@ import java.util.Map;
 @Qualifier("6")
 public class ExchangeSymbolProcessor implements MessageProcessor {
 
-    private static final Logger logger = LoggerFactory.getLogger(DocumentAdministrationProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExchangeSymbolProcessor.class);
 
     private final Gson gson;
     private final LSFRepository lsfRepository;
