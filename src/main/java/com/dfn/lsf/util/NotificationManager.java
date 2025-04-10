@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.dfn.lsf.model.notification.AdminUser;
 import org.springframework.stereotype.Service;
 
 import com.dfn.lsf.model.GlobalParameters;
@@ -32,9 +33,10 @@ public class NotificationManager {
  private final LSFRepository lsfRepository;
  private final Gson gson;
  private final Helper helper;
+ private  List<AdminUser> adminUsers;
 
  public void sendNotification(MurabahApplication murabahApplication) {
-   
+
     log.debug("===========LSF: Sending Notifications , applicationID:" + murabahApplication.getId() + ", Current Level :" + murabahApplication.getCurrentLevel() + " , Status :" + murabahApplication.getOverallStatus());
 
     int tempNotificationType = 0;
@@ -796,5 +798,9 @@ private Map<String, String> getParameterMapForAuthAbicToSellNotification(Murabah
     paramMap.put("$productName",product.getProductName());
     return paramMap;
 }
+
+    public void reloadAdminUsers() {
+        adminUsers = lsfRepository.getAdminUsers();
+    }
 
 }
