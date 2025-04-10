@@ -7,6 +7,7 @@ package com.dfn.lsf.util;
 public class LsfConstants {
 
     public static final int APP_LSF_CLIENT = 1;//"LSFCLIENT";
+    public static final int APPLICATION_ID = 2;
 
     public static final int APP_LSF_ADMIN = 2;
 
@@ -154,6 +155,12 @@ public class LsfConstants {
     public static final String GET_REPORT_STATUS = "getReportStatus";
     public static final String GET_REPORT_LIST = "getReportList";
     public static final String DOWNLOAD_REPORT = "downloadReport";
+
+    public static final String REQ_CUSTOMER_DETAILS_IFLEX = "reqCustomerDetailsIflex";
+    public static final String REQ_TRADING_ACC_LIST = "reqTradingAccList";
+    public static final String GET_CUSTOMER_DETAILS_ORDER_CONTRACT = "getCustomerDetailsOrderContract";
+    public static final String GET_CUSTOMER_SUMMARY_INFO = "getCustomerSummaryInfo";
+    public static final String GET_CUSTOMER_RISK_SCORE = "getCustomerRiskScore";
 
     /*------------OMS Request Related Request Types---------------------------*/
     public static final int GET_TRADING_ACCOUNT_LIST = 1;
@@ -343,4 +350,7 @@ public class LsfConstants {
     //document upload
     public static final int ERROR_ALL_THE_DOCUMENTS_ARE_NOT_YET_UPLOADED = 9016;
     public static final int ERROR_PLEASE_UPLOAD_DOCUMENT = 9017;
+
+    //inquiry
+    public static final int ERROR_PF_REQUEST_FAILED = 9022;
 }
