@@ -207,6 +207,12 @@ public class LsfConstants {
 
     public static final int STATUS_ACCOUNT_DELETION_SUCCEED_FROM_OMS = 116;
 
+    public static final int STATUS_PO_FILLED_WAITING_FOR_ACCEPTANCE = 103;
+    public static final int STATUS_INVESTOR_ACCOUNT_CREATION_FAILED = 1105;
+    public static final int STATUS_EXCHANGE_ACCOUNT_CREATION_FAILED = 1108;
+    public static final int STATUS_COLLATERAL_SHARE_TRANSFER_FAILED_FROM_EXCHANGE = 1117;
+
+
     public static final int REQUEST_SENT_TO_OMS = 1;
     public static final int REQUEST_DID_NOT_ACCEPTED_CASH_TRANSFER_FAILED = -1;
     public static final int REQUEST_DID_NOT_ACCEPTED_SHARE_TRANSFER_FAILED = -2;
@@ -269,5 +275,23 @@ public class LsfConstants {
     public static final String CREDIT_PROPOSAL = "CP";
     public static final String FACILITY_AGREEMENT_LETTER = "FAL";
     public static final String INVESTMENT_OFFER_LETTER = "IOF";
+
+    //OMS QUEUE MESSAGE TYPES
+    public static final int UPDATE_ORDER_STATUS_PROCESS = 120;
+    public static final int APPROVE_ORDER_FOR_FTV = 123;
+    public static final int APPROVE_WITHDRAW_FOR_FTV = 124;
+    public static final int LIQUIDATION_SUCCESS_RESPONSE = 126;
+    public static final int DEPOSIT_SUCCESS_RESPONSE = 132;
+    public static final int WITHDRAW_SUCCESS_RESPONSE = 133;
+    public static final int INVESTOR_ACCOUNT_CREATION_RESPONSE = 140;
+    public static final int EXCHANGE_ACCOUNT_CREATION_RESPONSE = 141;
+    public static final int RIA_LOGOUT_RESPONSE = 142;
+    public static final int EXCHANGE_ACCOUNT_DELETION_RESPONSE = 137;
+    public static final int TRADE_HOLDING_UPDATE_RESPONSE = 147;
+
+
+
+
+
 
 }
