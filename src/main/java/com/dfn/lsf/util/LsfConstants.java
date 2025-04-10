@@ -353,4 +353,9 @@ public class LsfConstants {
 
     //inquiry
     public static final int ERROR_PF_REQUEST_FAILED = 9022;
+
+    /*---Admin Customer Search Related--*/
+    public static final String GET_CUSTOMER_LIST = "getCustomerList";
+    public static final String R_CUSTOMER_SEARCH = "customerSearch";
+    public static final String PAGE_COUNTER = "pageCounter";
 }
