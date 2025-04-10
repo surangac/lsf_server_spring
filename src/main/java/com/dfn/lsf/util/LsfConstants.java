@@ -9,7 +9,7 @@ public class LsfConstants {
     public static final int APP_LSF_CLIENT = 1;//"LSFCLIENT";
 
     public static final int APP_LSF_ADMIN = 2;
-    
+
     /*------------Admin-Client Message Types ---------------------------*/
     public static final int MESSAGE_TYPE_EXECUTE_CORE_PROCESS = 1;
     public static final int MESSAGE_TYPE_VALIDATE_BANK_ACC = 2;
@@ -38,7 +38,7 @@ public class LsfConstants {
     public static final int MESSAGE_TYPE_PENDING_ACTIVITY_ADMIN = 25;
     public static final int MESSAGE_TYPE_ADMIN_COMMON_REJECT = 26;
     public static final int MESSAGE_TYPE_PROFIT_CALCULATION_INQUIRY = 27;
-    
+
     /*---Application List Related--*/
     public static final String GET_MURABAH_APPLICATION_LIST = "getMurabahApplicationList";
     public static final String GET_MURABAH_APPLICATION_COUNTER = "getMurabahApplicationCounter";
@@ -50,7 +50,7 @@ public class LsfConstants {
     public static final String GET_APPLICATIONS_FTV = "applicationsFTV";
     public static final String GET_MURABAH_APPLICATION_USER_INFO = "getMurabahApplicationUserInfo";
     public static final String GET_SAVED_ANSWER_FOR_USER = "getSavedAnswerForUser";
-    
+
     /*----Common Inquiry Related-----*/
     public static final String REQ_DETAILED_FTV_LIST = "reqDetailedFTVList";
     public static final String REQ_APPROVED_PURCHASE_ORDERS = "reqApprovedPurchaseOrders";
@@ -63,17 +63,17 @@ public class LsfConstants {
     public static final String REQ_GET_MURABAHA_PRODUCT = "getMurabahaProduct";
     public static final String GET_PHYSICAL_DELIVER_LIST = "getPhysicalDeliverList";
     public static final String CHANGE_PO_STATUS = "changePOStatus";
-    
+
     /*---Admin Master Data Related--*/
     public static final String REQ_APP_FLOW = "reqAppFlow";
     public static final String REQ_LIQUID_TYPS = "reqLiquidTyps";
     public static final String REQ_DOCUMENT_MASTER_LIST = "reqDocumentMasterList";
-    
+
     /*---Authentication Related--*/
     public static final String LOGIN = "login";
     public static final String LOGOUT = "logout";
     public static final String VALIDATE_SESSION = "validateSession";
-    
+
     /*---Notification Related--*/
     public static final String SENT_NOTIFICATION_FOR_A_CUSTOMER = "sentNotificationForACustomer";
     public static final String SENT_NOTIFICATION_FOR_GROUP = "sentNotificationForGroup";
@@ -84,7 +84,7 @@ public class LsfConstants {
     public static final String REQ_MSG_CONFIGURATION = "reqMsgConfiguration";
     public static final String REQ_MSG_CONFIGURATION_LIST = "reqMsgConfigurationList";
     public static final String GET_NOTIFICATION_HISTORY = "getNotificationHistory";
-    
+
     /*---Core Operations Related--*/
     public static final String CASH_TRANSFER = "cashTransfer";
     public static final String SHARE_TRANSFER = "shareTransfer";
@@ -105,7 +105,7 @@ public class LsfConstants {
     public static final String COMMODITY_PO_EXECUTE = "commodityPOExecute";
     public static final String CONFIRM_AUTH_ABIC_TO_SELL_BY_USER = "confirmAuthAbicToSellbyUser";
     public static final String REVERT_TO_SELL_DELIVER_BY_ADMIN = "revertToSellOrDeliver";
-    
+
     /*---Settlement Related--*/
     public static final String SETTLEMENT_SUMMARY_APPLICATION = "settlementSummaryApplication";
     public static final String SETTLEMENT_BREAKDOWN_APPLICATION = "settlementBreakDownApplication";
@@ -114,7 +114,7 @@ public class LsfConstants {
     public static final String GET_SETTLEMENT_LIST = "getSettlementList";
     public static final String GET_LIST_FOR_MANUAL_SETTELEMENT = "getListForManualSettlement";
     public static final String SETTLEMENT_PROCESS = "settlementProcess";
-    
+
     /*---Report Related--*/
     public static final String GENERATE_REPORT = "generateReport";
     public static final String GET_REPORT_STATUS = "getReportStatus";
@@ -195,6 +195,9 @@ public class LsfConstants {
     public static final int SHARE_TRANSFERED_STATUS = 2;
     public static final int SHARE_TRANSFER_FAILED_FROM_EXCHANGE = -1;
 
+    public static final int STATUS_COLLATERLS_SUBMITTED = 101;
+    public static final int STATUS_COLLATERLS_SUBMISSION_FAILED = 1101;
+
     public static final int STATUS_ACCOUNT_DELETION_REQUEST_FAILED_TO_SEND_OMS_DUE_TO_CASH_TRANSFER = 1111;
 
     public static final int STATUS_ACCOUNT_DELETION_REQUEST_FAILED_TO_SEND_OMS_DUE_TO_SHARE_TRANSFER = 1112;
@@ -212,17 +215,19 @@ public class LsfConstants {
     public static final int STATUS_EXCHANGE_ACCOUNT_CREATION_FAILED = 1108;
     public static final int STATUS_COLLATERAL_SHARE_TRANSFER_FAILED_FROM_EXCHANGE = 1117;
 
-
     public static final int REQUEST_SENT_TO_OMS = 1;
     public static final int REQUEST_DID_NOT_ACCEPTED_CASH_TRANSFER_FAILED = -1;
     public static final int REQUEST_DID_NOT_ACCEPTED_SHARE_TRANSFER_FAILED = -2;
-    public static final int REQUEST_DID_NOT_ACCEPTED_SELL_PENDING_AVAILABLE=-3;
+    public static final int REQUEST_DID_NOT_ACCEPTED_SELL_PENDING_AVAILABLE = -3;
 
-    public static final String HTTP_PRODUCER_OMS_GET_LSF_CASH_ACCOUNT_USERID = "http_producer_oms_get_lsf_cash_account_userId";
+    public static final String HTTP_PRODUCER_OMS_GET_LSF_CASH_ACCOUNT_USERID =
+            "http_producer_oms_get_lsf_cash_account_userId";
     public static final String HTTP_PRODUCER_OMS_GET_MASTER_CASH_ACCOUNT = "http_producer_oms_get_master_cash_account";
-    public static final String HTTP_PRODUCER_OMS_CASH_TRANSFER_MASTER_CASH_ACCOUNT = "http_producer_oms_cash_transfer_master_account";
+    public static final String HTTP_PRODUCER_OMS_CASH_TRANSFER_MASTER_CASH_ACCOUNT =
+            "http_producer_oms_cash_transfer_master_account";
     public static final String HTTP_PRODUCER_OMS_LIQUIDATE_PORTFOLIO = "http_producer_oms_liquidate_portfolio";
-    public static final String HTTP_PRODUCER_OMS_REQ_GET_LSF_TYPE_TRADING_ACCOUNT = "http_producer_oms_req_get_lsf_type_trading_account";
+    public static final String HTTP_PRODUCER_OMS_REQ_GET_LSF_TYPE_TRADING_ACCOUNT =
+            "http_producer_oms_req_get_lsf_type_trading_account";
     public static final String HTTP_PRODUCER_OMS_REQ_HANDLER = "http_producer_oms_req_handler";
     public static final String HTTP_PRODUCER_LSF_ADMIN_REPORT_ACK = "http_producer_lsf_admin_report_ack";
 
@@ -259,7 +264,8 @@ public class LsfConstants {
     public static final int ERROR_ORDER_SEND_TO_OMS_FAILED = 9001;
     public static final int ERROR_COLLATRAL_RELEASE_FAILED_FROM_OMS = 9002;
     public static final int ACCOUNT_DELETION_SUCCESS = 1; /*---Share Transfer and Account Deletion Succeed----*/
-    public static final int EXCHANGE_ACCOUNT_DELETION_FAILED_FROM_EXCHANGE =  -1; /*--Share transfer with exchange succeed and account deletion failed from  exchange----*/
+    public static final int EXCHANGE_ACCOUNT_DELETION_FAILED_FROM_EXCHANGE = -1; /*--Share transfer with exchange
+    succeed and account deletion failed from  exchange----*/
     public static final int SHARE_TRANSFER_FAILED_WITH_EXCHANGE = -2;
 
     public static final String MURABAH_APPLICATION = "murabahApplication";
@@ -289,12 +295,14 @@ public class LsfConstants {
     public static final int EXCHANGE_ACCOUNT_DELETION_RESPONSE = 137;
     public static final int TRADE_HOLDING_UPDATE_RESPONSE = 147;
 
-
     // admin common reject
     public static final int ERROR_FAILED_DURING_COLLATERAL_RELEASE = 9009;
     public static final int ERROR_YOU_CANNOT_CANCEL_THE_REQUEST_WITH_OPEN_ORDERS = 9010;
     public static final int ERROR_ERROR_WHILE_PROCESSING_THE_REQUEST = 9011;
 
-
-
+    //collateral
+    public static final int ERROR_ERROR_IN_COLLATERAL_UPDATING = 9012;
+    public static final int ERROR_NET_COLLATRAL_VALUE_SHOULD_BE_GREATER_THAN_CONFIGURED_PERCENTAGE = 9013;
+    public static final int ERROR_COLLATRAL_CANNOT_SUBMIT_DUE_TO_MARKET_CLOSED_STATE = 9014;
+    public static final int ERROR_CASH_AMOUNT_VALIDATION_FAILED = 9015;
 }
