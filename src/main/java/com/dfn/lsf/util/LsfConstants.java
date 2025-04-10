@@ -358,4 +358,14 @@ public class LsfConstants {
     public static final String GET_CUSTOMER_LIST = "getCustomerList";
     public static final String R_CUSTOMER_SEARCH = "customerSearch";
     public static final String PAGE_COUNTER = "pageCounter";
+
+    /*--------------Deposit Request Status-------------*/
+    public static final int INITIALED_IN_LSF = 1;
+    public static final int SENT_TO_B2B = 2;
+    public static final int RESPONSE_RECEIVED_B2B_FAILED = 3;
+    public static final int RESPONSE_RECEIVED_B2B_SUCCESS = 4;
+
+    /*------------B2B Transaction Types---------*/
+    public static final int DEPOSIT = 1;
+    public static final int WITHDRAW = 2;
 }
