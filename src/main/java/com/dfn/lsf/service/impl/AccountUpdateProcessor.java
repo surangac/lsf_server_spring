@@ -28,7 +28,7 @@ public class AccountUpdateProcessor implements MessageProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(AccountUpdateProcessor.class);
 
-    Gson gson = null;
+    private final Gson gson;
     private final LSFRepository lsfRepository;
     private final Helper helper;
     private final LsfCoreService lsfCore;

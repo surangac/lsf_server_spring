@@ -290,7 +290,10 @@ public class LsfConstants {
     public static final int TRADE_HOLDING_UPDATE_RESPONSE = 147;
 
 
-
+    // admin common reject
+    public static final int ERROR_FAILED_DURING_COLLATERAL_RELEASE = 9009;
+    public static final int ERROR_YOU_CANNOT_CANCEL_THE_REQUEST_WITH_OPEN_ORDERS = 9010;
+    public static final int ERROR_ERROR_WHILE_PROCESSING_THE_REQUEST = 9011;
 
 
 
