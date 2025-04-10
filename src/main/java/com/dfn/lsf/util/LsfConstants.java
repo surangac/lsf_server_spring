@@ -368,4 +368,7 @@ public class LsfConstants {
     /*------------B2B Transaction Types---------*/
     public static final int DEPOSIT = 1;
     public static final int WITHDRAW = 2;
+
+    public static final String LOAD_INIT_DATA = "loadInitData";
+
 }
