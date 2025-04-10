@@ -371,4 +371,17 @@ public class LsfConstants {
 
     public static final String LOAD_INIT_DATA = "loadInitData";
 
+    /*---Admin Symbol Related--*/
+    public static final String UPDATE_LIQUIDITY_TYPE = "updateLiquidityType";
+    public static final String SEARCH_SYMBOL = "searchSymbol";
+    public static final String GET_ALL_SYMBOLS = "getAllSymbols";
+    public static final String GET_SYMBOL_MARGINABILITY_GROUPS = "getSymbolMarginabilityGroups";
+    public static final String ADD_TO_WISH_LIST = "addToWishList";
+    public static final String LOAD_SYMBOL_WISH_LIST = "loadSymbolWishList";
+    public static final String UPDATE_SYMBOL_CLASSIFY_LOG_STATUS = "updateSymbolClassifyLogStatus";
+    public static final String GET_SYMBOL_CLASSIFY_LOG = "getSymbolClassifyLog";
+    public static final String GET_STOCK_CLASSIFICATION_DATA = "getStockClassificationData";
+    public static final String GET_SYMBOL_MARGINABILITY_DATA = "getSymbolMarginabilityData";
+    public static final String GET_SYMBOL_INSTRUMENTS_LIST = "getSymbolInstrumentslist";
+
 }
