@@ -149,6 +149,7 @@ public class LsfConstants {
     public static final String GET_SETTLEMENT_LIST = "getSettlementList";
     public static final String GET_LIST_FOR_MANUAL_SETTELEMENT = "getListForManualSettlement";
     public static final String SETTLEMENT_PROCESS = "settlementProcess";
+    public static final String CONFIRM_ROLLOVER_BY_USER = "confirmRolloverByUser";
 
     /*---Report Related--*/
     public static final String GENERATE_REPORT = "generateReport";

@@ -1,34 +1,39 @@
 package com.dfn.lsf.service.impl;
 
-import com.dfn.lsf.model.CommonResponse;
-import com.dfn.lsf.model.SettlementRequest;
-import com.dfn.lsf.repository.LSFRepository;
-import com.dfn.lsf.service.MessageProcessor;
-import com.dfn.lsf.util.LsfConstants;
-import com.google.gson.Gson;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
+import com.dfn.lsf.model.CashAcc;
+import com.dfn.lsf.model.CommonResponse;
+import com.dfn.lsf.model.MurabahApplication;
+import com.dfn.lsf.model.PurchaseOrder;
+import com.dfn.lsf.model.TradingAcc;
+import com.dfn.lsf.model.responseMsg.AccountDeletionRequestState;
+import com.dfn.lsf.repository.LSFRepository;
+import com.dfn.lsf.service.LsfCoreService;
+import com.dfn.lsf.service.MessageProcessor;
+import com.dfn.lsf.util.ErrorCodes;
+import com.dfn.lsf.util.LsfConstants;
+import com.dfn.lsf.util.NotificationManager;
+import com.google.gson.Gson;
 
-/**
- * Processor for settlement operations
- * This replaces the AKKA SettlementProcessor
- */
-@Service
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Service    
 @Qualifier("15") // MESSAGE_TYPE_SETTLEMENT_PROCESS
+// contrains both LsfSettlementProcessorAbic
+@Slf4j
+@RequiredArgsConstructor
 public class SettlementProcessor implements MessageProcessor {
     
-    private static final Logger logger = LoggerFactory.getLogger(SettlementProcessor.class);
+    private final LSFRepository lsfRepository;
     
-    @Autowired
-    private LSFRepository lsfRepository;
-    
-    private final Gson gson = new Gson();
+    private final Gson gson;
+    private final LsfCoreService lsfCoreService;
+    private final NotificationManager notificationManager;
     
     @Override
     public String process(String request) {
@@ -36,273 +41,179 @@ public class SettlementProcessor implements MessageProcessor {
             Map<String, Object> requestMap = gson.fromJson(request, Map.class);
             String subMessageType = (String) requestMap.get("subMessageType");
             
-            logger.info("Processing settlement request with subMessageType: {}", subMessageType);
-            
-            // Handle different sub-message types
+            log.info("Processing settlement request with subMessageType: {}", subMessageType);
             switch (subMessageType) {
-                case LsfConstants.SETTLEMENT_SUMMARY_APPLICATION:
-                    return getSettlementSummary(requestMap);
-                case LsfConstants.SETTLEMENT_BREAKDOWN_APPLICATION:
-                    return getSettlementBreakdown(requestMap);
-                case LsfConstants.PERFORM_EARLY_SETTLEMENT:
-                    return performEarlySettlement(request);
-                case LsfConstants.PERFORM_MANUAL_SETTLEMENT:
-                    return performManualSettlement(request);
-                case LsfConstants.GET_SETTLEMENT_LIST:
-                    return getSettlementList(requestMap);
-                case LsfConstants.GET_LIST_FOR_MANUAL_SETTELEMENT:
-                    return getListForManualSettlement();
-                case LsfConstants.SETTLEMENT_PROCESS:
-                    return processSettlement(request);
-                default:
-                    logger.warn("Unknown sub-message type: {}", subMessageType);
-                    return createErrorResponse("Unknown sub-message type: " + subMessageType);
+                case LsfConstants.PERFORM_EARLY_SETTLEMENT: {//early settlement-client
+                    return performEarlySettlement(requestMap.get("id").toString(), requestMap.get("customerID").toString(), Double.valueOf(requestMap.get("settlementAmount").toString()), requestMap.get("orderID").toString());
+                }
+                case LsfConstants.PERFORM_MANUAL_SETTLEMENT: {//manual  settlement-admin
+                    return performManualSettlement(requestMap.get("id").toString(), requestMap.get("customerID").toString(), Double.valueOf(requestMap.get("settlementAmount").toString()), requestMap.get("orderID").toString());
+                }
+                case LsfConstants.CONFIRM_ROLLOVER_BY_USER: {
+                    return confirmRolloverByUser(requestMap);
+                }
+                default: {
+                    CommonResponse cmr = new CommonResponse();
+                    cmr.setResponseCode(400);
+                    cmr.setErrorMessage("Invalid subMessageType: " + subMessageType);
+                    return gson.toJson(cmr);
+                }
             }
-        } catch (Exception e) {
-            logger.error("Error processing settlement request", e);
-            return createErrorResponse("Error processing request: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Gets settlement summary for an application
-     */
-    private String getSettlementSummary(Map<String, Object> requestMap) {
-        logger.info("Getting settlement summary");
-        
-        if (!requestMap.containsKey("applicationId")) {
-            return createErrorResponse("Application ID is required");
-        }
-        
-        String applicationId = requestMap.get("applicationId").toString();
-        
-        CommonResponse response = new CommonResponse();
-        try {
-            // In a real implementation, this would get the settlement summary for the application
-            // For now, we'll just return a placeholder response
-            response.setResponseCode(200);
-            response.setResponseMessage("Settlement summary retrieved successfully");
-            response.setResponseObject("Settlement summary for application " + applicationId);
-        } catch (Exception e) {
-            logger.error("Error getting settlement summary", e);
-            response.setResponseCode(500);
-            response.setErrorMessage(e.getMessage());
-        }
-        
-        return gson.toJson(response);
-    }
-    
-    /**
-     * Gets settlement breakdown for an application
-     */
-    private String getSettlementBreakdown(Map<String, Object> requestMap) {
-        logger.info("Getting settlement breakdown");
-        
-        if (!requestMap.containsKey("settlementId")) {
-            return createErrorResponse("Settlement ID is required");
-        }
-        
-        String settlementId = requestMap.get("settlementId").toString();
-        
-        CommonResponse response = new CommonResponse();
-        try {
-            Map<String, Object> settlementDetails = lsfRepository.getSettlementDetails(settlementId);
             
-            if (settlementDetails != null && !settlementDetails.isEmpty()) {
-                response.setResponseCode(200);
-                response.setResponseObject(settlementDetails);
+        } catch (Exception e) {
+            log.error("Error processing settlement request", e);
+            CommonResponse cmr = new CommonResponse();
+            cmr.setResponseCode(500);
+            cmr.setErrorMessage(ErrorCodes.ERROR_EXCEPTION.errorDescription());
+            return gson.toJson(cmr);
+        }
+    }
+
+    public String performEarlySettlement(String applicationID, String userID, double settlementAmount, String orderID) {
+        CommonResponse commonResponse = new CommonResponse();
+        int responseCode = 200;
+        String responseMessage = "";
+        String masterCashAccount = null;
+
+        log.info("===========LSF : (performEarlySettlement)-REQUEST  : , ApplicationID:" + applicationID + ",Order ID:" + orderID + ", Amount:" + settlementAmount);
+
+        //buy pass for DIB
+ /*       if(LSFUtils.isMarketOpened()){*/ // remove market open status during settlement after Sulthan's comment
+            TradingAcc lsfTradingAcc = lsfCoreService.getLsfTypeTradinAccountForUser(userID,applicationID);
+            CashAcc lsfCashAccount = lsfCoreService.getLsfTypeCashAccountForUser(userID,applicationID);//get lsf type cash account details for user
+            PurchaseOrder purchaseOrder= lsfRepository.getSinglePurchaseOrder(orderID);
+            MurabahApplication application = lsfRepository.getMurabahApplication(applicationID);
+            if((lsfCoreService.checkPendingOrdersForLSFTradingAccount(lsfTradingAcc.getAccountId(), lsfCashAccount.getAccountId())== 0)
+                    &&
+                    ((lsfCashAccount.getCashBalance()-lsfCashAccount.getNetReceivable())>settlementAmount)
+                    &&
+                    purchaseOrder.getSettlementStatus()!=1
+                    ){
+                masterCashAccount = lsfCoreService.getMasterCashAccount();//getting ABIC master cash account
+                application.setCurrentLevel(17);
+                application.setOverallStatus(String.valueOf(16));
+                if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), masterCashAccount, settlementAmount, applicationID)) {
+                    lsfRepository.updatePOToSettledState(Integer.parseInt(orderID));
+                    log.info("===========LSF :(performEarlySettlement)- Cash Transfer Succeed , From(Customer Cash Account):" + lsfCashAccount.getAccountId() + ", To:(Master Cash Account)" + masterCashAccount + ", Amount :" + settlementAmount);
+                    responseMessage = "Successfully Deducted Outstanding Amount.";
+                    //Todo -- After Sending the Account Closure Request to OMS LSF is not waiting to the OMS Response
+                    application.setCurrentLevel(18);
+                    application.setOverallStatus(String.valueOf(17));
+                    AccountDeletionRequestState accountDeletionRequestState = new AccountDeletionRequestState();
+                    accountDeletionRequestState = lsfCoreService.closeLSFAccount(applicationID, lsfTradingAcc.getAccountId(), application.getTradingAcc(), lsfCashAccount.getAccountId(), application.getCashAccount());
+                    if (accountDeletionRequestState.isSent()) {
+                   
+                        log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Sent to OMS, Application ID :" + applicationID);
+
+                        try {
+                            notificationManager.sendEarlySettlementNotification(application);
+                        } catch (Exception e) {
+                            commonResponse.setResponseCode(responseCode);
+                            commonResponse.setResponseMessage(responseMessage + " , failed to send the notification.");
+                            e.printStackTrace();
+                        }
+                    }else{
+                        log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Rejected from OMS, Application ID :" + applicationID + ", Reason :" +  accountDeletionRequestState.getFailureReason());
+                        responseCode = 200; // since cash transfer is success response code is set to 200
+                        commonResponse.setErrorCode(-1); // error code is set since cash transfer is success and account closure is failed
+                        responseMessage = accountDeletionRequestState.getFailureReason();
+                    }
+                } else {
+                    responseCode = 500;
+                    responseMessage = "Failed to deduct outstanding due to Cash Transfer failure.";
+                }
+            }else{
+                responseCode = 500;
+                responseMessage = "Already settled or,You have pending orders in the LSF Trading Account :" + lsfTradingAcc.getAccountId() + ", Can't perform settlement";
+            }
+        lsfRepository.updateMurabahApplication(application);
+        commonResponse.setResponseCode(responseCode);
+        commonResponse.setResponseMessage(responseMessage);
+
+        log.info("===========LSF : (performEarlySettlement)-LSF-SERVER RESPONSE  : " + gson.toJson(commonResponse));
+        return gson.toJson(commonResponse);
+    }
+
+    public String performManualSettlement(String applicationID, String userID, double settlementAmount, String orderID) {
+        CommonResponse commonResponse = new CommonResponse();
+        int responseCode = 200;
+        String responseMessage = "";
+        String masterCashAccount = null;
+        String collateralTradingAccount = null;
+        String collateralCashAccount = null;
+        log.info("===========LSF : (performManualSettlement)-REQUEST  : , ApplicationID:" + applicationID + ",Order ID:" + orderID + ", Amount:" + settlementAmount);
+
+        TradingAcc lsfTradingAcc = lsfCoreService.getLsfTypeTradinAccountForUser(userID,applicationID);
+        CashAcc  lsfCashAccount = lsfCoreService.getLsfTypeCashAccountForUser(userID,applicationID);//get lsf type cash account details for user
+        masterCashAccount = lsfCoreService.getMasterCashAccount();//getting master cash account
+        PurchaseOrder purchaseOrder= lsfRepository.getSinglePurchaseOrder(orderID);
+        if((lsfCoreService.checkPendingOrdersForLSFTradingAccount(lsfTradingAcc.getAccountId(), lsfCashAccount.getAccountId()) == 0)
+                &&
+                ((lsfCashAccount.getCashBalance()-lsfCashAccount.getNetReceivable())>settlementAmount)
+                &&
+                purchaseOrder.getSettlementStatus()!=1
+                ){
+            MurabahApplication application = lsfRepository.getMurabahApplication(applicationID);
+
+            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), masterCashAccount, settlementAmount, applicationID)) {
+                log.info("===========LSF :(performManualSettlement)- Cash Transfer Succeed , From:" + lsfCashAccount.getAccountId() + ", To:" + masterCashAccount + ", Amount :" + settlementAmount);
+                responseMessage = "Successfully Deducted Outstanding Amount.";
+                lsfRepository.updatePOToSettledState(Integer.parseInt(orderID));
+                AccountDeletionRequestState accountDeletionRequestState = new AccountDeletionRequestState();
+                accountDeletionRequestState = lsfCoreService.closeLSFAccount(applicationID, lsfTradingAcc.getAccountId(), application.getTradingAcc(), lsfCashAccount.getAccountId(), application.getCashAccount());
+
+                if (accountDeletionRequestState.isSent()) {
+                     log.info("===========LSF :(performManualSettlement)- Account Deletion Request Sent to OMS, Application ID :" + applicationID);
+                }else{
+                    log.info("===========LSF :(performManualSettlement)- Account Deletion Request Rejected from OMS, Application ID :" + applicationID + ", Reason :" +  accountDeletionRequestState.getFailureReason());
+                    responseCode = 200;
+                    commonResponse.setErrorCode(-1);
+                    responseMessage = accountDeletionRequestState.getFailureReason();
+                }
             } else {
-                response.setResponseCode(404);
-                response.setErrorMessage("Settlement not found");
+                responseCode = 500;
+                responseMessage = "Failed to deduct outstanding due to Cash Transfer failure.";
             }
-        } catch (Exception e) {
-            logger.error("Error getting settlement breakdown", e);
-            response.setResponseCode(500);
-            response.setErrorMessage(e.getMessage());
+        }else{
+            responseCode = 500;
+            responseMessage = "Already settled or,You have pending orders in the LSF Trading Account :" + lsfTradingAcc.getAccountId() + ", Can't perform settlement";
         }
-        
-        return gson.toJson(response);
+
+
+        commonResponse.setResponseCode(responseCode);
+        commonResponse.setResponseMessage(responseMessage);
+        log.info("===========LSF : (performManualSettlement)-LSF-SERVER RESPONSE  : " + gson.toJson(commonResponse));
+        return gson.toJson(commonResponse);
     }
-    
-    /**
-     * Performs early settlement
-     */
-    private String performEarlySettlement(String request) {
-        logger.info("Performing early settlement");
-        
+    public String confirmRolloverByUser(Map<String, Object> map){
+        CommonResponse cmr = new CommonResponse();
+        String appID = map.get("appId").toString();
+        String customerId = map.get("customerId").toString();
+        String oldAppId = "";
+        String ip;
+        int responseCode = 200;
+        String responseMessage = "";
+        if (map.containsKey("ipAddress")){
+            ip = map.get("ipAddress").toString();
+        }
+
+        MurabahApplication newApplication = lsfRepository.getMurabahApplication(appID);
+        oldAppId = newApplication.getRollOverAppId();
+        PurchaseOrder oldPO = lsfRepository.getSinglePurchaseOrder(oldAppId);
+        PurchaseOrder newPO = lsfRepository.getSinglePurchaseOrder(newApplication.getId());
+        performEarlySettlement(oldAppId,customerId,oldPO.getOrderSettlementAmount(),oldPO.getId());
+        newPO.setAuthAbicToSell(1);
+        newPO.setIsPhysicalDelivery(0);
+        lsfRepository.addAuthAbicToSellStatus(newPO);
+        responseMessage = "Confirmed Rollover Successfully";
         try {
-            SettlementRequest settlementRequest = gson.fromJson(request, SettlementRequest.class);
-            
-            // Validate required fields
-            if (settlementRequest.getApplicationId() == null || settlementRequest.getApplicationId().isEmpty()) {
-                return createErrorResponse("Application ID is required");
-            }
-            
-            // Extract user ID from session
-            Map<String, Object> userInfo = lsfRepository.getUserBySession(settlementRequest.getSecurityKey());
-            if (userInfo == null || userInfo.isEmpty()) {
-                return createErrorResponse("Invalid session");
-            }
-            
-            String userId = userInfo.get("USER_ID").toString();
-            
-            // In a real implementation, this would perform early settlement for the application
-            // For now, we'll just return a success response
-            
-            CommonResponse response = new CommonResponse();
-            response.setResponseCode(200);
-            response.setResponseMessage("Early settlement initiated for application " + 
-                    settlementRequest.getApplicationId());
-            
-            return gson.toJson(response);
-            
+            //todo : Need to add seperate notification templates
+            notificationManager.sendAuthAbicToSellNotification(newApplication, true);/*---Send Notification---*/
         } catch (Exception e) {
-            logger.error("Error performing early settlement", e);
-            return createErrorResponse("Error performing early settlement: " + e.getMessage());
+            cmr.setResponseCode(responseCode);
+            cmr.setResponseMessage(responseMessage + " , failed to send the notification.");
         }
-    }
-    
-    /**
-     * Performs manual settlement
-     */
-    private String performManualSettlement(String request) {
-        logger.info("Performing manual settlement");
-        
-        try {
-            SettlementRequest settlementRequest = gson.fromJson(request, SettlementRequest.class);
-            
-            // Validate required fields
-            if (settlementRequest.getSettlementId() == null || settlementRequest.getSettlementId().isEmpty()) {
-                return createErrorResponse("Settlement ID is required");
-            }
-            
-            // Extract user ID from session
-            Map<String, Object> userInfo = lsfRepository.getUserBySession(settlementRequest.getSecurityKey());
-            if (userInfo == null || userInfo.isEmpty()) {
-                return createErrorResponse("Invalid session");
-            }
-            
-            String userId = userInfo.get("USER_ID").toString();
-            
-            // Process settlement
-            boolean success = lsfRepository.processSettlement(
-                    settlementRequest.getSettlementId(), 
-                    userId);
-            
-            // Create response
-            CommonResponse response = new CommonResponse();
-            if (success) {
-                response.setResponseCode(200);
-                response.setResponseMessage("Settlement processed successfully");
-            } else {
-                response.setResponseCode(500);
-                response.setErrorMessage("Failed to process settlement");
-            }
-            
-            return gson.toJson(response);
-            
-        } catch (Exception e) {
-            logger.error("Error performing manual settlement", e);
-            return createErrorResponse("Error performing manual settlement: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Gets settlement list for an application
-     */
-    private String getSettlementList(Map<String, Object> requestMap) {
-        logger.info("Getting settlement list");
-        
-        if (!requestMap.containsKey("applicationId")) {
-            return createErrorResponse("Application ID is required");
-        }
-        
-        String applicationId = requestMap.get("applicationId").toString();
-        
-        CommonResponse response = new CommonResponse();
-        try {
-            List<Map<String, Object>> settlementList = lsfRepository.getSettlementList(applicationId);
-            response.setResponseCode(200);
-            response.setResponseObject(settlementList);
-        } catch (Exception e) {
-            logger.error("Error getting settlement list", e);
-            response.setResponseCode(500);
-            response.setErrorMessage(e.getMessage());
-        }
-        
-        return gson.toJson(response);
-    }
-    
-    /**
-     * Gets list for manual settlement
-     */
-    private String getListForManualSettlement() {
-        logger.info("Getting list for manual settlement");
-        
-        CommonResponse response = new CommonResponse();
-        try {
-            // Get settlements with status 0 (pending)
-            List<Map<String, Object>> settlementList = lsfRepository.getSettlementsForProcessing(0);
-            response.setResponseCode(200);
-            response.setResponseObject(settlementList);
-        } catch (Exception e) {
-            logger.error("Error getting list for manual settlement", e);
-            response.setResponseCode(500);
-            response.setErrorMessage(e.getMessage());
-        }
-        
-        return gson.toJson(response);
-    }
-    
-    /**
-     * Processes settlement
-     */
-    private String processSettlement(String request) {
-        logger.info("Processing settlement");
-        
-        try {
-            SettlementRequest settlementRequest = gson.fromJson(request, SettlementRequest.class);
-            
-            // Validate required fields
-            if (settlementRequest.getSettlementId() == null || settlementRequest.getSettlementId().isEmpty()) {
-                return createErrorResponse("Settlement ID is required");
-            }
-            
-            // Extract user ID from session
-            Map<String, Object> userInfo = lsfRepository.getUserBySession(settlementRequest.getSecurityKey());
-            if (userInfo == null || userInfo.isEmpty()) {
-                return createErrorResponse("Invalid session");
-            }
-            
-            String userId = userInfo.get("USER_ID").toString();
-            
-            // Process settlement
-            boolean success = lsfRepository.processSettlement(
-                    settlementRequest.getSettlementId(), 
-                    userId);
-            
-            // Create response
-            CommonResponse response = new CommonResponse();
-            if (success) {
-                response.setResponseCode(200);
-                response.setResponseMessage("Settlement processed successfully");
-            } else {
-                response.setResponseCode(500);
-                response.setErrorMessage("Failed to process settlement");
-            }
-            
-            return gson.toJson(response);
-            
-        } catch (Exception e) {
-            logger.error("Error processing settlement", e);
-            return createErrorResponse("Error processing settlement: " + e.getMessage());
-        }
-    }
-    
-    private String createErrorResponse(String message) {
-        CommonResponse response = new CommonResponse();
-        response.setResponseCode(500);
-        response.setErrorMessage(message);
-        return gson.toJson(response);
+        log.debug("===========LSF : LSF-SERVER RESPONSE (confirmRolloverByUser) :" + gson.toJson(cmr));
+        return gson.toJson(cmr);
     }
 }
