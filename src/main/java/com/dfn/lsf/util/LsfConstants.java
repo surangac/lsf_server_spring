@@ -386,5 +386,9 @@ public class LsfConstants {
 
     //profit calculation
     public static final int ERROR_ERROR_ON_CALCULATING_PROFIT = 9029;
+    public static final String GET_SETTLEMENT_INSTALLMENT_LIST = "getSettlementInstallmentList";
+    public static final String CONTRACT_ROLLOVER_PROCESS = "contractRollover";
+    public static final int ERROR_NOT_IN_ROLLOVER_PERIOD = 9033;
+    public static final int ERROR_NOT_IN_ROLLOVER_RATIO = 9034;
 
 }
