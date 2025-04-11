@@ -387,4 +387,10 @@ public class LsfConstants {
     //profit calculation
     public static final int ERROR_ERROR_ON_CALCULATING_PROFIT = 9029;
 
+    //ML Application creation
+    public static final int ERROR_APPLICATION_IS_AVAILABLE_FOR_THIS_CUSTOMER = 9023;
+    public static final int ERROR_REQUESTED_LOAN_AMOUNT_CANNOT_BE_PROCESSED = 9024;
+    public static final int ERROR_NO_RECORDS_TO_UPDATE = 9025;
+    public static final int ERROR_NO_APPLICATION_ID = 9026;
+
 }
