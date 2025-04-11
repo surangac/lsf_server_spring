@@ -393,4 +393,8 @@ public class LsfConstants {
     public static final int ERROR_NO_RECORDS_TO_UPDATE = 9025;
     public static final int ERROR_NO_APPLICATION_ID = 9026;
 
+    //OTP
+    public static final int ERROR_OTP_GENERATION_FAILED = 9027;
+    public static final int ERROR_OTP_VALIDATION_FAILED = 9028;
+
 }
