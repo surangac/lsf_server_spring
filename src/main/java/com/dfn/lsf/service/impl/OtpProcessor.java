@@ -35,9 +35,7 @@ public class OtpProcessor implements MessageProcessor {
 
     private final Gson gson;
     private final LSFRepository lsfRepository;
-    private final Helper helper;
     private final NotificationManager notificationManager;
-    private final LsfCoreService lsfCoreService;
 
     @Override
     public String process(String request) {

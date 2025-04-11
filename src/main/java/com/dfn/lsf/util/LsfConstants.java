@@ -255,6 +255,8 @@ public class LsfConstants {
     public static final int STATUS_INVESTOR_ACCOUNT_CREATION_FAILED = 1105;
     public static final int STATUS_EXCHANGE_ACCOUNT_CREATION_FAILED = 1108;
     public static final int STATUS_COLLATERAL_SHARE_TRANSFER_FAILED_FROM_EXCHANGE = 1117;
+    public static final int STATUS_BASKET_SHARE_TRANSFER_REQUEST_SENT_TO_OMS = 120;
+    public static final int STATUS_BASKET_SHARE_TRANSFER_REQUEST_FAILED_TO_SEND_OMS = 1120;
 
     public static final int REQUEST_SENT_TO_OMS = 1;
     public static final int REQUEST_DID_NOT_ACCEPTED_CASH_TRANSFER_FAILED = -1;
