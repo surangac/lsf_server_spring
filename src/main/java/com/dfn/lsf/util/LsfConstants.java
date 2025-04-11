@@ -403,4 +403,13 @@ public class LsfConstants {
     public static final int ERROR_OTP_GENERATION_FAILED = 9027;
     public static final int ERROR_OTP_VALIDATION_FAILED = 9028;
 
+    //Liquidation Related Status
+    public static final int LIQUIDATION_REQUEST_SENT_TO_OMS = 1;
+    public static final int LIQUIDATION_SUCCESS_RESPONSE_RECEIVED_FAILED_CASH_TRANSFER = 2;
+    public static final int LIQUIDATION_SUCCESS_RESPONSE_RECEIVED_FAILED_CASH_TRANSFER_SUCCESSFUL = 3;
+
+    //Temp Application Levels & Status
+    public static final int SETTLEMENT_NOTIFICATION_MARGIN_LEVEL = 166;
+    public static final String SETTLEMENT_NOTIFICATION_MARGIN_STATUS = "155";
+
 }
