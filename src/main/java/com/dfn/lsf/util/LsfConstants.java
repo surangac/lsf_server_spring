@@ -255,6 +255,8 @@ public class LsfConstants {
     public static final int STATUS_INVESTOR_ACCOUNT_CREATION_FAILED = 1105;
     public static final int STATUS_EXCHANGE_ACCOUNT_CREATION_FAILED = 1108;
     public static final int STATUS_COLLATERAL_SHARE_TRANSFER_FAILED_FROM_EXCHANGE = 1117;
+    public static final int STATUS_BASKET_SHARE_TRANSFER_REQUEST_SENT_TO_OMS = 120;
+    public static final int STATUS_BASKET_SHARE_TRANSFER_REQUEST_FAILED_TO_SEND_OMS = 1120;
 
     public static final int REQUEST_SENT_TO_OMS = 1;
     public static final int REQUEST_DID_NOT_ACCEPTED_CASH_TRANSFER_FAILED = -1;
@@ -390,5 +392,15 @@ public class LsfConstants {
     public static final String CONTRACT_ROLLOVER_PROCESS = "contractRollover";
     public static final int ERROR_NOT_IN_ROLLOVER_PERIOD = 9033;
     public static final int ERROR_NOT_IN_ROLLOVER_RATIO = 9034;
+
+    //ML Application creation
+    public static final int ERROR_APPLICATION_IS_AVAILABLE_FOR_THIS_CUSTOMER = 9023;
+    public static final int ERROR_REQUESTED_LOAN_AMOUNT_CANNOT_BE_PROCESSED = 9024;
+    public static final int ERROR_NO_RECORDS_TO_UPDATE = 9025;
+    public static final int ERROR_NO_APPLICATION_ID = 9026;
+
+    //OTP
+    public static final int ERROR_OTP_GENERATION_FAILED = 9027;
+    public static final int ERROR_OTP_VALIDATION_FAILED = 9028;
 
 }
