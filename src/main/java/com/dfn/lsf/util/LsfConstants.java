@@ -384,4 +384,7 @@ public class LsfConstants {
     public static final String GET_SYMBOL_MARGINABILITY_DATA = "getSymbolMarginabilityData";
     public static final String GET_SYMBOL_INSTRUMENTS_LIST = "getSymbolInstrumentslist";
 
+    //profit calculation
+    public static final int ERROR_ERROR_ON_CALCULATING_PROFIT = 9029;
+
 }
