@@ -121,8 +121,6 @@ public class LsfConstants {
     public static final String GET_NOTIFICATION_HISTORY = "getNotificationHistory";
 
     /*---Core Operations Related--*/
-    public static final String CASH_TRANSFER = "cashTransfer";
-    public static final String SHARE_TRANSFER = "shareTransfer";
     public static final String GET_PORTFOLIO_DETAILS = "getPortfolioDetails";
     public static final String CREATE_PURCHASE_ORDER = "createPurchaseOrder";
     public static final String RUN_REVALUE_PROCESS = "runRevalueProcess";
@@ -162,6 +160,7 @@ public class LsfConstants {
     public static final String GET_CUSTOMER_DETAILS_ORDER_CONTRACT = "getCustomerDetailsOrderContract";
     public static final String GET_CUSTOMER_SUMMARY_INFO = "getCustomerSummaryInfo";
     public static final String GET_CUSTOMER_RISK_SCORE = "getCustomerRiskScore";
+    public static final String GET_APPLICATION_STATUS_SUMMARY = "getApplicationStatusSummary";
 
     /*------------OMS Request Related Request Types---------------------------*/
     public static final int GET_TRADING_ACCOUNT_LIST = 1;
@@ -171,6 +170,8 @@ public class LsfConstants {
     public static final int GET_NON_LSF_CASH_ACCOUNT_DETAILS = 5;
     public static final int GET_LSF_TYPE_TRADING_ACCOUNTS = 6;
     public static final int GET_LSF_TYPE_CASH_ACCOUNTS = 7;
+    public static final int CASH_TRANSFER = 10;
+    public static final int SHARE_TRANSFER = 9;
     public static final int SEND_PO_INSTRUCTIONS = 11;
     public static final int GET_EXECUTION_DETAILS = 12;
     public static final int GET_CUSTOMER_INFO = 13;
@@ -339,6 +340,10 @@ public class LsfConstants {
     public static final int EXCHANGE_ACCOUNT_DELETION_RESPONSE = 137;
     public static final int TRADE_HOLDING_UPDATE_RESPONSE = 147;
 
+    // OMS QUEUE Message Response
+    public static final int RESPONSE_APPROVE_ORDER_FOR_FTV = 23;
+    public static final int RESPONSE_APPROVE_WITHDRAW_FOR_FTV = 24;
+
     // admin common reject
     public static final int ERROR_FAILED_DURING_COLLATERAL_RELEASE = 9009;
     public static final int ERROR_YOU_CANNOT_CANCEL_THE_REQUEST_WITH_OPEN_ORDERS = 9010;
@@ -412,5 +417,14 @@ public class LsfConstants {
     //Temp Application Levels & Status
     public static final int SETTLEMENT_NOTIFICATION_MARGIN_LEVEL = 166;
     public static final String SETTLEMENT_NOTIFICATION_MARGIN_STATUS = "155";
+
+    /*---------------Profit Calculation Master Inquiry---------*/
+
+    public static final String REQ_PROFIT_CAL_RELATED_MASTER_DATA = "reqProfitCalRelatedMasterData";
+    public static final String REQ_CALCULATE_MISSING_ENTRIES = "reqCalculateMissingEntries";
+
+    //Manual Profit Calculation
+    public static final int ERROR_NOT_ALLOW_TO_RUN_MANUAL_PROFIT_CYCLE_FOR_FUTURE_DATE = 9031;
+    public static final int ERROR_PROFIT_CYCLE_ALREADY_RUN_FOR_THE_APPLICATION = 9032;
 
 }

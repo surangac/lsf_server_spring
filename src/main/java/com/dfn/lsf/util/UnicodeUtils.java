@@ -1,5 +1,10 @@
 package com.dfn.lsf.util;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+
 public class UnicodeUtils {
     public static String getNativeStringFromCompressed(String sUnicode) {
         int i = 0;

@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import com.dfn.lsf.service.GlobalParametersService;
+import com.dfn.lsf.service.scheduler.GlobalParametersService;
 
 import lombok.RequiredArgsConstructor;
 

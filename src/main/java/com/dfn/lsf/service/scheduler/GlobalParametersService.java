@@ -1,4 +1,4 @@
-package com.dfn.lsf.service;
+package com.dfn.lsf.service.scheduler;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,7 @@ public class GlobalParametersService {
 
     private final LSFRepository lsfRepository;
 
-    @Scheduled(fixedRateString = "${global.parameters.refresh.rate:900000}") // Default 15 minutes (in milliseconds)
+    @Scheduled(fixedRateString = "${scheduler.global.parameters.refresh.rate=:900000}") // Default 15 minutes (in milliseconds)
     public void refreshGlobalParameters() {
         try {
             log.debug("Refreshing global parameters from repository");

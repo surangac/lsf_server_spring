@@ -1,8 +1,14 @@
 package com.dfn.lsf.model;
 
-import lombok.Data;
+import com.dfn.lsf.model.requestMsg.OrderBasket;
 
-@Data
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
 public class CommonInquiryMessage {
 
     private String reqType;

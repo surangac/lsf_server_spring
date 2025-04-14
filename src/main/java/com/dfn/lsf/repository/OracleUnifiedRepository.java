@@ -435,7 +435,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl01_from_date", fromDate);
         parameterMap.put("pl01_to_date", toDate);
         parameterMap.put("pl01_request_status", requestStatus);
-        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_FILTERED_APPLICATION, parameterMap, RowMapperI.MURABH_APPICATION);
+        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_FILTERED_APPLICATION, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
         if (murabahApplications.size() > 0) {
             for (MurabahApplication murabahApplication : murabahApplications) {
                 if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
@@ -966,8 +966,8 @@ public class OracleUnifiedRepository implements LSFRepository {
     
     @Override
     public List<LiquidityType> getLiquidityTypes() {
-
-            return oracleRepository.get(NamedQueryI.GET_LIQUIDITY_TYPES, null, new BeanPropertyRowMapper<>(LiquidityType.class));
+        String GET_LIQUIDITY_TYPES="select * from l10_liquidity_type";
+        return oracleRepository.query(GET_LIQUIDITY_TYPES, null, "LiquidityType");
     }
 
     @Override
@@ -2114,7 +2114,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<Message> getNotificationHistory() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_N04_MESSAGE_OUT, DBConstants.PROC_N04_GET_NOTIFICATION_HISTORY, parameterMap, new BeanPropertyRowMapper<>(Message.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_N04_MESSAGE_OUT, DBConstants.PROC_N04_GET__MESSAGE_HISTORY, parameterMap, new BeanPropertyRowMapper<>(Message.class));
     }   
 
     @Override
@@ -2230,7 +2230,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl31_customer_id", customerId);
         return oracleRepository.getProcResult(DBConstants.PKG_L31_SYMBOL_CLASSIFY_LOG,
                 DBConstants.PROC_L31_SYMBOL_CLASSIFY_LOG_GET,
-                parameterMap, RowMapperI.SYMBOL_CLASSIFY_LOG);
+                parameterMap, new BeanPropertyRowMapper<>(SymbolClassifyLog.class));
     }
 
     @Override
@@ -2434,7 +2434,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override       
     public List<Installments> getCreatedInstallments() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_L22_PO_INSTALLMENTS, DBConstants.PROC_L22_GET_CREATED_INSTALLMENTS, parameterMap, RowMapperI.ORDER_INSTALLMENTS);
+        return oracleRepository.getProcResult(DBConstants.PKG_L22_PO_INSTALLMENTS, DBConstants.PROC_L22_GET_CREATED_INSTALLMENTS, parameterMap, new BeanPropertyRowMapper<>(Installments.class));
 
     }
 
@@ -2837,7 +2837,8 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     @Override
     public List<MurabahaProduct> getMurabahaProducts(){
-        return oracleRepository.getProcResult(NamedQueryI.GET_MURABAHA_PRODUCTS, null, new BeanPropertyRowMapper<>(MurabahaProduct.class));
+        String GET_MURABAHA_PRODUCTS = "select * from m07_murabaha_products";
+        return oracleRepository.query(GET_MURABAHA_PRODUCTS, null, "MurabahaProduct");
     }
 
     @Override

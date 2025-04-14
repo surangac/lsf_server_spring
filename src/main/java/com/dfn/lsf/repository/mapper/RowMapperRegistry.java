@@ -10,7 +10,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SingleColumnRowMapper;
 import org.springframework.stereotype.Component;
 
-import com.dfn.lsf.model.*;
+import com.dfn.lsf.model.PurchaseOrder;
 
 /**
  * Registry for all row mappers
@@ -60,6 +60,16 @@ public class RowMapperRegistry implements MapperRegistry {
     }
     
     /**
+     * Get a row mapper that maps to Map<String, String>
+     *
+     * @return Map row mapper for String values
+     */
+    @Override
+    public RowMapper<Map<String, String>> getMapRowMapperString() {
+        return new StringMapRowMapper();
+    }
+    
+    /**
      * Create a mapper for a type if not registered
      *
      * @param type Class to create mapper for
@@ -104,5 +114,25 @@ public class RowMapperRegistry implements MapperRegistry {
         
         // Also register by name for backward compatibility
         namedMappers.put("purchaseOrder", typeMappers.get(PurchaseOrder.class));
+    }
+    
+    /**
+     * Row mapper that converts result set to Map<String, String>
+     */
+    private static class StringMapRowMapper implements RowMapper<Map<String, String>> {
+        @Override
+        public Map<String, String> mapRow(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
+            Map<String, String> map = new java.util.HashMap<>();
+            java.sql.ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
+            
+            for (int i = 1; i <= columnCount; i++) {
+                String columnName = metaData.getColumnLabel(i);
+                String value = rs.getString(i);
+                map.put(columnName, value);
+            }
+            
+            return map;
+        }
     }
 }

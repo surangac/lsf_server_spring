@@ -1,56 +1,54 @@
 package com.dfn.lsf.service;
 
-import org.springframework.stereotype.Service;
-
-import com.dfn.lsf.model.MApplicationCollaterals;
-import com.dfn.lsf.repository.LSFRepository;
-import com.google.gson.Gson;
-import com.dfn.lsf.util.Helper;
-import com.dfn.lsf.model.CommonResponse;
-import com.dfn.lsf.model.TradingAcc;
-import com.dfn.lsf.model.Symbol;
-import com.dfn.lsf.model.CashAcc;
-import com.dfn.lsf.model.ShareTransferRequest;
-import com.dfn.lsf.model.CashTransferRequest;
-import com.dfn.lsf.util.LsfConstants;
-import com.dfn.lsf.util.LSFUtils;
-import com.dfn.lsf.util.NotificationManager;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
-import java.util.ArrayList;
-
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.Date;
 import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
-import com.dfn.lsf.model.MarginabilityGroup;
-import com.dfn.lsf.model.SymbolMarginabilityPercentage;
-import com.dfn.lsf.model.MurabahApplication;
-import com.dfn.lsf.model.requestMsg.CommonInqueryMessage;
+import com.dfn.lsf.model.CashAcc;
+import com.dfn.lsf.model.CashAccountResponse;
+import com.dfn.lsf.model.CommissionStructure;
+import com.dfn.lsf.model.CommonResponse;
+import com.dfn.lsf.model.ExternalCollaterals;
 import com.dfn.lsf.model.GlobalParameters;
+import com.dfn.lsf.model.LiquidityType;
+import com.dfn.lsf.model.MApplicationCollaterals;
+import com.dfn.lsf.model.MarginabilityGroup;
+import com.dfn.lsf.model.MurabahApplication;
+import com.dfn.lsf.model.OMSCommission;
+import com.dfn.lsf.model.OrderProfit;
+import com.dfn.lsf.model.PurchaseOrder;
+import com.dfn.lsf.model.Symbol;
+import com.dfn.lsf.model.SymbolMarginabilityPercentage;
 import com.dfn.lsf.model.Tenor;
+import com.dfn.lsf.model.TradingAcc;
+import com.dfn.lsf.model.requestMsg.CashTransferRequest;
+import com.dfn.lsf.model.requestMsg.CloseLSFAccountRequest;
+import com.dfn.lsf.model.requestMsg.CommonInqueryMessage;
+import com.dfn.lsf.model.requestMsg.OMSQueueRequest;
+import com.dfn.lsf.model.requestMsg.ShareTransferRequest;
+import com.dfn.lsf.model.responseMsg.AccountDeletionRequestState;
 import com.dfn.lsf.model.responseMsg.ProfitResponse;
+import com.dfn.lsf.repository.LSFRepository;
+import com.dfn.lsf.util.Helper;
+import com.dfn.lsf.util.LSFUtils;
+import com.dfn.lsf.util.LsfConstants;
+import com.dfn.lsf.util.NotificationManager;
+import com.google.gson.Gson;
 
 import lombok.RequiredArgsConstructor;
-import com.dfn.lsf.model.CommissionStructure;
-import com.dfn.lsf.model.LiquidityType;
-import com.dfn.lsf.model.ExternalCollaterals;
-import com.dfn.lsf.model.OrderProfit;
-import com.dfn.lsf.model.requestMsg.CloseLSFAccountRequest;
-import com.dfn.lsf.model.responseMsg.AccountDeletionRequestState;
-import com.dfn.lsf.model.CashAccountResponse;
-import com.dfn.lsf.model.requestMsg.OMSQueueRequest;
-import com.dfn.lsf.model.PurchaseOrder;
-import com.dfn.lsf.model.OMSCommission;
+import lombok.extern.slf4j.Slf4j;
 
 
 @Service    
