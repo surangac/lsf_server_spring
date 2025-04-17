@@ -10,8 +10,6 @@ import com.dfn.lsf.util.Helper;
 import com.dfn.lsf.util.LsfConstants;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,10 +21,9 @@ import java.util.List;
  * - INVESTOR_ACCOUNT_CREATION_RESPONSE = 140
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AccountUpdateProcessor implements MessageProcessor {
-
-    private static final Logger logger = LoggerFactory.getLogger(AccountUpdateProcessor.class);
 
     private final Gson gson;
     private final LSFRepository lsfRepository;
@@ -51,7 +48,7 @@ public class AccountUpdateProcessor implements MessageProcessor {
     }
 
     private String processInvestorAccountResponse(OMSQueueRequest omsQueueRequest) {
-        logger.debug("===========LSF : Updating Investor Account Response, Cash Account ID :"
+        log.debug("===========LSF : Updating Investor Account Response, Cash Account ID :"
                      + omsQueueRequest.getCashAccNo()
                      + " , Status:"
                      + omsQueueRequest.getStatus()
@@ -83,7 +80,7 @@ public class AccountUpdateProcessor implements MessageProcessor {
                         createExchangeAccount.setExchange(lsfTradingAccount.getExchange());
                         String omsResponseForExchangeAccountCreation = helper.cashAccountRelatedOMS(gson.toJson(
                                 createExchangeAccount));
-                        logger.debug("===========LSF : Creating Exchange Account for Trading Account :"
+                        log.debug("===========LSF : Creating Exchange Account for Trading Account :"
                                      + createExchangeAccount.getTradingAccountId()
                                      + " OMS Response  :"
                                      + omsResponseForExchangeAccountCreation);
@@ -100,14 +97,14 @@ public class AccountUpdateProcessor implements MessageProcessor {
                         }
                     }
                 } else {
-                    logger.debug("===========LSF : LSF Type Trading Account not found for Cash Account :"
+                    log.debug("===========LSF : LSF Type Trading Account not found for Cash Account :"
                                  + omsQueueRequest.getCashAccNo());
                 }
             } else {
                 lsfRepository.updateActivity(
                         murabahApplication.getId(),
                         LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATION_FAILED);
-                logger.debug("===========LSF : Updating Investor Account Failed, Cash Account ID :"
+                log.debug("===========LSF : Updating Investor Account Failed, Cash Account ID :"
                              + omsQueueRequest.getCashAccNo()
                              + " , Status:"
                              + omsQueueRequest.getStatus());
@@ -118,7 +115,7 @@ public class AccountUpdateProcessor implements MessageProcessor {
     }
 
     private String processExchangeAccountResponse(OMSQueueRequest omsQueueRequest) {
-        logger.debug("===========LSF : Updating Exchange Account Response, Trading Account ID :"
+        log.debug("===========LSF : Updating Exchange Account Response, Trading Account ID :"
                      + omsQueueRequest.getTradingAccount()
                      + "Cash Account Number "
                      + omsQueueRequest.getCashAccNo()
@@ -151,11 +148,11 @@ public class AccountUpdateProcessor implements MessageProcessor {
                     }
                 }
             } else {
-                logger.debug("===========LSF: Application Closed.");
+                log.debug("===========LSF: Application Closed.");
             }
         } else {
             lsfRepository.updateActivity(application.getId(), LsfConstants.STATUS_EXCHANGE_ACCOUNT_CREATION_FAILED);
-            logger.debug("===========LSF : Creating Exchange Account Failed, Trading Account ID :"
+            log.debug("===========LSF : Creating Exchange Account Failed, Trading Account ID :"
                          + omsQueueRequest.getTradingAccount()
                          + " , Status:"
                          + omsQueueRequest.getStatus());
@@ -182,7 +179,7 @@ public class AccountUpdateProcessor implements MessageProcessor {
     private String processExchangeAccountDeletionResponse(OMSQueueRequest accountDeletionResponse) {
         if (accountDeletionResponse.getIsLsf()
             == 0) { // from account of the share transfer is a LSF type account during the collateral transfer
-            logger.debug("===========LSF : Share Transfer Failure during Collateral Transfer, Response Received :"
+            log.debug("===========LSF : Share Transfer Failure during Collateral Transfer, Response Received :"
                          + gson.toJson(accountDeletionResponse));
             MurabahApplication murabahApplication =
                     lsfRepository.getApplicationByLSFTradingAccount(accountDeletionResponse.getExchangeAccount(),
@@ -220,7 +217,7 @@ public class AccountUpdateProcessor implements MessageProcessor {
             }
         } else if (accountDeletionResponse.getIsLsf()
                    == 1) {// from account of the share transfer is a non lsf type account during the account closer
-            logger.debug("===========LSF : Account Deletion Response Received :"
+            log.debug("===========LSF : Account Deletion Response Received :"
                          + gson.toJson(accountDeletionResponse));
             MurabahApplication murabahApplication =
                     lsfRepository.getApplicationByLSFTradingAccount(accountDeletionResponse.getExchangeAccount(),
@@ -235,7 +232,7 @@ public class AccountUpdateProcessor implements MessageProcessor {
                                 murabahApplication.getId());
                         if (purchaseOrders.size() > 0) {
                             PurchaseOrder purchaseOrder = purchaseOrders.get(0);
-                            logger.info("===========LSF : Moving Application to close state, Application ID :"
+                            log.info("===========LSF : Moving Application to close state, Application ID :"
                                         + murabahApplication.getId());
                             lsfCore.moveToCashTransferredClosedState(
                                     murabahApplication.getId(),
