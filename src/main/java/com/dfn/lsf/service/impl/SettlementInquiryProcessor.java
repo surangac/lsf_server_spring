@@ -8,6 +8,7 @@ import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.util.LsfConstants;
+import com.dfn.lsf.util.MessageType;
 import com.dfn.lsf.util.OverrallApprovalStatus;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_SETTLEMENT_INQUIRY_PROCESS;
+
 /**
  * Defined in InMessageHandlerAdminCbr AND InMessageHandlerCbr
  * route : SETTLEMENT_INQUIRY_ROUTE
@@ -29,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  * - MESSAGE_TYPE_SETTLEMENT_INQUIRY_PROCESS = 13;
  */
 @Service
-@Qualifier("13")
+@MessageType(MESSAGE_TYPE_SETTLEMENT_INQUIRY_PROCESS)
 @RequiredArgsConstructor
 public class SettlementInquiryProcessor implements MessageProcessor {
 

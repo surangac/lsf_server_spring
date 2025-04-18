@@ -12,6 +12,7 @@ import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.util.Helper;
 import com.dfn.lsf.util.LsfConstants;
+import com.dfn.lsf.util.MessageType;
 import com.dfn.lsf.util.NotificationManager;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_PENDING_ACTIVITY_ADMIN;
+
 /**
  * Defined in InMessageHandlerAdminCbr
  * route : PENDING_ACTIVITY_ADMIN_ROUTE
@@ -29,8 +32,8 @@ import java.util.List;
  * - MESSAGE_TYPE_PENDING_ACTIVITY_ADMIN = 25;
  */
 @Service
+@MessageType(MESSAGE_TYPE_PENDING_ACTIVITY_ADMIN)
 @RequiredArgsConstructor
-@Qualifier("25")
 public class PendingActivityAdminProcessor implements MessageProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(OtpProcessor.class);

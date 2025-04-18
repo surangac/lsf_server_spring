@@ -23,6 +23,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_CUSTOMER_INQUIRY_PROCESS;
+
 /**
  * Defined in InMessageHandlerAdminCbr,InMessageHandlerCbr
  * route : CUSTOMER_INQUIRY_ROUTE
@@ -30,8 +32,8 @@ import java.util.regex.Pattern;
  * - MESSAGE_TYPE_CUSTOMER_INQUIRY_PROCESS = 20;
  */
 @Service
+@MessageType(MESSAGE_TYPE_CUSTOMER_INQUIRY_PROCESS)
 @RequiredArgsConstructor
-@Qualifier("20")
 public class CustomerInquiryProcessor implements MessageProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerInquiryProcessor.class);

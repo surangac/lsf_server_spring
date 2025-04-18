@@ -4,10 +4,7 @@ import com.dfn.lsf.model.*;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.service.reporting.ReportGenerator;
-import com.dfn.lsf.util.ErrorCodes;
-import com.dfn.lsf.util.Helper;
-import com.dfn.lsf.util.LsfConstants;
-import com.dfn.lsf.util.ReportConstants;
+import com.dfn.lsf.util.*;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import net.sf.jasperreports.engine.JRException;
@@ -21,6 +18,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_REPORT_GENERATION_PROCESSS;
+
 /**
  * Defined in InMessageHandlerAdminCbr, InMessageHandlerCbr
  * route : GENERATE_REPORTS
@@ -28,8 +27,8 @@ import java.util.*;
  * - MESSAGE_TYPE_REPORT_GENERATION_PROCESSS = 5;
  */
 @Service
+@MessageType(MESSAGE_TYPE_REPORT_GENERATION_PROCESSS)
 @RequiredArgsConstructor
-@Qualifier("5")
 public class MReportGenerationProcessor implements MessageProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(MReportGenerationProcessor.class);

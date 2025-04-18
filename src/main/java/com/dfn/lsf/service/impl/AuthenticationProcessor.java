@@ -3,6 +3,7 @@ package com.dfn.lsf.service.impl;
 import java.util.List;
 import java.util.Map;
 
+import com.dfn.lsf.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -18,22 +19,20 @@ import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.service.security.SessionValidator;
-import com.dfn.lsf.util.ErrorCodes;
-import com.dfn.lsf.util.Helper;
-import com.dfn.lsf.util.LSFUtils;
-import com.dfn.lsf.util.LsfConstants;
-import com.dfn.lsf.util.NotificationManager;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import lombok.RequiredArgsConstructor;
+
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_AUTHORIZATION_PROCESS;
+
 /**
  * Processor for authentication operations
  * This replaces the AKKA AuthenticationProcessor
  */
 @Service
-@Qualifier("10")
-@RequiredArgsConstructor // MESSAGE_TYPE_AUTHORIZATION_PROCESS
+@MessageType(MESSAGE_TYPE_AUTHORIZATION_PROCESS)
+@RequiredArgsConstructor
 public class AuthenticationProcessor implements MessageProcessor {
     
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationProcessor.class);

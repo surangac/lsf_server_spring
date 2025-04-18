@@ -8,6 +8,7 @@ import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.util.Helper;
 import com.dfn.lsf.util.LsfConstants;
+import com.dfn.lsf.util.MessageType;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -20,19 +21,20 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.dfn.lsf.util.LsfConstants.DEPOSIT_SUCCESS_RESPONSE;
+
 /**
  * Defined in OMSRequestHandlerCbr
  * route : DEPOSIT_WITHDRAW_RESPONSE_ROUTE
  * Handling Message types :
  * - DEPOSIT_SUCCESS_RESPONSE = 132;
- * - WITHDRAW_SUCCESS_RESPONSE = 133
  */
 @Service
 @RequiredArgsConstructor
-@Qualifier("") //  Both 132, 133 come to this processor
-public class DepositWithdrawResponseHandlingProcessor implements MessageProcessor {
+@MessageType(DEPOSIT_SUCCESS_RESPONSE)
+public class DepositResponseHandlingProcessor implements MessageProcessor {
 
-    private static final Logger logger = LoggerFactory.getLogger(DepositWithdrawResponseHandlingProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(DepositResponseHandlingProcessor.class);
 
     private final Gson gson;
     private final LSFRepository lsfRepository;
@@ -45,10 +47,8 @@ public class DepositWithdrawResponseHandlingProcessor implements MessageProcesso
         map = gson.fromJson(request, map.getClass());
         int messageType = omsRequest.getMessageType();
         switch (messageType) {
-            case LsfConstants.DEPOSIT_SUCCESS_RESPONSE:
+            case DEPOSIT_SUCCESS_RESPONSE:
                 return processB2BDepositResponse(map);/*----------Deposit Success Response-----------*/
-            case LsfConstants.WITHDRAW_SUCCESS_RESPONSE:
-                return processB2BWithdrawResponse(map);/*----------Withdraw Success Response-------*/
             default:
                 return null;
         }
@@ -126,28 +126,5 @@ public class DepositWithdrawResponseHandlingProcessor implements MessageProcesso
         return resultMap[0].equals("1");
     }
 
-    private String processB2BWithdrawResponse(Map<String, Object> map) {
-        String referenceNo = map.get("referenceNo").toString();
-        //if(referenceNo.contains("|")){
-        double status = Double.parseDouble(map.get("status").toString()/*.replace(".0","")*/);
-        //String narration = map.get("narration").toString();
-        logger.info("===========LSF :Withdraw Response Receive from , referenceNo: "
-                    + referenceNo
-                    + " , status :"
-                    + status /*+ " , narration:" + narration */);
-        if (status > 0) {
-            lsfRepository.updateDepositStatus(
-                    referenceNo,
-                    LsfConstants.RESPONSE_RECEIVED_B2B_SUCCESS,
-                    LsfConstants.WITHDRAW);
-        } else {
-            lsfRepository.updateDepositStatus(
-                    referenceNo,
-                    LsfConstants.RESPONSE_RECEIVED_B2B_FAILED,
-                    LsfConstants.WITHDRAW);
-        }
-        //}
 
-        return null;
-    }
 }

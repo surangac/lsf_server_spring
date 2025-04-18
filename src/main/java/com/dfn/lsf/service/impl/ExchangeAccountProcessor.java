@@ -1,7 +1,6 @@
 package com.dfn.lsf.service.impl;
 
 import com.dfn.lsf.model.*;
-import com.dfn.lsf.model.requestMsg.AccountCreationRequest;
 import com.dfn.lsf.model.requestMsg.OMSQueueRequest;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
@@ -10,20 +9,15 @@ import com.dfn.lsf.util.Helper;
 import com.dfn.lsf.util.LsfConstants;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * Defined in OMSRequestHandlerCbr
- * Handling Message types :
- * - EXCHANGE_ACCOUNT_DELETION_RESPONSE = 137;
- * - INVESTOR_ACCOUNT_CREATION_RESPONSE = 140
- */
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class AccountUpdateProcessor implements MessageProcessor {
+public class ExchangeAccountProcessor implements MessageProcessor {
 
     private final Gson gson;
     private final LSFRepository lsfRepository;
@@ -34,9 +28,6 @@ public class AccountUpdateProcessor implements MessageProcessor {
     public String process(String request) {
         OMSQueueRequest omsRequest = gson.fromJson((String) request, OMSQueueRequest.class);
         switch (omsRequest.getMessageType()) {
-            case LsfConstants.INVESTOR_ACCOUNT_CREATION_RESPONSE: {
-                return processInvestorAccountResponse(omsRequest);
-            }
             case LsfConstants.EXCHANGE_ACCOUNT_CREATION_RESPONSE: {
                 return processExchangeAccountResponse(omsRequest);
             }
@@ -44,73 +35,6 @@ public class AccountUpdateProcessor implements MessageProcessor {
                 return processExchangeAccountDeletionResponse(omsRequest);
             }
         }
-        return null;
-    }
-
-    private String processInvestorAccountResponse(OMSQueueRequest omsQueueRequest) {
-        log.debug("===========LSF : Updating Investor Account Response, Cash Account ID :"
-                     + omsQueueRequest.getCashAccNo()
-                     + " , Status:"
-                     + omsQueueRequest.getStatus()
-                     + " Investor account:"
-                     + omsQueueRequest.getInvestorAccount());
-        //List<MurabahApplication> murabahApplications = lsfDaoI.geMurabahAppicationUserID(omsQueueRequest
-        // .getMubasherNo());
-        MurabahApplication murabahApplication = lsfRepository.getApplicationByCashAccount(
-                omsQueueRequest.getCashAccNo(),
-                1);
-
-//        MurabahApplication murabahApplication= lsfDaoI.getApplicationByCashAccount(omsQueueRequest.getCashAccNo(),1);
-        if (murabahApplication != null) {
-            if (omsQueueRequest.getStatus() == 1) {
-                // updating investor account of the
-                lsfRepository.updateInvestorAcc(
-                        omsQueueRequest.getCashAccNo(),
-                        omsQueueRequest.getInvestorAccount(),
-                        murabahApplication.getId());
-                TradingAcc lsfTradingAccount = lsfCore.getLsfTypeTradinAccountForUser(
-                        omsQueueRequest.getMubasherNo(),
-                        murabahApplication.getId());
-
-                if (lsfTradingAccount != null) {
-                    if (murabahApplication != null) {
-                        AccountCreationRequest createExchangeAccount = new AccountCreationRequest();
-                        createExchangeAccount.setReqType(LsfConstants.CREATE_EXCHANGE_ACCOUNT);
-                        createExchangeAccount.setTradingAccountId(lsfTradingAccount.getAccountId());
-                        createExchangeAccount.setExchange(lsfTradingAccount.getExchange());
-                        String omsResponseForExchangeAccountCreation = helper.cashAccountRelatedOMS(gson.toJson(
-                                createExchangeAccount));
-                        log.debug("===========LSF : Creating Exchange Account for Trading Account :"
-                                     + createExchangeAccount.getTradingAccountId()
-                                     + " OMS Response  :"
-                                     + omsResponseForExchangeAccountCreation);
-                        CommonResponse exchangeAccountResponse = helper.processOMSCommonResponseAccountCreation(
-                                omsResponseForExchangeAccountCreation);
-                        if (exchangeAccountResponse.getResponseCode() == 1) {
-                            lsfRepository.updateActivity(
-                                    murabahApplication.getId(),
-                                    LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATED_AND_SENT_EXCHANGE_ACCOUNT_CREATION);
-                        } else {
-                            lsfRepository.updateActivity(
-                                    murabahApplication.getId(),
-                                    LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATED_FAILED_TO_SUBMIT_EXCHANGE_ACCOUNT_CREATION);
-                        }
-                    }
-                } else {
-                    log.debug("===========LSF : LSF Type Trading Account not found for Cash Account :"
-                                 + omsQueueRequest.getCashAccNo());
-                }
-            } else {
-                lsfRepository.updateActivity(
-                        murabahApplication.getId(),
-                        LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATION_FAILED);
-                log.debug("===========LSF : Updating Investor Account Failed, Cash Account ID :"
-                             + omsQueueRequest.getCashAccNo()
-                             + " , Status:"
-                             + omsQueueRequest.getStatus());
-            }
-        }
-
         return null;
     }
 

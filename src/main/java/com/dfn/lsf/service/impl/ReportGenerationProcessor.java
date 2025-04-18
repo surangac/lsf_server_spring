@@ -3,6 +3,7 @@ package com.dfn.lsf.service.impl;
 import java.io.OutputStream;
 import java.util.Map;
 
+import com.dfn.lsf.util.MessageType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -21,8 +22,10 @@ import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_REPORT_GENERATION_PROCESS;
+
 @Service
-@Qualifier("14") // MESSAGE_TYPE_REPORT_GENERATION_PROCESS
+@MessageType(MESSAGE_TYPE_REPORT_GENERATION_PROCESS)
 @Slf4j
 @RequiredArgsConstructor
 public class ReportGenerationProcessor implements MessageProcessor {

@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.dfn.lsf.util.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -30,17 +31,15 @@ import com.dfn.lsf.model.responseMsg.FTVInfo;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.MessageProcessor;
-import com.dfn.lsf.util.ErrorCodes;
-import com.dfn.lsf.util.LSFUtils;
-import com.dfn.lsf.util.LsfConstants;
-import com.dfn.lsf.util.NumberToArabic;
-import com.dfn.lsf.util.UnicodeUtils;
 import com.google.gson.Gson;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_COMMON_INQUIRY_PROCESS;
+
 @Service
-@Qualifier("16") // MESSAGE_TYPE_COMMON_INQUIRY_PROCESS
+@MessageType(MESSAGE_TYPE_COMMON_INQUIRY_PROCESS)
 @Slf4j
 @RequiredArgsConstructor
 public class CommonInquiryProcessor implements MessageProcessor {

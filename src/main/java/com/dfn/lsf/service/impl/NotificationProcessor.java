@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.dfn.lsf.util.MessageType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -23,12 +24,14 @@ import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_NOTIFICATION_PROCESSOR;
+
 /**
  * Processor for notification operations
  * This replaces the AKKA NotificationProcessor
  */
 @Service
-@Qualifier("11") // MESSAGE_TYPE_NOTIFICATION_PROCESSOR
+@MessageType(MESSAGE_TYPE_NOTIFICATION_PROCESSOR)
 @Slf4j
 @RequiredArgsConstructor
 public class NotificationProcessor implements MessageProcessor {

@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_LOAN_PERSIST_PROCESS;
+
 /**
  * Defined in InMessageHandlerAdminCbr, InMessageHandlerCbr
  * route : APPLY_MURABAH_FACILITY_CLIENT
@@ -26,8 +28,8 @@ import java.util.*;
  * - MESSAGE_TYPE_LOAN_PERSIST_PROCESS = 7;
  */
 @Service
+@MessageType(MESSAGE_TYPE_LOAN_PERSIST_PROCESS)
 @RequiredArgsConstructor
-@Qualifier("7")
 public class MurabahApplicationPersistProcessor implements MessageProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(MurabahApplicationPersistProcessor.class);

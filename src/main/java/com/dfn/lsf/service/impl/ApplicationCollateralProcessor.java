@@ -16,14 +16,16 @@ import org.springframework.stereotype.Service;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_APPLICATION_COLLATERAL_PROCESS;
+
 /**
  * Defined in InMessageHandlerAdminCbr,InMessageHandlerCbr
  * Handling Message types :
  * - MESSAGE_TYPE_APPLICATION_COLLATERAL_PROCESS = 19;
  */
 @Service
+@MessageType(MESSAGE_TYPE_APPLICATION_COLLATERAL_PROCESS)
 @RequiredArgsConstructor
-@Qualifier("19")
 public class ApplicationCollateralProcessor implements MessageProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(ApplicationCollateralProcessor.class);

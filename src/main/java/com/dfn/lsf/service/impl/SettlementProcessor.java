@@ -2,6 +2,7 @@ package com.dfn.lsf.service.impl;
 
 import java.util.Map;
 
+import com.dfn.lsf.util.MessageType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -22,9 +23,10 @@ import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Service    
-@Qualifier("15") // MESSAGE_TYPE_SETTLEMENT_PROCESS
-// contrains both LsfSettlementProcessorAbic
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_SETTLEMENT_PROCESS;
+
+@Service
+@MessageType(MESSAGE_TYPE_SETTLEMENT_PROCESS)
 @Slf4j
 @RequiredArgsConstructor
 public class SettlementProcessor implements MessageProcessor {

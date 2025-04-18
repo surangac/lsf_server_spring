@@ -4,9 +4,7 @@ import com.dfn.lsf.model.CommonResponse;
 import com.dfn.lsf.model.MurabahApplication;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.MessageProcessor;
-import com.dfn.lsf.util.ErrorCodes;
-import com.dfn.lsf.util.NotificationManager;
-import com.dfn.lsf.util.OverrallApprovalStatus;
+import com.dfn.lsf.util.*;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -17,14 +15,16 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_CREDIT_PROPOSAL_PROCESS;
+
 /**
  * Defined in InMessageHandlerAdminCbr,InMessageHandlerCbr
  * Handling Message types :
  * - MESSAGE_TYPE_CREDIT_PROPOSAL_PROCESS = 9;
  */
 @Service
+@MessageType(MESSAGE_TYPE_CREDIT_PROPOSAL_PROCESS)
 @RequiredArgsConstructor
-@Qualifier("9")
 public class ApplicationCreateCPProcessor implements MessageProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(ApplicationCreateCPProcessor.class);

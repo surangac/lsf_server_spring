@@ -8,6 +8,7 @@ import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.util.Helper;
 import com.dfn.lsf.util.LsfConstants;
+import com.dfn.lsf.util.MessageType;
 import com.dfn.lsf.util.NotificationManager;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
@@ -20,14 +21,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_ADMIN_COMMON_REJECT;
+
 /**
  * Defined in InMessageHandlerAdminCbr
  * Handling Message types :
  * - MESSAGE_TYPE_ADMIN_COMMON_REJECT = 26
  */
 @Service
+@MessageType(MESSAGE_TYPE_ADMIN_COMMON_REJECT)
 @RequiredArgsConstructor
-@Qualifier("26")
 public class AdminCommonRejectProcessor implements MessageProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminCommonRejectProcessor.class);

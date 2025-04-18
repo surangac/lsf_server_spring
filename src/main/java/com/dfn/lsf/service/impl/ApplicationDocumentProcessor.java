@@ -7,6 +7,7 @@ import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.util.ErrorCodes;
 import com.dfn.lsf.util.LsfConstants;
+import com.dfn.lsf.util.MessageType;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -19,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_APPLICATION_DOCUMENT_PROCESS;
+
 /**
  * Defined in InMessageHandlerAdminCbr,InMessageHandlerCbr
  * route : APPLICATION_DOCUMENT_ROUTE
@@ -26,8 +29,8 @@ import java.util.Map;
  * - MESSAGE_TYPE_APPLICATION_DOCUMENT_PROCESS = 18;
  */
 @Service
+@MessageType(MESSAGE_TYPE_APPLICATION_DOCUMENT_PROCESS)
 @RequiredArgsConstructor
-@Qualifier("18")
 public class ApplicationDocumentProcessor implements MessageProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(ApplicationDocumentProcessor.class);

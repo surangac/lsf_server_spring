@@ -19,14 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Defined in InMessageHandlerAdminCbr AND InMessageHandlerCbr
- * route : SETTLEMENT_INQUIRY_ROUTE
- * Handling Message types :
- * - MESSAGE_TYPE_SETTLEMENT_INQUIRY_PROCESS = 13;
- */
+
 @Service
-@Qualifier("13")
 @RequiredArgsConstructor
 public class SettlementCalculationProcessor implements MessageProcessor {
 

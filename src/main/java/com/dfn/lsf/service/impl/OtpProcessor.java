@@ -5,10 +5,7 @@ import com.dfn.lsf.model.MurabahApplication;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.MessageProcessor;
-import com.dfn.lsf.util.ErrorCodes;
-import com.dfn.lsf.util.Helper;
-import com.dfn.lsf.util.LsfConstants;
-import com.dfn.lsf.util.NotificationManager;
+import com.dfn.lsf.util.*;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -20,6 +17,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_OTP_PROCESS;
+
 /**
  * Defined in InMessageHandlerCbr
  * route : HANDLE_OTP
@@ -27,8 +26,8 @@ import java.util.Random;
  * - MESSAGE_TYPE_OTP_PROCESS = 22;
  */
 @Service
+@MessageType(MESSAGE_TYPE_OTP_PROCESS)
 @RequiredArgsConstructor
-@Qualifier("22")
 public class OtpProcessor implements MessageProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(OtpProcessor.class);

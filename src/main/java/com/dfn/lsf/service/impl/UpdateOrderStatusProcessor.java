@@ -7,16 +7,14 @@ import com.dfn.lsf.model.responseMsg.ProfitResponse;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.MessageProcessor;
-import com.dfn.lsf.util.Helper;
-import com.dfn.lsf.util.LSFUtils;
-import com.dfn.lsf.util.LsfConstants;
-import com.dfn.lsf.util.NotificationManager;
+import com.dfn.lsf.util.*;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
+import static com.dfn.lsf.util.LsfConstants.UPDATE_ORDER_STATUS_PROCESS;
 
 /**
  * Defined in OMSRequestHandlerCbr
@@ -25,11 +23,11 @@ import org.springframework.stereotype.Service;
  * - UPDATE_ORDER_STATUS_PROCESS = 120;
  */
 @Service
-@Qualifier("120")
+@MessageType(UPDATE_ORDER_STATUS_PROCESS)
 @RequiredArgsConstructor
 public class UpdateOrderStatusProcessor implements MessageProcessor {
 
-    private static final Logger logger = LoggerFactory.getLogger(AccountUpdateProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExchangeAccountProcessor.class);
 
     private final Gson gson;
     private final LSFRepository lsfRepository;

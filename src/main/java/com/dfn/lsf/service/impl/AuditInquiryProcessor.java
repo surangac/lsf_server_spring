@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.dfn.lsf.util.MessageType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -24,12 +25,12 @@ import com.google.gson.reflect.TypeToken;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_AUDIT_INQUIRY;
 
 @Slf4j
 @Service
+@MessageType(MESSAGE_TYPE_AUDIT_INQUIRY)
 @RequiredArgsConstructor
-@Qualifier("23")
 public class AuditInquiryProcessor implements MessageProcessor {
 
     private final Gson gson;

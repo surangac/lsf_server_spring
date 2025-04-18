@@ -7,6 +7,7 @@ import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.util.Helper;
 import com.dfn.lsf.util.LsfConstants;
+import com.dfn.lsf.util.MessageType;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -19,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_CUSTOMER_SEARCH_PROCESSOR;
+
 /**
  * Defined in InMessageHandlerAdminCbr
  * route : CUSTOMER_SEARCH_PROCESSOR
@@ -26,8 +29,8 @@ import java.util.Map;
  * - MESSAGE_TYPE_CUSTOMER_SEARCH_PROCESSOR = 12;
  */
 @Service
+@MessageType(MESSAGE_TYPE_CUSTOMER_SEARCH_PROCESSOR)
 @RequiredArgsConstructor
-@Qualifier("12")
 public class CustomerSearchProcessor implements MessageProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerSearchProcessor.class);
@@ -38,19 +41,19 @@ public class CustomerSearchProcessor implements MessageProcessor {
 
     @Override
     public String process(String request) {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map = gson.fromJson(request, map.getClass());
         String subMessageType = map.get("subMessageType").toString();
-        switch (subMessageType) {
-            case LsfConstants.GET_CUSTOMER_LIST:  /*----get approved customer list from LSF server with pagination---*/
-                return getCustomerList(map);
-            case LsfConstants.R_CUSTOMER_SEARCH:  /*----search customer from OMS, using service---*/
-                return searchOmsCustomer(map);
-            case LsfConstants.PAGE_COUNTER:  /*---Number of pages according to page size---*/
-                return getPageCount(map);
-            default:
-                return null;
-        }
+
+        return switch (subMessageType) {
+            case LsfConstants.GET_CUSTOMER_LIST ->  /*----get approved customer list from LSF server with pagination---*/
+                    getCustomerList(map);
+            case LsfConstants.R_CUSTOMER_SEARCH ->  /*----search customer from OMS, using service---*/
+                    searchOmsCustomer(map);
+            case LsfConstants.PAGE_COUNTER ->  /*---Number of pages according to page size---*/
+                    getPageCount(map);
+            default -> null;
+        };
     }
 
     private String getCustomerList(Map<String, Object> map) {

@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.dfn.lsf.util.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -38,19 +39,15 @@ import com.dfn.lsf.model.responseMsg.ProfitResponse;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.MessageProcessor;
-import com.dfn.lsf.util.ErrorCodes;
-import com.dfn.lsf.util.Helper;
-import com.dfn.lsf.util.LSFUtils;
-import com.dfn.lsf.util.LsfConstants;
-import com.dfn.lsf.util.NotificationManager;
 import com.google.gson.Gson;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_EXECUTE_CORE_PROCESS;
 
 @Service
-@Qualifier("1") // MESSAGE_TYPE_EXECUTE_CORE_PROCESS
+@MessageType(MESSAGE_TYPE_EXECUTE_CORE_PROCESS)
 @Slf4j
 @RequiredArgsConstructor
 public class LsfCoreProcessor implements MessageProcessor {

@@ -10,6 +10,7 @@ import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.util.Helper;
 import com.dfn.lsf.util.LsfConstants;
+import com.dfn.lsf.util.MessageType;
 import com.dfn.lsf.util.NotificationManager;
 import com.google.gson.Gson;
 import com.google.gson.internal.LinkedTreeMap;
@@ -24,6 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_MASTER_DATA_PROCESS;
+
 /**
  * Defined in InMessageHandlerAdminCbr,InMessageHandlerCbr
  * route : APPLICATION_MASTER_DATA_PROCESS
@@ -31,8 +34,8 @@ import java.util.Map;
  * - MESSAGE_TYPE_MASTER_DATA_PROCESS = 3;
  */
 @Service
+@MessageType(MESSAGE_TYPE_MASTER_DATA_PROCESS)
 @RequiredArgsConstructor
-@Qualifier("3")
 public class ApplicationMasterDataProcessor implements MessageProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(ApplicationMasterDataProcessor.class);

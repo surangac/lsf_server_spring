@@ -1,12 +1,13 @@
 package com.dfn.lsf.jms;
 
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
 import com.dfn.lsf.model.requestMsg.OMSQueueRequest;
-import com.dfn.lsf.service.impl.AccountUpdateProcessor;
-import com.dfn.lsf.service.impl.DepositWithdrawResponseHandlingProcessor;
+import com.dfn.lsf.service.impl.ExchangeAccountProcessor;
+import com.dfn.lsf.service.impl.DepositResponseHandlingProcessor;
 import com.dfn.lsf.service.impl.LsfOmsValidatorAbicProcessor;
 import com.dfn.lsf.service.impl.SettlementCalculationProcessor;
 import com.dfn.lsf.service.impl.UpdateOrderStatusProcessor;
@@ -15,8 +16,6 @@ import com.google.gson.Gson;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * JMS Listener for receiving and processing messages from TO_LSF_QUEUE
@@ -25,14 +24,16 @@ import org.slf4j.LoggerFactory;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@ConditionalOnProperty(name = "lsf.jms.enabled",
+                       havingValue = "true")
 public class LsfJmsListener {
     
     private final Gson gson;
-    private final AccountUpdateProcessor accountUpdateProcessor;
+    private final ExchangeAccountProcessor exchangeAccountProcessor;
     private final LsfOmsValidatorAbicProcessor lsfOmsValidatorProcessor;
     private final UpdateOrderStatusProcessor updateOrderStatusProcessor;
     private final SettlementCalculationProcessor settlementCalculationProcessor;
-    private final DepositWithdrawResponseHandlingProcessor depositWithdrawProcessor;
+    private final DepositResponseHandlingProcessor depositWithdrawProcessor;
     
     /**
      * Handles messages from the JBoss TO_LSF_QUEUE
@@ -89,7 +90,7 @@ public class LsfJmsListener {
      */
     private void accountUpdateProcessor(String message, String subMessageType) {
         log.info("Processing with core processor: {}", subMessageType);
-        accountUpdateProcessor.process(message);
+        exchangeAccountProcessor.process(message);
     }
     
     /**

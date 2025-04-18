@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.dfn.lsf.util.MessageType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -22,9 +23,11 @@ import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.dfn.lsf.util.LsfConstants.MESSAGE_TYPE_REPORTING_PROCESS;
+
 @Service
+@MessageType(MESSAGE_TYPE_REPORTING_PROCESS)
 @RequiredArgsConstructor
-@Qualifier("21")
 @Slf4j
 public class ReportingProcessor implements MessageProcessor {
 
