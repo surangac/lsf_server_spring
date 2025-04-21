@@ -79,11 +79,13 @@ import com.dfn.lsf.model.responseMsg.PendingActivity;
 import com.dfn.lsf.model.responseMsg.RiskwavierQuestionConfig;
 import com.dfn.lsf.model.responseMsg.SettlementSummaryResponse;
 import com.dfn.lsf.repository.mapper.MapperRegistry;
+import com.dfn.lsf.repository.mapper.RowMapperFactory;
 import com.dfn.lsf.repository.mapper.RowMapperRegistry;
 import com.dfn.lsf.repository.oracle.OracleRepository;
 import com.dfn.lsf.util.DBConstants;
 import com.dfn.lsf.util.LSFUtils;
 import com.dfn.lsf.util.LsfConstants;
+import com.dfn.lsf.util.RowMapperI;
 
 @Repository
 public class OracleUnifiedRepository implements LSFRepository {
@@ -95,6 +97,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final MapperRegistry mapperRegistry;
     private final OracleRepository oracleRepository;
+    private final RowMapperFactory rowMapperFactory;
     
     // Virtual thread executor for async operations
     private final Executor virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
@@ -105,11 +108,12 @@ public class OracleUnifiedRepository implements LSFRepository {
     
     
     public OracleUnifiedRepository(DataSource dataSource, RowMapperRegistry rowMapperRegistry,
-                                  OracleRepository oracleRepository) {
+                                  OracleRepository oracleRepository, RowMapperFactory rowMapperFactory) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
         this.mapperRegistry = rowMapperRegistry;
         this.oracleRepository = oracleRepository;
+        this.rowMapperFactory = rowMapperFactory;
         
         // Configure common SQL settings
         this.jdbcTemplate.setQueryTimeout(30); // 30 seconds timeout
@@ -377,7 +381,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<Status>   getApplicationStatus(String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl02_l01_app_id", applicationID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L02_APP_STATE, DBConstants.PROC_L01_GET_APP_STATE, parameterMap, new BeanPropertyRowMapper<>(Status.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L02_APP_STATE, DBConstants.PROC_L01_GET_APP_STATE, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.APPLICATION_STATUS));
 
     }
 
@@ -385,40 +389,40 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<Status> getApplicationPermanentlyRejectedReason(String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl02_l01_app_id", Integer.parseInt(applicationID));
-        return oracleRepository.getProcResult(DBConstants.PKG_L02_APP_STATE, DBConstants.PROC_L01_GET_APP_REJECTED_REASON, parameterMap, new BeanPropertyRowMapper<>(Status.class));
+            return oracleRepository.getProcResult(DBConstants.PKG_L02_APP_STATE, DBConstants.PROC_L01_GET_APP_REJECTED_REASON, parameterMap,  rowMapperFactory.getRowMapper(RowMapperI.APPLICATION_STATUS));
     }
 
     @Override
     public List<MurabahApplication> geMurabahAppicationUserID(String customerID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_customer_id", customerID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_GET_BY_CUSTOMER_ID, parameterMap, murabahApplicationRowMapper);
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_GET_BY_CUSTOMER_ID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
     
     @Override
     public List<MurabahApplication> getAllMurabahAppicationsForUserID(String customerID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_customer_id", customerID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_GET_APPS_BY_CUSTOMER_ID, parameterMap, murabahApplicationRowMapper);
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_GET_APPS_BY_CUSTOMER_ID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
 
     @Override
     public List<MurabahApplication> geMurabahAppicationUserIDFilteredByClosedApplication(String customerID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_customer_id", customerID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_GET_NOT_CLOSED_APPS, parameterMap, murabahApplicationRowMapper);
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_GET_NOT_CLOSED_APPS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
 
     @Override
     public List<MurabahApplication> getNotGrantedApplication(String customerID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_customer_id", customerID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_NOT_GRANTED, parameterMap, murabahApplicationRowMapper);
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_NOT_GRANTED, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
     
     @Override
     public List<MurabahApplication> getAllMurabahApplications() {
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_ALL, null, murabahApplicationRowMapper);
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_ALL, null, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
 
     @Override
@@ -434,7 +438,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl01_from_date", fromDate);
         parameterMap.put("pl01_to_date", toDate);
         parameterMap.put("pl01_request_status", requestStatus);
-        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_FILTERED_APPLICATION, parameterMap, murabahApplicationRowMapper);
+        murabahApplications = oracleRepository.<MurabahApplication>getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_FILTERED_APPLICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
         if (murabahApplications.size() > 0) {
             for (MurabahApplication murabahApplication : murabahApplications) {
                 if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
@@ -466,7 +470,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<MurabahApplication> getSnapshotCurrentLevel(int requestStatus) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_request_status", requestStatus);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_SNAPSHOT, parameterMap, murabahApplicationRowMapper);
+        return oracleRepository.<MurabahApplication>getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_SNAPSHOT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
     
     @Override
@@ -477,14 +481,14 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl01_from_date", fromDate);
         parameterMap.put("pl01_to_date", toDate);
         parameterMap.put("pl01_request_status", requestStatus);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_HISTORY_APPLICATION, parameterMap, murabahApplicationRowMapper);
+        return oracleRepository.<MurabahApplication>getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_HISTORY_APPLICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
 
     @Override
     public List<MurabahApplication> getReversedApplication(int reversedStatus) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_request_status", reversedStatus);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_REVERSED_APPLICATION, parameterMap, murabahApplicationRowMapper);
+        return oracleRepository.<MurabahApplication>getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_REVERSED_APPLICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
     
     @Override
@@ -517,7 +521,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl21_app_id", applicationID);
         parameterMap.put("pl21_commented_id", commentID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L21_APP_COMMENTS, DBConstants.PROC_L21_GET_APPLICATION_COMMENT_ID, parameterMap, new BeanPropertyRowMapper<>(Comment.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L21_APP_COMMENTS, DBConstants.PROC_L21_GET_APPLICATION_COMMENT_ID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.APP_COMMENT));
 
     }
 
@@ -525,7 +529,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<Comment> getApplicationComment(String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl21_app_id", applicationID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L21_APP_COMMENTS, DBConstants.PROC_L21_GET_APPLICATION_COMMENT, parameterMap, new BeanPropertyRowMapper<>(Comment.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L21_APP_COMMENTS, DBConstants.PROC_L21_GET_APPLICATION_COMMENT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.APP_COMMENT));
 
     }
 
@@ -555,7 +559,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<MurabahApplication> getMurabahApplicationForCurrentLevelAndOverRoleStatus(String currentLevel) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_current_level", currentLevel);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_LEVEL_STATUS, parameterMap, murabahApplicationRowMapper);
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_LEVEL_STATUS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
 
     @Override
@@ -563,7 +567,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_page_size", pageSize);
         parameterMap.put("pl01_page_number", pageNumber);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_LIMITED_APPROVED_CUSTOMER, parameterMap, murabahApplicationRowMapper);
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_LIMITED_APPROVED_CUSTOMER, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
 
     @Override
@@ -642,7 +646,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         List<OrderContractCustomerInfo> infoList = null;
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_app_id", applicationId);
-        infoList = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_ORD_CNTRCT_DATA, parameterMap, new BeanPropertyRowMapper<>(OrderContractCustomerInfo.class));
+        infoList = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_ORD_CNTRCT_DATA, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.ORDER_CONTRACT_USER_INFO));
         if (infoList != null && infoList.size() > 0) {
             userInfo = infoList.get(0);
         }
@@ -652,7 +656,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<ApplicationStatus> applicationStatusSummary() {
         return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION,
-                DBConstants.PROC_L01_GET_APP_STATUS_SUMMARY, new HashMap<String, Object>(), new BeanPropertyRowMapper<>(ApplicationStatus.class));
+                DBConstants.PROC_L01_GET_APP_STATUS_SUMMARY, new HashMap<String, Object>(), rowMapperFactory.getRowMapper(RowMapperI.APPLICATION_STATUS));
     }
 
     @Override
@@ -662,14 +666,14 @@ public class OracleUnifiedRepository implements LSFRepository {
         return oracleRepository.executeProc(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_UPDATE_LAST_PROFIT_DATE, parameterMap);
     }
     public List<PhysicalDeliverOrder> getPhysicalDeliveryFromDB(){
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_PHYSICAL_DELIVER_LIST, null, new BeanPropertyRowMapper<>(PhysicalDeliverOrder.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_PHYSICAL_DELIVER_LIST, null, rowMapperFactory.getRowMapper(RowMapperI.PHYSICAL_DELIVERY_LIST));
     }
 
     //Failed deposits for PO
     @Override
     public List<MurabahApplication> getDepositFailedApplications() {
         return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION,
-                DBConstants.PROC_L01_GET_FAIlED_DEPOSITS, new HashMap<String, Object>(), new BeanPropertyRowMapper<>(MurabahApplication.class));
+                DBConstants.PROC_L01_GET_FAIlED_DEPOSITS, new HashMap<String, Object>(), rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
 
 
@@ -714,7 +718,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<Documents> getComparedCustomerDocumentList(String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L04_GET_USER_DOCS_BY_APPID, parameterMap, new BeanPropertyRowMapper<>(Documents.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L04_GET_USER_DOCS_BY_APPID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.USER_APPLICATION_DOCUMENTS));
 
     }
     
@@ -723,7 +727,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl04_l01_app_id", applicationID);
         parameterMap.put("pl04_l03_doc_id", documentID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L04_GET_USER_DOCS_BY_DOC_ID, parameterMap, new BeanPropertyRowMapper<>(Documents.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L04_GET_USER_DOCS_BY_DOC_ID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.USER_APPLICATION_DOCUMENTS));
     }
 
     @Override
@@ -748,14 +752,14 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     @Override
     public List<Documents> getDocumentMasterList() {
-        return oracleRepository.getProcResult(DBConstants.PKG_l03_documents, DBConstants.PROC_L03_GET_ALL, null, new BeanPropertyRowMapper<>(Documents.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_l03_documents, DBConstants.PROC_L03_GET_ALL, null, rowMapperFactory.getRowMapper(RowMapperI.DOCUMENT_MASTER_DOCS));
     }
     
     @Override
     public List<MurabahApplication> getDocumentRelatedAppsByDocID(int documentID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl04_l03_doc_id", documentID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L04_GET_APPS_BY_DOC_ID, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L04_GET_APPS_BY_DOC_ID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
 
     }
 
@@ -802,7 +806,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_filter_criteria", filterCriteria);
         parameterMap.put("pl01_filter_value", filterValue);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_APP_ADMIN_DOC_UPLOAD, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_APP_ADMIN_DOC_UPLOAD, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
 
     }
 
@@ -811,7 +815,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<Documents> getApplicationAdminDocs(String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl19_app_id", applicationID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L19_GET_UADMIN_DOCS_BY_APPLID, parameterMap, new BeanPropertyRowMapper<>(Documents.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L19_GET_UADMIN_DOCS_BY_APPLID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.USER_APPLICATION_DOCUMENTS));
     }
     
     @Override
@@ -858,7 +862,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<UserSession> getUserSession(String userID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pu01_user_id", userID);
-        return oracleRepository.getProcResult(DBConstants.PKG_U01_USER_SESSION, DBConstants.PROC_U01_GET_USER_SESSION, parameterMap, new BeanPropertyRowMapper<>(UserSession.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_U01_USER_SESSION, DBConstants.PROC_U01_GET_USER_SESSION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.USER_SESSION));
 
     }
 
@@ -876,7 +880,7 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     @Override
     public List<Status> getApplicationStatusFlow() {
-        return oracleRepository.getProcResult(DBConstants.PKG_M02_APP_STATE_FLOW, DBConstants.PROC_M02_GET_APP_STATE_FLOW, null, new BeanPropertyRowMapper<>(Status.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_M02_APP_STATE_FLOW, DBConstants.PROC_M02_GET_APP_STATE_FLOW, null, rowMapperFactory.getRowMapper(RowMapperI.APPLICATION_STATUS));
     }
     
     @Override
@@ -888,7 +892,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<Tenor> getTenorList() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_L15_TENOR_PKG, DBConstants.PROC_GET_ALL_TENOR, parameterMap, new BeanPropertyRowMapper<>(Tenor.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L15_TENOR_PKG, DBConstants.PROC_GET_ALL_TENOR, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.TENOR));
     }
 
     @Override
@@ -985,40 +989,44 @@ public class OracleUnifiedRepository implements LSFRepository {
     
     @Override
     public List<MarginabilityGroup> getMarginabilityGroups() {
-        return oracleRepository.getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_ALL_GROUPS_L11, null, marginabilityGroupRowMapper);
+        return oracleRepository.<MarginabilityGroup>getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_ALL_GROUPS_L11, null, rowMapperFactory.getRowMapper(RowMapperI.MARGINABILITY_GROUPS));
     }
 
     @Override
-        public MarginabilityGroup getMarginabilityGroup(String groupId) {
-            Map<String, Object> parameterMap = new HashMap<>();
-            parameterMap.put("pl11_marginability_grp_id", groupId);
-            List<MarginabilityGroup> marginabilityGroupList =
-                    oracleRepository.getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_MARGIN_GROUP_BY_ID, parameterMap, marginabilityGroupRowMapper);
+    public MarginabilityGroup getMarginabilityGroup(String groupId) {
+        try {
+        Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("pl11_marginability_grp_id", groupId);
+        List<MarginabilityGroup> marginabilityGroupList =
+                    oracleRepository.<MarginabilityGroup>getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_MARGIN_GROUP_BY_ID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MARGINABILITY_GROUPS));
         if (marginabilityGroupList != null) {
             return marginabilityGroupList.size() > 0 ? marginabilityGroupList.get(0) : null;
         } else {
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("Error getting marginability group by ID: " + groupId, e);
             return null;
         }
     }
 
     @Override
     public List<MarginabilityGroup> getDefaultMarginGroups() {
-        return oracleRepository.getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_DEFAULT_GROUP_L11, null, marginabilityGroupRowMapper);
+        return oracleRepository.<MarginabilityGroup>getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_DEFAULT_GROUP_L11, null, rowMapperFactory.getRowMapper(RowMapperI.MARGINABILITY_GROUPS));
     }
 
     @Override
     public List<LiquidityType> getMarginabilityGroupLiquidTypes(String groupId) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl17_marginability_grp_id", groupId);
-        return oracleRepository.getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_LIQUID_TYPES_IN_GROUP_L11, parameterMap, new BeanPropertyRowMapper<>(LiquidityType.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_LIQUID_TYPES_IN_GROUP_L11, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.LIQUIDITY_TYPES));
     }
 
     @Override
     public List<SymbolMarginabilityPercentage> getMarginabilityPercByGroup(String groupId) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("groupId", groupId);
-        return oracleRepository.getProcResult(DBConstants.PKG_L35_SYMBOL_MARGINABILITY, DBConstants.PROC_L35_SYMBOL_PERC_BY_GROUP,
-                                           parameterMap, new BeanPropertyRowMapper<>(SymbolMarginabilityPercentage.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L35_SYMBOL_MARGINABILITY, DBConstants.PROC_L35_SYMBOL_PERC_BY_GROUP,parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL_MARGINABILITY_PERCENTAGE));
     }
 
     @Override
@@ -1027,7 +1035,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl08_symbol_code", symbol.getSymbolCode());
         parameterMap.put("pl08_exchange", symbol.getExchange());
-        List<LiquidityType> list = oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_GET_SYMBOL_LIQUIDITY_TYPE, parameterMap, new BeanPropertyRowMapper<>(LiquidityType.class));
+        List<LiquidityType> list = oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_GET_SYMBOL_LIQUIDITY_TYPE, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.LIQUIDITY_TYPES));
         if (list.size() == 0) {
             liquidityType = new LiquidityType();
             liquidityType.setLiquidId(1);
@@ -1048,7 +1056,7 @@ public class OracleUnifiedRepository implements LSFRepository {
 
         List<Map<String, Object>> result = oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL,
                                                                        DBConstants.PROC__l08_GET_SYMBOL_MARGINABILITY_PERC,
-                                                                       parameterMap);
+                                                                       parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL_MARGINABILITY_PERCENTAGE));
 
         if(result != null && result.size() > 0) {
             return Double.valueOf(result.get(0).get("marginability_perc").toString());
@@ -1063,13 +1071,13 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl08_symbol_code", symbolCode);
         parameterMap.put("pl08_exchange", exchange);
-        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_GET_SYMBOL_LIQUIDITY_TYPE, parameterMap, new BeanPropertyRowMapper<>(Symbol.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_GET_SYMBOL_LIQUIDITY_TYPE, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
     }
 
     @Override
     public List<Symbol> loadAllSymbols() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_l08_GET_ALL_SYMBOLS, parameterMap, new BeanPropertyRowMapper<>(Symbol.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_l08_GET_ALL_SYMBOLS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
 
     }
 
@@ -1079,13 +1087,13 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl35_symbol_code", symbolCode);
         parameterMap.put("pl35_exchange", exchange);
         return oracleRepository.getProcResult(DBConstants.PKG_L35_SYMBOL_MARGINABILITY, DBConstants.PROC_L35_GET_SYMBOL_GROUPS,
-                                           parameterMap, new BeanPropertyRowMapper<>(SymbolMarginabilityPercentage.class));
+                                           parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL_MARGINABILITY_PERCENTAGE));
     }
 
     @Override
     public List<Symbol> loadSymbolsForClassification() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_l08_GET_ALL_SYMBOLS_CLASSF, parameterMap, new BeanPropertyRowMapper<>(Symbol.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_l08_GET_ALL_SYMBOLS_CLASSF, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
 
     }
 
@@ -1094,7 +1102,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("appId", applicationId);
         return oracleRepository.getProcResult(DBConstants.PKG_L35_SYMBOL_MARGINABILITY, DBConstants.PROC_L35_GET_SYMBOL_MARGINABILITY_PERCENTAGE,
-                                           parameterMap, new BeanPropertyRowMapper<>(SymbolMarginabilityPercentage.class));
+                                           parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL_MARGINABILITY_PERCENTAGE));
     }
 
     @Override
@@ -1114,7 +1122,7 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     @Override
     public List<CommissionStructure> getCommissionStructure() {
-            return oracleRepository.getProcResult(DBConstants.PKG_M10_COMMISSION_STRUCTURE_PKG, DBConstants.PROC_M10_GET_ALL, null, new BeanPropertyRowMapper<>(CommissionStructure.class));
+            return oracleRepository.getProcResult(DBConstants.PKG_M10_COMMISSION_STRUCTURE_PKG, DBConstants.PROC_M10_GET_ALL, null, rowMapperFactory.getRowMapper(RowMapperI.COMMISSION_STRUCTURE));
     }
 
     @Override
@@ -1223,7 +1231,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<GlobalParameters> getGlobalParameters() {
         Map<String, Object> parameterMap = new HashMap<>();
-                return oracleRepository.getProcResult(DBConstants.PKG_M01_SYS_PARAS, DBConstants.PROC_ADD_GET_SYS_PARAS, parameterMap, new BeanPropertyRowMapper<>(GlobalParameters.class));
+                return oracleRepository.getProcResult(DBConstants.PKG_M01_SYS_PARAS, DBConstants.PROC_ADD_GET_SYS_PARAS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYS_PARAS));
     }
 
     @Override
@@ -1232,7 +1240,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         return oracleRepository.getProcResult(DBConstants.PKG_M01_SYS_PARAS, 
                 DBConstants.PROC_ADD_GET_SYS_PARAS, 
                 parameterMap, 
-                mapperRegistry.getMapRowMapper());
+                rowMapperFactory.getRowMapper(RowMapperI.SYS_PARAS));
     }
 
     @Override
@@ -1248,7 +1256,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl13_l01_app_id", applicationId);
         parameterMap.put("pl13_l08_exchange", exchange);
-        return oracleRepository.getProcResult(DBConstants.PKG_L13_SYMBOL_WISH_LIST, DBConstants.PROC_GET_WISH_LIST_SYMBOLS, parameterMap, new BeanPropertyRowMapper<>(Symbol.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L13_SYMBOL_WISH_LIST, DBConstants.PROC_GET_WISH_LIST_SYMBOLS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
     }
 
     @Override
@@ -1283,7 +1291,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public Tenor getTenor(int tenorId) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl15_tenor_id", tenorId);
-        List<Tenor> list = oracleRepository.getProcResult(DBConstants.PKG_L15_TENOR_PKG, DBConstants.PROC_GET_TENOR, parameterMap, new BeanPropertyRowMapper<>(Tenor.class));
+        List<Tenor> list = oracleRepository.getProcResult(DBConstants.PKG_L15_TENOR_PKG, DBConstants.PROC_GET_TENOR, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.TENOR));
         if (list != null) {
             return list.size() > 0 ? list.get(0) : new Tenor();
         } else {
@@ -1777,7 +1785,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<Symbol> getPurchaseOrderSymbols(String orderId) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pL22_PURCHASE_ORD_ID", orderId);
-        return oracleRepository.getProcResult(DBConstants.PKG_L16_PO_SYMBOLS, DBConstants.PROC_L16_GET_PO_SYMBOLS, parameterMap, new BeanPropertyRowMapper<>(Symbol.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L16_PO_SYMBOLS, DBConstants.PROC_L16_GET_PO_SYMBOLS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
     }
 
     @Override
@@ -1851,14 +1859,14 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     @Override
     public List<StockConcentrationGroup> getStockConcentrationGroup() {
-        return oracleRepository.getProcResult(DBConstants.PKG_L12_STOCK_CONCENTRATION, DBConstants.PROC_GET_ALL_GROUPS_L12, null, new BeanPropertyRowMapper<>(StockConcentrationGroup.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L12_STOCK_CONCENTRATION, DBConstants.PROC_GET_ALL_GROUPS_L12, null, rowMapperFactory.getRowMapper(RowMapperI.STOCK_CONCENTRATION_GROUP));
     }
 
     @Override
     public List<LiquidityType> getStockConcentrationGroupLiquidTypes(String groupId) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("p18_stock_conc_grp_id", Integer.parseInt(groupId));
-        return oracleRepository.getProcResult(DBConstants.PKG_L12_STOCK_CONCENTRATION, DBConstants.PROC_GET_LIQUID_TYPES_IN_GROUP_L12, parameterMap, new BeanPropertyRowMapper<>(LiquidityType.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L12_STOCK_CONCENTRATION, DBConstants.PROC_GET_LIQUID_TYPES_IN_GROUP_L12, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.LIQUIDITY_TYPES));
     }
 
     @Override
@@ -1936,7 +1944,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<WebNotification> getWebNotification(String applicationId) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("p04_l01_application_id", applicationId);
-        List<WebNotification> list = oracleRepository.getProcResult(DBConstants.PKG_N04_WEB_NOTIFICATION, DBConstants.PROC_N04_GET_WEB_NOTIFICATION, parameterMap, new BeanPropertyRowMapper<>(WebNotification.class));
+        List<WebNotification> list = oracleRepository.getProcResult(DBConstants.PKG_N04_WEB_NOTIFICATION, DBConstants.PROC_N04_GET_WEB_NOTIFICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.WEB_NOTIFICATION));
         return list;
     }
 
@@ -1982,7 +1990,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<NotificationMsgConfiguration> getNotificationMsgConfiguration() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return  oracleRepository.getProcResult(DBConstants.PKG_N03_NOTIFICATION_MESSAGE_CONFIG, DBConstants.PROC_N03_GET_ALL, parameterMap, new BeanPropertyRowMapper<>(NotificationMsgConfiguration.class));
+        return  oracleRepository.getProcResult(DBConstants.PKG_N03_NOTIFICATION_MESSAGE_CONFIG, DBConstants.PROC_N03_GET_ALL, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.NOTIFICATION_MSG_CONFIGURATION));
     }
 
     @Override
@@ -1990,27 +1998,27 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("p03_current_level", currentLevel);
         parameterMap.put("p03_overole_status", overRoleStatus);
-        return oracleRepository.getProcResult(DBConstants.PKG_N03_NOTIFICATION_MESSAGE_CONFIG, DBConstants.PROC_N03_GET_STATUS_LEVEL, parameterMap, new BeanPropertyRowMapper<>(NotificationMsgConfiguration.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_N03_NOTIFICATION_MESSAGE_CONFIG, DBConstants.PROC_N03_GET_STATUS_LEVEL, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.NOTIFICATION_MSG_CONFIGURATION));
     }
 
     @Override
     public List<NotificationMsgConfiguration> getNotificationMsgConfigurationForNotificationType(String notificationType) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pn03_notification_code", notificationType);
-        return oracleRepository.getProcResult(DBConstants.PKG_N03_NOTIFICATION_MESSAGE_CONFIG, DBConstants.PROC_N03_GET_CONFIG_NOTIFI_TYPE, parameterMap, new BeanPropertyRowMapper<>(NotificationMsgConfiguration.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_N03_NOTIFICATION_MESSAGE_CONFIG, DBConstants.PROC_N03_GET_CONFIG_NOTIFI_TYPE, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.NOTIFICATION_MSG_CONFIGURATION));
     }
 
     @Override
     public List<NotificationMsgConfiguration> getNotificationMsgConfigurationForApplication(String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_app_id", Integer.parseInt(applicationID));
-        return oracleRepository.getProcResult(DBConstants.PKG_N03_NOTIFICATION_MESSAGE_CONFIG, DBConstants.PROC_N03_GET_MATCHING_CONFIG, parameterMap, new BeanPropertyRowMapper<>(NotificationMsgConfiguration.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_N03_NOTIFICATION_MESSAGE_CONFIG, DBConstants.PROC_N03_GET_MATCHING_CONFIG, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.NOTIFICATION_MSG_CONFIGURATION));
     }
 
     @Override
     public List<Notification> getNotificationHeader() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_N01_NOTIFICATION, DBConstants.PROC_N01_GET_NOTIFICATION_HEADER, parameterMap, new BeanPropertyRowMapper<>(Notification.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_N01_NOTIFICATION, DBConstants.PROC_N01_GET_NOTIFICATION_HEADER, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.NOTIFICATION_HEADER));
     }
 
     @Override
@@ -2023,13 +2031,13 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<Message> getCustomMessageHistory() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return  oracleRepository.getProcResult(DBConstants.PKG_N04_MESSAGE_OUT, DBConstants.PROC_N04_GET_CUSTOM_MESSAGE_HISTORY, parameterMap, new BeanPropertyRowMapper<>(Message.class));
+        return  oracleRepository.getProcResult(DBConstants.PKG_N04_MESSAGE_OUT, DBConstants.PROC_N04_GET_CUSTOM_MESSAGE_HISTORY, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MESSAGE));
     }
 
     @Override
     public List<Message> getNotificationHistory() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_N04_MESSAGE_OUT, DBConstants.PROC_N04_GET__MESSAGE_HISTORY, parameterMap, new BeanPropertyRowMapper<>(Message.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_N04_MESSAGE_OUT, DBConstants.PROC_N04_GET__MESSAGE_HISTORY, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MESSAGE));
     }   
 
     @Override
@@ -2181,21 +2189,21 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<UserAnswer> getSavedAnswerForUser(int userID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pA04_CUSOMER_ID", userID);
-        return oracleRepository.getProcResult(DBConstants.PKG_A04_QUESTIONER_PKG, DBConstants.PROC_A04_GET_ALL, parameterMap, new BeanPropertyRowMapper<>(UserAnswer.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_A04_QUESTIONER_PKG, DBConstants.PROC_A04_GET_ALL, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.USER_ANSWER));
     }
 
     /*---------------------Application Settlement Releated -----------------------------*/
     @Override
     public List<MurabahApplication> getOrderContractSingedApplications() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.L01_GET_ODRCNTCT_SINGED_APP, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.L01_GET_ODRCNTCT_SINGED_APP, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
 
     @Override
     public List<PurchaseOrder> getPurchaseOrderForApplication(String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pL14_APP_ID", Integer.parseInt(applicationID));
-        return oracleRepository.getProcResult(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_GET_ALL_ORDER, parameterMap, new BeanPropertyRowMapper<>(PurchaseOrder.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_GET_ALL_ORDER, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.PURCHASE_ORDER));
     }
 
     @Override
@@ -2203,7 +2211,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl23_application_id", Integer.parseInt(applicationID));
         parameterMap.put("pl23_order_id", Integer.parseInt(orderID));
-        return oracleRepository.getProcResult(DBConstants.PKG_L23_ORDER_PROFIT_LOG, DBConstants.L23_GET_LSTONE, parameterMap, new BeanPropertyRowMapper<>(OrderProfit.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L23_ORDER_PROFIT_LOG, DBConstants.L23_GET_LSTONE, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.ORDER_PROFIT));
     }
 
     @Override
@@ -2224,7 +2232,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pn03_current_level", applicationCurrentLevel);
         parameterMap.put("pn03_overole_status", Integer.parseInt(applicationCurrentStatus));
-        return oracleRepository.getProcResult(DBConstants.PKG_N03_NOTIFICATION_MESSAGE_CONFIG, DBConstants.N03_GET_STTLEMENT_MSG_TMPLT, parameterMap, new BeanPropertyRowMapper<>(NotificationMsgConfiguration.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_N03_NOTIFICATION_MESSAGE_CONFIG, DBConstants.N03_GET_STTLEMENT_MSG_TMPLT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.NOTIFICATION_MSG_CONFIGURATION));
     }
 
     @Override
@@ -2245,7 +2253,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<LiquidationLog> getLiquidationLog(int liquidationReference) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl24_liquidate_reference", liquidationReference);
-        return oracleRepository.getProcResult(DBConstants.PKG_L24_LIQUIDATION_LOG, DBConstants.L24_GET_LIQUIDATION_LOG, parameterMap, new BeanPropertyRowMapper<>(LiquidationLog.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L24_LIQUIDATION_LOG, DBConstants.L24_GET_LIQUIDATION_LOG, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.LIQUIDATION_LOG));
     }
 
     @Override
@@ -2298,7 +2306,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<PurchaseOrder> getApplicationForManualSettlement() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_L14_GET_APPS_FOR_MANUAL_SETMNT, parameterMap, new BeanPropertyRowMapper<>(PurchaseOrder.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_L14_GET_APPS_FOR_MANUAL_SETMNT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.PURCHASE_ORDER));
 
     }
 
@@ -2349,7 +2357,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override       
     public List<Installments> getCreatedInstallments() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_L22_PO_INSTALLMENTS, DBConstants.PROC_L22_GET_CREATED_INSTALLMENTS, parameterMap, new BeanPropertyRowMapper<>(Installments.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L22_PO_INSTALLMENTS, DBConstants.PROC_L22_GET_CREATED_INSTALLMENTS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.ORDER_INSTALLMENTS));
 
     }
 
@@ -2359,7 +2367,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl23_application_id", Integer.parseInt(applicationID));
         parameterMap.put("pl23_order_id", Integer.parseInt(orderID));
-        List<OrderProfit> orderProfitList = oracleRepository.getProcResult(DBConstants.PKG_L23_ORDER_PROFIT_LOG, DBConstants.L23_GET_SUMMATION_APPLICATION, parameterMap, new BeanPropertyRowMapper<>(OrderProfit.class));
+        List<OrderProfit> orderProfitList = oracleRepository.getProcResult(DBConstants.PKG_L23_ORDER_PROFIT_LOG, DBConstants.L23_GET_SUMMATION_APPLICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.ORDER_PROFIT));
         if (orderProfitList != null && orderProfitList.size() > 0) {
             return orderProfitList.get(0);
         } else {
@@ -2373,7 +2381,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl23_application_id", Integer.parseInt(applicationID));
         parameterMap.put("pl23_order_id", Integer.parseInt(orderID));
-        List<OrderProfit> orderProfitList = oracleRepository.getProcResult(DBConstants.PKG_L23_ORDER_PROFIT_LOG, DBConstants.L23_GET_ALL_FOR_APPLICATION, parameterMap, new BeanPropertyRowMapper<>(OrderProfit.class));
+        List<OrderProfit> orderProfitList = oracleRepository.getProcResult(DBConstants.PKG_L23_ORDER_PROFIT_LOG, DBConstants.L23_GET_ALL_FOR_APPLICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.ORDER_PROFIT));
         if (orderProfitList != null && orderProfitList.size() > 0) {
             return orderProfitList;
         } else {
@@ -2387,7 +2395,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public ReportConfigObject getReportConfigObject(int reportID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pm03_report_id", reportID);
-        List<ReportConfigObject> reportConfigObjects = oracleRepository.getProcResult(DBConstants.PKG_M03_REPORT_SETTINGS_PKG, DBConstants.M03_GET_REPORT_CONFIG, parameterMap, new BeanPropertyRowMapper<>(ReportConfigObject.class));
+        List<ReportConfigObject> reportConfigObjects = oracleRepository.getProcResult(DBConstants.PKG_M03_REPORT_SETTINGS_PKG, DBConstants.M03_GET_REPORT_CONFIG, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.REPORT_CONFIG_OBJECT));
         return reportConfigObjects.get(0);
     }
 
@@ -2396,7 +2404,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("fromdate", fromDate);
         parameterMap.put("todate", toDate);
-        List<MarginInformation> marginInformations = oracleRepository.getProcResult(DBConstants.PKG_R01_REPORTS, DBConstants.R01_REPORT_MARGIN_INFO, parameterMap, new BeanPropertyRowMapper<>(MarginInformation.class));
+        List<MarginInformation> marginInformations = oracleRepository.getProcResult(DBConstants.PKG_R01_REPORTS, DBConstants.R01_REPORT_MARGIN_INFO, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MARGIN_INFO));
         if (marginInformations != null && marginInformations.size() > 0) {
             return marginInformations.get(0);
         } else {
@@ -2408,7 +2416,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<FinanceBrokerageInfo> getFinanceBrokerageInfo() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return  oracleRepository.getProcResult(DBConstants.PKG_R01_REPORTS, DBConstants.R01_FINANCE_BROKERAGE_INFO, parameterMap, new BeanPropertyRowMapper<>(FinanceBrokerageInfo.class));
+        return  oracleRepository.getProcResult(DBConstants.PKG_R01_REPORTS, DBConstants.R01_FINANCE_BROKERAGE_INFO, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.FINANCE_BROKERAGE_INFO));
     }
 
     @Override
@@ -2486,7 +2494,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         PurchaseOrder po = null;
         Map<String, Object> paraMap = new HashMap<>();
         paraMap.put("pl26_txn_reference", referenceID);
-        List<PurchaseOrder> purchaseOrderList = oracleRepository.getProcResult(DBConstants.PKG_L26_EXTERNAL_REQUEST_LOG, DBConstants.L26_FIND_BY_REF, paraMap, new BeanPropertyRowMapper<>(PurchaseOrder.class));
+        List<PurchaseOrder> purchaseOrderList = oracleRepository.getProcResult(DBConstants.PKG_L26_EXTERNAL_REQUEST_LOG, DBConstants.L26_FIND_BY_REF, paraMap, rowMapperFactory.getRowMapper(RowMapperI.PURCHASE_ORDER));
         if (purchaseOrderList != null) {
             if (purchaseOrderList.size() > 0) {
                 po = purchaseOrderList.get(0);
@@ -2517,7 +2525,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> paraMap = new HashMap<>();
         paraMap.put("pl27_application_id", applicationId);
         paraMap.put("pl27_collateral_id", collateralId);
-        return  oracleRepository.getProcResult(DBConstants.PKG_L27_EXTERNAL_COLLATERALS, DBConstants.PROC_L27_GET, paraMap, new BeanPropertyRowMapper<>(ExternalCollaterals.class));
+        return  oracleRepository.getProcResult(DBConstants.PKG_L27_EXTERNAL_COLLATERALS, DBConstants.PROC_L27_GET, paraMap, rowMapperFactory.getRowMapper(RowMapperI.EXTERNAL_COLLATERALS));
     }
     
     @Override
@@ -2535,7 +2543,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<ExternalCollaterals> getExternalCollateralsForApplication(int applicationId) {
         Map<String, Object> paraMap = new HashMap<>();
         paraMap.put("pl27_application_id", applicationId);
-        return  oracleRepository.getProcResult(DBConstants.PKG_L27_EXTERNAL_COLLATERALS, DBConstants.PROC_L27_GET_ALL_FOR_APPLICATION, paraMap, new BeanPropertyRowMapper<>(ExternalCollaterals.class));
+        return  oracleRepository.getProcResult(DBConstants.PKG_L27_EXTERNAL_COLLATERALS, DBConstants.PROC_L27_GET_ALL_FOR_APPLICATION, paraMap, rowMapperFactory.getRowMapper(RowMapperI.EXTERNAL_COLLATERALS));
     }
 
     /*--------------------Common Inquiry Related--------------*/
@@ -2545,14 +2553,14 @@ public class OracleUnifiedRepository implements LSFRepository {
         paraMap.put("fromdate", fromDate);
         paraMap.put("todate", toDate);
         paraMap.put("stlStatus", settlementSts);
-        return  oracleRepository.getProcResult(DBConstants.PKG_L05_COLLATERALS, DBConstants.PROC_L05_GET_FTV_DETAILED_INFO, paraMap, new BeanPropertyRowMapper<>(FTVInfo.class));
+        return  oracleRepository.getProcResult(DBConstants.PKG_L05_COLLATERALS, DBConstants.PROC_L05_GET_FTV_DETAILED_INFO, paraMap, rowMapperFactory.getRowMapper(RowMapperI.FTV_DETAILED_INFO));
     }
 
     @Override
     public List<CommissionDetail> getCommissionDetails(String reportDate) {
         Map<String, Object> paraMap = new HashMap<>();
         paraMap.put("reportDate", reportDate);
-        return  oracleRepository.getProcResult(DBConstants.PKG_L05_COLLATERALS, DBConstants.PROC_L05_GET_ML_ACCOUNT_COMMISSION, paraMap, new BeanPropertyRowMapper<>(CommissionDetail.class));
+        return  oracleRepository.getProcResult(DBConstants.PKG_L05_COLLATERALS, DBConstants.PROC_L05_GET_ML_ACCOUNT_COMMISSION, paraMap, rowMapperFactory.getRowMapper(RowMapperI.COMMISSION_DETAILS));
     }
     
     @Override
@@ -2560,13 +2568,13 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> paraMap = new HashMap<>();
         paraMap.put("pl14_fromDate", fromDate);
         paraMap.put("pl14_toDate", toDate);
-        return  oracleRepository.getProcResult(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_L14_GET_ORD_APRVED_APP, paraMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        return  oracleRepository.getProcResult(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_L14_GET_ORD_APRVED_APP, paraMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
 
     @Override
     public List<MurabahApplication> getBlackListedApplications() {
         Map<String, Object> paraMap = new HashMap<>();
-        return  oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_BLACK_LISTED_APPLICATIONS, paraMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        return  oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_BLACK_LISTED_APPLICATIONS, paraMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
 
     @Override
@@ -2575,7 +2583,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         paraMap.put("settlementstatus", settlementStatus);
         paraMap.put("fromdate", fromDate);
         paraMap.put("todate", toDate);
-        return  oracleRepository.getProcResult(DBConstants.PKG_M04_REPORTS, DBConstants.PROC_M04_SETTLEMENT_LIST, paraMap, new BeanPropertyRowMapper<>(SettlementSummaryResponse.class));
+        return  oracleRepository.getProcResult(DBConstants.PKG_M04_REPORTS, DBConstants.PROC_M04_SETTLEMENT_LIST, paraMap, rowMapperFactory.getRowMapper(RowMapperI.SETTLEMENT_LIST));
     }
 
 
@@ -2610,7 +2618,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<RiskwavierQuestionConfig> getAllQustionSettings() {
         Map<String, Object> paraMap = new HashMap<>();
-        List<RiskwavierQuestionConfig> configList = oracleRepository.getProcResult(DBConstants.PKG_M06_RISKWAVIER_QST_CONFIG_PKG, DBConstants.M06_GET_ALL, paraMap, new BeanPropertyRowMapper<>(RiskwavierQuestionConfig.class));
+        List<RiskwavierQuestionConfig> configList = oracleRepository.getProcResult(DBConstants.PKG_M06_RISKWAVIER_QST_CONFIG_PKG, DBConstants.M06_GET_ALL, paraMap, rowMapperFactory.getRowMapper(RowMapperI.RISK_WAVIER_QUESTION_CONFIG));
         return configList;
     }
 
@@ -2619,14 +2627,14 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<PendingActivity> getPendingActivityList() {
         Map<String, Object> paraMap = new HashMap<>();
-        List<PendingActivity> pendingActivityList = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_INCOMPLETE_CUSTOMERS, paraMap, new BeanPropertyRowMapper<>(PendingActivity.class));
+        List<PendingActivity> pendingActivityList = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_INCOMPLETE_CUSTOMERS, paraMap, rowMapperFactory.getRowMapper(RowMapperI.PENDING_ACTIVITY));
         return pendingActivityList;
     }
 
     @Override
     public List<MurabahApplication> getApplicationListForAdminCommonReject() {
         Map<String, Object> paraMap = new HashMap<>();
-        List<MurabahApplication> murabahApplicationList = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_APPS_FOR_ADMIN_REJECT, paraMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        List<MurabahApplication> murabahApplicationList = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_APPS_FOR_ADMIN_REJECT, paraMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
         return murabahApplicationList;
     }
 
@@ -2658,7 +2666,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<FtvSummary> getFTVsummaryForDashBoard(String applicationId) {
         Map<String, Object> paraMap = new HashMap<>();
         paraMap.put("pl28_application_id", applicationId);
-        List<FtvSummary> ftvInfoList = oracleRepository.getProcResult(DBConstants.PKG_L28_DAILY_FTV_LOG_PKG, DBConstants.PROC_L28_GET, paraMap, new BeanPropertyRowMapper<>(FtvSummary.class));
+        List<FtvSummary> ftvInfoList = oracleRepository.getProcResult(DBConstants.PKG_L28_DAILY_FTV_LOG_PKG, DBConstants.PROC_L28_GET, paraMap, rowMapperFactory.getRowMapper(RowMapperI.FTV_SUMMARY_INFO));
         return ftvInfoList;
     }
 
@@ -2666,7 +2674,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public FtvSummary getFTVforToday(String applicationId) {
         Map<String, Object> paraMap = new HashMap<>();
         paraMap.put("pl28_application_id", applicationId);
-        List<FtvSummary> ftvSummaryList = oracleRepository.getProcResult(DBConstants.PKG_L28_DAILY_FTV_LOG_PKG, DBConstants.PROC_L28_GET_FOR_TODAY, paraMap, new BeanPropertyRowMapper<>(FtvSummary.class));
+        List<FtvSummary> ftvSummaryList = oracleRepository.getProcResult(DBConstants.PKG_L28_DAILY_FTV_LOG_PKG, DBConstants.PROC_L28_GET_FOR_TODAY, paraMap, rowMapperFactory.getRowMapper(RowMapperI.FTV_SUMMARY_INFO));
         if (ftvSummaryList != null && ftvSummaryList.size() > 0){
             return ftvSummaryList.get(0);
         }else
@@ -2689,7 +2697,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl07_cash_acc_id", cashAccountID);
         parameterMap.put("pl07_is_lsf_type", accountType);
-        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L07_CAH_ACCOUNT, DBConstants.PROC_L07_GET_APP_BY_CASH_ACCOUNT, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L07_CAH_ACCOUNT, DBConstants.PROC_L07_GET_APP_BY_CASH_ACCOUNT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
         if (murabahApplications != null && murabahApplications.size() > 0) {
             return murabahApplications.get(0);
         } else {
@@ -2786,7 +2794,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         List<MurabahaProduct> murabahaProducts = null;
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pm07_type", productId);
-        murabahaProducts = oracleRepository.getProcResult(DBConstants.PKG_M07_MURABAHA_PRODUCTS, DBConstants.M07_GET_PRODUCT, parameterMap, new BeanPropertyRowMapper<>(MurabahaProduct.class));
+        murabahaProducts = oracleRepository.getProcResult(DBConstants.PKG_M07_MURABAHA_PRODUCTS, DBConstants.M07_GET_PRODUCT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAHA_PRODUCT));
         if (murabahaProducts != null && murabahaProducts.size() > 0) {
             return murabahaProducts.get(0);
         } else {
@@ -2799,7 +2807,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public OMSCommission getExchangeAccCommission(String ExchangeAccount) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pexchangeAcc", ExchangeAccount);
-        List<OMSCommission> omsCommissions = oracleRepository.getProcResult(DBConstants.ML_OMS_PKG, DBConstants.ML_TOTAL_COMMISSION, parameterMap, new BeanPropertyRowMapper<>(OMSCommission.class));
+        List<OMSCommission> omsCommissions = oracleRepository.getProcResult(DBConstants.ML_OMS_PKG, DBConstants.ML_TOTAL_COMMISSION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.OMS_COMMISSION));
 
         if(omsCommissions.size() > 0){
             return  omsCommissions.get(0);
@@ -2820,14 +2828,14 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     @Override
     public List<ProfitCalMurabahaApplication> getProfitCalculationEligibleApplications() {
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.L01_GET_PROFIT_CAL_ELIGIBLE_APPLICATIONS, null, new BeanPropertyRowMapper<>(ProfitCalMurabahaApplication.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.L01_GET_PROFIT_CAL_ELIGIBLE_APPLICATIONS, null, rowMapperFactory.getRowMapper(RowMapperI.PROFIT_CAL_MURABAHA_APPLICATION));
 
     }
 
     @Override
     public ProfitCalculationMasterEntry getLastProfitCalculationEntry() {
         List<ProfitCalculationMasterEntry> profitEntries = null;
-        profitEntries = oracleRepository.getProcResult(DBConstants.PKG_M08_PROFIT_CAL_M_DATA, DBConstants.M08_GET_PROFIT_CAL_LAST_ENTRY, null, new BeanPropertyRowMapper<>(ProfitCalculationMasterEntry.class));
+        profitEntries = oracleRepository.getProcResult(DBConstants.PKG_M08_PROFIT_CAL_M_DATA, DBConstants.M08_GET_PROFIT_CAL_LAST_ENTRY, null, rowMapperFactory.getRowMapper(RowMapperI.PROFIT_CAL_MURABAHA_APPLICATION));
         if (profitEntries != null && profitEntries.size() > 0) {
             return profitEntries.get(0);
         } else {
@@ -2840,7 +2848,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl23_application_id", applicationID);
         parameterMap.put("pl23_date_str", dateStr);
-        List<OrderProfit> orderProfitList = oracleRepository.getProcResult(DBConstants.PKG_L23_ORDER_PROFIT_LOG, DBConstants.L23_GET_ENTRY_FOR_DATE, parameterMap, new BeanPropertyRowMapper<>(OrderProfit.class));
+        List<OrderProfit> orderProfitList = oracleRepository.getProcResult(DBConstants.PKG_L23_ORDER_PROFIT_LOG, DBConstants.L23_GET_ENTRY_FOR_DATE, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.ORDER_PROFIT));
         if (orderProfitList != null && orderProfitList.size() > 0) {
             return orderProfitList;
         } else {
@@ -2897,7 +2905,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<Agreement> getActiveAgreements(int id){
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl32_l01_app_id", id);
-        return oracleRepository.getProcResult(DBConstants.L32_APPROVE_AGREEMENTS_PKG, DBConstants.L32_GET_AGREEMENT_BY_ID, parameterMap, new BeanPropertyRowMapper<>(Agreement.class));
+        return oracleRepository.getProcResult(DBConstants.L32_APPROVE_AGREEMENTS_PKG, DBConstants.L32_GET_AGREEMENT_BY_ID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.AGREEMENT_LIST));
     }
 
     @Override
@@ -2905,7 +2913,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pm11_finance_method", financeMethod);
         parameterMap.put("pm11_product_type", productType);
-        return oracleRepository.getProcResult(DBConstants.M11_AGREEMENT_PKG, DBConstants.M11_GET_ACTIVE_FOR_PRODUCT, parameterMap, new BeanPropertyRowMapper<>(Agreement.class));
+        return oracleRepository.getProcResult(DBConstants.M11_AGREEMENT_PKG, DBConstants.M11_GET_ACTIVE_FOR_PRODUCT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.AGREEMENT_LIST));
     }
 
     @Override
@@ -2926,7 +2934,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<Commodity> getAllActiveCommodities(){
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.M12_COMMODITIES_PKG, DBConstants.M12_GET_ALL_ACTIVE_COMMODITY, parameterMap, new BeanPropertyRowMapper<>(Commodity.class));
+        return oracleRepository.getProcResult(DBConstants.M12_COMMODITIES_PKG, DBConstants.M12_GET_ALL_ACTIVE_COMMODITY, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.COMMODITY_LIST));
     }
 
     @Override
@@ -2943,93 +2951,93 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<PurchaseOrder> getPOForSetAuthAbicToSell(int gracePrd) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pm01_grace_per_commodity_sell",gracePrd);
-        return oracleRepository.getProcResult(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.L14_GET_PO_FOR_SET_AUTH_ABIC_TO_SELL, parameterMap, new BeanPropertyRowMapper<>(PurchaseOrder.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.L14_GET_PO_FOR_SET_AUTH_ABIC_TO_SELL, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.PURCHASE_ORDER));
     }
 
     @Override
     public List<InstumentType> loadSymbolInstrumentTypes() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_l08_GET_ALL_INSTRUMENT_TYPES, parameterMap, new BeanPropertyRowMapper<>(InstumentType.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_l08_GET_ALL_INSTRUMENT_TYPES, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.EXCHANGE_INSTRUMENT_TYPE));
     }
 
     @Override
     public List<Documents> getCustomerDocumentListByAppID(String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl04_l01_app_id", applicationID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L04_GET_USER_DOCS_BY_APPID, parameterMap, new BeanPropertyRowMapper<>(Documents.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L04_GET_USER_DOCS_BY_APPID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.USER_APPLICATION_DOCUMENTS));
 
     }
 
-    private final RowMapper<MurabahApplication> murabahApplicationRowMapper = (rs, rowNum) -> {
-        MurabahApplication application = new MurabahApplication();
-        application.setId(rs.getString("l01_app_id"));
-        application.setCustomerId(rs.getString("l01_customer_id"));
-        application.setFullName(rs.getString("l01_full_name"));
-        application.setOccupation(rs.getString("l01_occupation"));
-        application.setEmployer(rs.getString("l01_employer"));
-        application.setSelfEmp(rs.getInt("l01_is_self_emp") == 1);
-        application.setLineOfBusiness(rs.getString("l01_line_of_bisiness"));
-        application.setAvgMonthlyIncome(rs.getDouble("l01_avg_monthly_income"));
-        application.setFinanceRequiredAmt(rs.getDouble("l01_finance_req_amt"));
-        application.setAddress(rs.getString("l01_address"));
-        application.setMobileNo(rs.getString("l01_mobile_no"));
-        application.setTeleNo(rs.getString("l01_telephone_no"));
-        application.setEmail(rs.getString("l01_email"));
-        application.setFax(rs.getString("l01_fax"));
-        application.setDibAcc(rs.getString("l01_dib_acc"));
-        application.setTradingAcc(rs.getString("l01_trading_acc"));
-        application.setOtherBrkAvailable(rs.getInt("l01_is_other_brk_available") == 1);
-        application.setOtherBrkNames(rs.getString("l01_other_brk_names"));
-        application.setOtherBrkAvgPf(rs.getString("l01_other_brk_avg_pf"));
-        application.setOverallStatus(rs.getString("l01_overall_status"));
-        application.setCurrentLevel(rs.getInt("l01_current_level"));
-        application.setTypeofFacility(rs.getString("l01_type_of_facility"));
-        application.setDate(rs.getString("l01_date"));
-        application.setFacilityType(rs.getString("l01_facility_type"));
-        application.setProposalDate(rs.getString("l01_proposal_date"));
-        application.setProposedLimit(rs.getDouble("l01_proposal_limit"));
-        application.setReversedTo(rs.getString("l01_revised_to"));
-        application.setReversedFrom(rs.getString("l01_revised_from"));
-        application.setIsEditable(rs.getInt("l01_is_locked") == 0);
-        application.setIsReversed(rs.getInt("l01_is_reversed") == 1);
-        application.setIsEdited(rs.getInt("l01_is_edited") == 1);
-        application.setInitialRAPV(rs.getDouble("l01_initial_rapv"));
-        application.setCashAccount(rs.getString("l01_cash_acc"));
-        application.setAvailableCashBalance(rs.getDouble("l01_cash_balance"));
-        application.setTradingAccExchange(rs.getString("l01_trading_acc_exchange"));
-        application.setReviewDate(rs.getString("l01_review_date"));
-        application.setAdminFeeCharged(rs.getDouble("l01_admin_fee_charged"));
-        application.setMaximumNumberOfSymbols(rs.getInt("l01_max_symbol_cnt"));
-        application.setOtp(rs.getString("l01_otp"));
-        application.setOtpGeneratedTime(rs.getLong("l01_otp_generated_time"));
-        application.setCustomerReferenceNumber(rs.getString("l01_customer_ref_no"));
-        application.setZipCode(rs.getString("l01_zip_code"));
-        application.setBankBranchName(rs.getString("l01_bank_brch_name"));
-        application.setCity(rs.getString("l01_city"));
-        application.setPoBox(rs.getString("l01_pobox"));
-        application.setLsfAccountDeletionState(rs.getInt("l01_acc_closed_status"));
-        application.setPreferedLanguage(rs.getString("l01_prefered_language"));
-        application.setDiscountOnProfit(rs.getInt("l01_discount_on_profit"));
-        application.setProfitPercentage(rs.getDouble("l01_profit_percentage"));
-        application.setAutomaticSettlement(rs.getInt("l01_automatic_settlement") == 1);
-        application.setProductType(rs.getInt("l01_product_type"));
-        application.setLastProfitDate(rs.getString("l01_last_profit_date"));
-        application.setRolloverAppId(rs.getString("l01_rollover_app_id"));
-        application.setRolloverCount(rs.getInt("l01_rollover_count"));
-        return application;
-    };
+    // private final RowMapper<MurabahApplication> murabahApplicationRowMapper = (rs, rowNum) -> {
+    //     MurabahApplication application = new MurabahApplication();
+    //     application.setId(rs.getString("l01_app_id"));
+    //     application.setCustomerId(rs.getString("l01_customer_id"));
+    //     application.setFullName(rs.getString("l01_full_name"));
+    //     application.setOccupation(rs.getString("l01_occupation"));
+    //     application.setEmployer(rs.getString("l01_employer"));
+    //     application.setSelfEmp(rs.getInt("l01_is_self_emp") == 1);
+    //     application.setLineOfBusiness(rs.getString("l01_line_of_bisiness"));
+    //     application.setAvgMonthlyIncome(rs.getDouble("l01_avg_monthly_income"));
+    //     application.setFinanceRequiredAmt(rs.getDouble("l01_finance_req_amt"));
+    //     application.setAddress(rs.getString("l01_address"));
+    //     application.setMobileNo(rs.getString("l01_mobile_no"));
+    //     application.setTeleNo(rs.getString("l01_telephone_no"));
+    //     application.setEmail(rs.getString("l01_email"));
+    //     application.setFax(rs.getString("l01_fax"));
+    //     application.setDibAcc(rs.getString("l01_dib_acc"));
+    //     application.setTradingAcc(rs.getString("l01_trading_acc"));
+    //     application.setOtherBrkAvailable(rs.getInt("l01_is_other_brk_available") == 1);
+    //     application.setOtherBrkNames(rs.getString("l01_other_brk_names"));
+    //     application.setOtherBrkAvgPf(rs.getString("l01_other_brk_avg_pf"));
+    //     application.setOverallStatus(rs.getString("l01_overall_status"));
+    //     application.setCurrentLevel(rs.getInt("l01_current_level"));
+    //     application.setTypeofFacility(rs.getString("l01_type_of_facility"));
+    //     application.setDate(rs.getString("l01_date"));
+    //     application.setFacilityType(rs.getString("l01_facility_type"));
+    //     application.setProposalDate(rs.getString("l01_proposal_date"));
+    //     application.setProposedLimit(rs.getDouble("l01_proposal_limit"));
+    //     application.setReversedTo(rs.getString("l01_revised_to"));
+    //     application.setReversedFrom(rs.getString("l01_revised_from"));
+    //     application.setIsEditable(rs.getInt("l01_is_locked") == 0);
+    //     application.setIsReversed(rs.getInt("l01_is_reversed") == 1);
+    //     application.setIsEdited(rs.getInt("l01_is_edited") == 1);
+    //     application.setInitialRAPV(rs.getDouble("l01_initial_rapv"));
+    //     application.setCashAccount(rs.getString("l01_cash_acc"));
+    //     application.setAvailableCashBalance(rs.getDouble("l01_cash_balance"));
+    //     application.setTradingAccExchange(rs.getString("l01_trading_acc_exchange"));
+    //     application.setReviewDate(rs.getString("l01_review_date"));
+    //     application.setAdminFeeCharged(rs.getDouble("l01_admin_fee_charged"));
+    //     application.setMaximumNumberOfSymbols(rs.getInt("l01_max_symbol_cnt"));
+    //     application.setOtp(rs.getString("l01_otp"));
+    //     application.setOtpGeneratedTime(rs.getLong("l01_otp_generated_time"));
+    //     application.setCustomerReferenceNumber(rs.getString("l01_customer_ref_no"));
+    //     application.setZipCode(rs.getString("l01_zip_code"));
+    //     application.setBankBranchName(rs.getString("l01_bank_brch_name"));
+    //     application.setCity(rs.getString("l01_city"));
+    //     application.setPoBox(rs.getString("l01_pobox"));
+    //     application.setLsfAccountDeletionState(rs.getInt("l01_acc_closed_status"));
+    //     application.setPreferedLanguage(rs.getString("l01_prefered_language"));
+    //     application.setDiscountOnProfit(rs.getInt("l01_discount_on_profit"));
+    //     application.setProfitPercentage(rs.getDouble("l01_profit_percentage"));
+    //     application.setAutomaticSettlement(rs.getInt("l01_automatic_settlement") == 1);
+    //     application.setProductType(rs.getInt("l01_product_type"));
+    //     application.setLastProfitDate(rs.getString("l01_last_profit_date"));
+    //     application.setRolloverAppId(rs.getString("l01_rollover_app_id"));
+    //     application.setRolloverCount(rs.getInt("l01_rollover_count"));
+    //     return application;
+    // };
 
-    private final RowMapper<MarginabilityGroup> marginabilityGroupRowMapper = (rs, rowNum) -> {
-        MarginabilityGroup marginabilityGroup = new MarginabilityGroup();
-        marginabilityGroup.setId(rs.getString("l11_marginability_grp_id"));
-        marginabilityGroup.setGroupName(rs.getString("l11_group_name"));
-        marginabilityGroup.setCreatedDate(rs.getString("l11_created_date"));
-        marginabilityGroup.setStatus(rs.getInt("l11_status"));
-        marginabilityGroup.setCreatedBy(rs.getString("l11_created_by"));
-        marginabilityGroup.setApprovedBy(rs.getString("l11_approved_by"));
-        marginabilityGroup.setIsDefault(rs.getInt("l11_is_default"));
-        marginabilityGroup.setAdditionalDetails(rs.getString("l11_additional_details"));
-        marginabilityGroup.setGlobalMarginablePercentage(rs.getDouble("l11_global_marginability_perc"));
-        return marginabilityGroup;
-    };
+    // private final RowMapper<MarginabilityGroup> marginabilityGroupRowMapper = (rs, rowNum) -> {
+    //     MarginabilityGroup marginabilityGroup = new MarginabilityGroup();
+    //     marginabilityGroup.setId(rs.getString("l11_marginability_grp_id"));
+    //     marginabilityGroup.setGroupName(rs.getString("l11_group_name"));
+    //     marginabilityGroup.setCreatedDate(rs.getString("l11_created_date"));
+    //     marginabilityGroup.setStatus(rs.getInt("l11_status"));
+    //     marginabilityGroup.setCreatedBy(rs.getString("l11_created_by"));
+    //     marginabilityGroup.setApprovedBy(rs.getString("l11_approved_by"));
+    //     marginabilityGroup.setIsDefault(rs.getInt("l11_is_default"));
+    //     marginabilityGroup.setAdditionalDetails(rs.getString("l11_additional_details"));
+    //     marginabilityGroup.setGlobalMarginablePercentage(rs.getDouble("l11_global_marginability_perc"));
+    //     return marginabilityGroup;
+    // };
 }

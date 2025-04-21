@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.ApplicationStatus;
+import com.dfn.lsf.model.ApplicationStatus;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -9,9 +9,9 @@ import java.sql.SQLException;
 /**
  * Created by manodyas on 11/10/2016.
  */
-public class AppStatusSummaryMapper implements RowMapper {
+public class AppStatusSummaryMapper implements RowMapper<ApplicationStatus> {
     @Override
-    public Object mapRow(ResultSet resultSet, int i) throws SQLException {
+    public ApplicationStatus mapRow(ResultSet resultSet, int i) throws SQLException {
         ApplicationStatus applicationStatus = new ApplicationStatus();
         applicationStatus.setApplicationID(resultSet.getString("l01_app_id"));
         applicationStatus.setCustomerID(resultSet.getString("l01_customer_id"));

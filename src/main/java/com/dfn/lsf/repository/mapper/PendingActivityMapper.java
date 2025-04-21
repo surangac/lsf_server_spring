@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.responseMsg.PendingActivity;
+import com.dfn.lsf.model.responseMsg.PendingActivity;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -9,9 +9,9 @@ import java.sql.SQLException;
 /**
  * Created by manodyas on 2/12/2017.
  */
-public class PendingActivityMapper implements RowMapper {
+public class PendingActivityMapper implements RowMapper<PendingActivity> {
     @Override
-    public Object mapRow(ResultSet resultSet, int i) throws SQLException {
+    public PendingActivity mapRow(ResultSet resultSet, int i) throws SQLException {
         PendingActivity pendingActivity = new PendingActivity();
         pendingActivity.setApplicationID(resultSet.getString("l01_app_id"));
         pendingActivity.setActivityID(resultSet.getInt("l01_acc_activity_id"));

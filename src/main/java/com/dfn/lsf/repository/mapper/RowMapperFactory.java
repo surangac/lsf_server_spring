@@ -1,8 +1,13 @@
 package com.dfn.lsf.repository.mapper;
 
 import com.dfn.lsf.model.*;
+import com.dfn.lsf.util.RowMapperI;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
+import com.dfn.lsf.repository.mapper.application.*;
+import com.dfn.lsf.repository.mapper.reports.*;
+import com.dfn.lsf.repository.mapper.notification.*;
+import com.dfn.lsf.repository.mapper.symbol.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,90 +20,70 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class RowMapperFactory {
 
-    private final Map<String, RowMapper<?>> mappers = new ConcurrentHashMap<>();
-    
-    /**
-     * Initialize factory with all available mappers
-     */
-    public RowMapperFactory() {
-        registerDefaultMappers();
-    }
-    
-    /**
-     * Get a row mapper by type
-     *
-     * @param type Mapper type identifier
-     * @return RowMapper for the specified type
-     */
-    public RowMapper<?> getRowMapper(String type) {
-        return mappers.computeIfAbsent(type, this::createMapper);
-    }
-    
-    /**
-     * Register a new mapper
-     *
-     * @param type Mapper type identifier
-     * @param mapper RowMapper instance
-     */
-    public void registerMapper(String type, RowMapper<?> mapper) {
-        mappers.put(type, mapper);
-    }
-    
-    /**
-     * Create a mapper if not found
-     * This is a fallback method that attempts to create mappers dynamically
-     *
-     * @param type Mapper type identifier
-     * @return RowMapper or DefaultRowMapper if type unknown
-     */
-    private RowMapper<?> createMapper(String type) {
-        try {
-            // Try to dynamically instantiate a mapper class if it exists
-            // This assumes a naming convention of [Type]Mapper in the same package
-            String mapperClassName = "com.dfn.lsf.repository.mapper." + type + "Mapper";
-            Class<?> mapperClass = Class.forName(mapperClassName);
-            return (RowMapper<?>) mapperClass.getDeclaredConstructor().newInstance();
-        } catch (Exception e) {
-            // If mapper not found, return a default mapper that maps to generic Map
-            return new DefaultRowMapper();
-        }
-    }
-    
-    /**
-     * Register all default mappers
-     * This method registers all standard mappers used in the application
-     */
-    private void registerDefaultMappers() {
-        // Register common mappers
-        // These mappers would be defined as separate classes in the repository.mapper package
-        // For example: PurchaseOrderMapper, ApplicationMapper, etc.
-        
-        // This is just a placeholder - actual implementation would register real mappers
-        mappers.put("default", new DefaultRowMapper());
-        
-        // Example: Register other mappers as they're implemented
-        // mappers.put("purchaseOrder", new PurchaseOrderMapper());
-        // mappers.put("application", new ApplicationMapper());
-        // mappers.put("user", new UserMapper());
-    }
-    
-    /**
-     * Default row mapper that maps to Map<String, Object>
-     */
-    private static class DefaultRowMapper implements RowMapper<Map<String, Object>> {
-        @Override
-        public Map<String, Object> mapRow(java.sql.ResultSet rs, int rowNum) throws java.sql.SQLException {
-            Map<String, Object> result = new HashMap<>();
-            var metaData = rs.getMetaData();
-            int columnCount = metaData.getColumnCount();
-            
-            for (int i = 1; i <= columnCount; i++) {
-                String columnName = metaData.getColumnName(i);
-                Object value = rs.getObject(i);
-                result.put(columnName, value);
-            }
-            
-            return result;
-        }
+    @SuppressWarnings("unchecked")
+    public <T> RowMapper<T> getRowMapper(String mapperName) {
+        return switch (mapperName) {
+            case RowMapperI.CASH_ACCOUNT -> (RowMapper<T>) new CashAccMapper();
+            case RowMapperI.MURABAH_APPLICATION -> (RowMapper<T>) new MurabahApplicationMapper();
+            case RowMapperI.USER_DOCUMENTS -> (RowMapper<T>) new DocumentsMapper();
+            case RowMapperI.LIQUIDITY_TYPES -> (RowMapper<T>) new LiquidityTypeMapper();
+            case RowMapperI.USER_APPLICATION_DOCUMENTS -> (RowMapper<T>) new MApplicationDocumentsMapper();
+            case RowMapperI.TENOR -> (RowMapper<T>) new TenorMapper();
+            case RowMapperI.MARGINABILITY_GROUPS -> (RowMapper<T>) new MarginabilityGroupMapper();
+            case RowMapperI.ADMIN_APPLICATION_DOCUMENTS -> (RowMapper<T>) new MAdminApplicationDocumentMapper();
+            case RowMapperI.INITIAL_PORTFOLIO -> (RowMapper<T>) new InitialPortfolioMapper();
+            case RowMapperI.COMMISSION_STRUCTURE -> (RowMapper<T>) new CommissionStructureMapper();
+            case RowMapperI.APP_COMMENT -> (RowMapper<T>) new AppCommentMapper();
+            case RowMapperI.SYS_PARAS -> (RowMapper<T>) new GlobalParametersMapper();
+            case RowMapperI.EXCHANGE_SYMBOLS -> (RowMapper<T>) new SymbolMapper();
+            case RowMapperI.SYMBOL_DESCRIPTION -> (RowMapper<T>) new SymbolDescriptionMapper();
+            case RowMapperI.USER_SESSION -> (RowMapper<T>) new UserSessionMapper();
+            case RowMapperI.APP_STATE_FLOW -> (RowMapper<T>) new StateFlowMapper();
+            case RowMapperI.APPLICATION_STATUS -> (RowMapper<T>) new ApplicationStatusMapper();
+            case RowMapperI.COLLATERALS -> (RowMapper<T>) new MApplicationCollateralsMapper();
+            case RowMapperI.STOCK_CONCENTRATION_GROUP -> (RowMapper<T>) new StockConcentrationGroupMapper();
+            case RowMapperI.TRADING_ACCOUNT -> (RowMapper<T>) new TradingAccMapper();
+            case RowMapperI.ORDER_INSTALLMENTS -> (RowMapper<T>) new InstallmentsMapper();
+            case RowMapperI.PURCHASE_ORDER -> (RowMapper<T>) new PurchaseOrderMapper();
+            case RowMapperI.NOTIFICATION_MSG_CONFIGURATION -> (RowMapper<T>) new NotificationMsgConfigurationMapper();
+            case RowMapperI.WEB_NOTIFICATION -> (RowMapper<T>) new WebNotificationMapper();
+            case RowMapperI.DOCUMENT_MASTER_DOCS -> (RowMapper<T>) new DocumentMasterMapper();
+            case RowMapperI.NOTIFICATION_HEADER -> (RowMapper<T>) new NotificationHeaderMapper();
+            case RowMapperI.NOTIFICATION_BODY -> (RowMapper<T>) new NotificationBodyMapper();
+            case RowMapperI.USER_ANSWER -> (RowMapper<T>) new UserAnswerMapper();
+            case RowMapperI.DOCUMENT_RELATED_APPS -> (RowMapper<T>) new DocumentRelateAppsMapper();
+            case RowMapperI.SYMBOL -> (RowMapper<T>) new LoadSymbolMapper();
+            case RowMapperI.ORDER_PROFIT -> (RowMapper<T>) new OrderProfitMapper();
+            case RowMapperI.MESSAGE -> (RowMapper<T>) new MessageMapper();
+            case RowMapperI.LIQUIDATION_LOG -> (RowMapper<T>) new LiquidationLogMapper();
+            case RowMapperI.REPORT_CONFIG_OBJECT -> (RowMapper<T>) new ReportConfigObjectMapper();
+            case RowMapperI.REPORT_CONFIG -> (RowMapper<T>) new ReportConfigMapper();
+            case RowMapperI.MARGIN_INFO -> (RowMapper<T>) new MarginInformationReportMapper();
+            case RowMapperI.FINANCE_BROKERAGE_INFO -> (RowMapper<T>) new FinanceBrokerageInfoMapper();
+            case RowMapperI.EXTERNAL_COLLATERALS -> (RowMapper<T>) new ExternalCollateralsMapper();
+            case RowMapperI.FTV_DETAILED_INFO -> (RowMapper<T>) new FTVDetailedInfoMapper();
+            case RowMapperI.COMMISSION_DETAILS -> (RowMapper<T>) new CommissionDetailsMapper();
+            case RowMapperI.RISK_WAVIER_QUESTION_CONFIG -> (RowMapper<T>) new RisKWavierQUestionConfigMapper();
+            case RowMapperI.ADMIN_USER -> (RowMapper<T>) new AdminUserMapper();
+            case RowMapperI.APPLICATION_RATING -> (RowMapper<T>) new ApplicationRatingMapper();
+            case RowMapperI.QUESTIONNAIRE_ENTRY -> (RowMapper<T>) new QuestionnaireEntryMapper();
+            case RowMapperI.SYMBOL_CLASSIFY_LOG -> (RowMapper<T>) new SymbolClassifyLogMapper();
+            case RowMapperI.FTV_SUMMARY_INFO -> (RowMapper<T>) new FtvSummaryMapper();
+            case RowMapperI.ORDER_CONTRACT_USER_INFO -> (RowMapper<T>) new OrderContractUserInfoMapper();
+            case RowMapperI.APP_STATUS_SUMMARY -> (RowMapper<T>) new AppStatusSummaryMapper();
+            case RowMapperI.PENDING_ACTIVITY -> (RowMapper<T>) new PendingActivityMapper();
+            case RowMapperI.ADMIN__REJECT_APPLICATION -> (RowMapper<T>) new AdminRejectApplicationMapper();
+            case RowMapperI.SETTLEMENT_LIST -> (RowMapper<T>) new SettlementListMapper();
+            case RowMapperI.MURABAHA_PRODUCT -> (RowMapper<T>) new MurabahaProductsMapper();
+            case RowMapperI.PROFIT_MASTER_ENTRY -> (RowMapper<T>) new ProfitMasterEntryMapper();
+            case RowMapperI.PROFIT_CAL_MURABAHA_APPLICATION -> (RowMapper<T>) new ProfitCalMurabahaApplicationMapper();
+            case RowMapperI.OMS_COMMISSION -> (RowMapper<T>) new OMSCommissionMapper();
+            case RowMapperI.AGREEMENT_LIST -> (RowMapper<T>) new AgreementListMapper();
+            case RowMapperI.COMMODITY_LIST -> (RowMapper<T>) new CommodityListMapper();
+            case RowMapperI.PHYSICAL_DELIVERY_LIST -> (RowMapper<T>) new PhysicalDeliveryOrderMapper();
+            case RowMapperI.SYMBOL_MARGINABILITY_PERCENTAGE -> (RowMapper<T>) new SymbolMarginabilityPercentageMapper();
+            case RowMapperI.EXCHANGE_INSTRUMENT_TYPE -> (RowMapper<T>) new InstrumentTypeMapper();
+            default -> null;
+        };
     }
 }

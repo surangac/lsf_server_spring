@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.GlobalParameters;
+import com.dfn.lsf.model.GlobalParameters;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -9,10 +9,10 @@ import java.sql.SQLException;
 /**
  * Created by Atchuthan on 8/6/2015.
  */
-public class GlobalParametersMapper implements RowMapper {
+public class GlobalParametersMapper implements RowMapper<GlobalParameters> {
 
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public GlobalParameters mapRow(ResultSet rs, int i) throws SQLException {
         GlobalParameters _instant = GlobalParameters.getInstance();
         _instant.setMaxGuidanceLimit(rs.getLong("M01_MAX_GUIDANCE_LIMIT"));
         _instant.setMinGuidanceLimit(rs.getInt("M01_MIN_GUIDANCE_LIMIT"));
@@ -74,7 +74,7 @@ public class GlobalParametersMapper implements RowMapper {
         _instant.setAdministrationFee(rs.getDouble("m01_admin_fee"));
         _instant.setNumberOfDecimalPlaces(rs.getInt("m01_decimal_count"));
         _instant.setTimeGapBetweenCallingAttempts(rs.getDouble("M01_TIME_GAP_BTW_CALLING_ATMPT"));
-        _instant.setIsMultipleOrderAllowed(rs.getBoolean("m01_is_multiple_order_allowed"));
+      //  _instant.setIsMultipleOrderAllowed(rs.getBoolean("m01_is_multiple_order_allowed"));
         _instant.setMinimumOrderValue(rs.getDouble("m01_minimum_order_value"));
         _instant.setInstitutionCashAccount(rs.getString("m01_institution_cash_acc"));
         _instant.setAdministrationFeePercent(rs.getDouble("m01_admin_fee_percentage"));

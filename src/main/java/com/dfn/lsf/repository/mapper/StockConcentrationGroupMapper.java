@@ -1,15 +1,15 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
 
-import com.dfn.lsf.gbl.bo.StockConcentrationGroup;
+import com.dfn.lsf.model.StockConcentrationGroup;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class StockConcentrationGroupMapper implements RowMapper{
+public class StockConcentrationGroupMapper implements RowMapper<StockConcentrationGroup>{
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public StockConcentrationGroup mapRow(ResultSet rs, int i) throws SQLException {
         StockConcentrationGroup obj = new StockConcentrationGroup();
 
         obj.setId(rs.getString("L12_STOCK_CONC_GRP_ID"));

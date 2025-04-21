@@ -1,15 +1,15 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.MApplicationCollaterals;
+import com.dfn.lsf.model.MApplicationCollaterals;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 
-public class MApplicationCollateralsMapper implements RowMapper {
+public class MApplicationCollateralsMapper implements RowMapper<MApplicationCollaterals> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public MApplicationCollaterals mapRow(ResultSet rs, int i) throws SQLException {
         MApplicationCollaterals obj = new MApplicationCollaterals();
         obj.setId(rs.getString("L05_COLLATERAL_ID"));
         obj.setApplicationId(rs.getString("L05_L01_APP_ID"));

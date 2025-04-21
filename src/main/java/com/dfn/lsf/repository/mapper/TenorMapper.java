@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.Tenor;
+import com.dfn.lsf.model.Tenor;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -9,9 +9,9 @@ import java.sql.SQLException;
 /**
  * Created by Nuskya on 7/20/2015.
  */
-public class TenorMapper implements RowMapper {
+public class TenorMapper implements RowMapper<Tenor> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public Tenor mapRow(ResultSet rs, int i) throws SQLException {
         Tenor obj = new Tenor();
         obj.setTenorId(rs.getString("L15_TENOR_ID"));
         obj.setProfitPercentage(rs.getDouble("L15_PROFIT_PERCENT"));

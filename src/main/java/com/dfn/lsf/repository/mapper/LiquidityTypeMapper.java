@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.LiquidityType;
+import com.dfn.lsf.model.LiquidityType;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -9,9 +9,9 @@ import java.sql.SQLException;
 /**
  * Created by Nuskya on 7/16/2015.
  */
-public class LiquidityTypeMapper implements RowMapper {
+public class LiquidityTypeMapper implements RowMapper<LiquidityType> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public LiquidityType mapRow(ResultSet rs, int i) throws SQLException {
         LiquidityType obj = new LiquidityType();
 
         obj.setLiquidId(rs.getInt("L10_LIQUID_ID"));

@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.Symbol;
+import com.dfn.lsf.model.Symbol;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -9,9 +9,9 @@ import java.sql.SQLException;
 /**
  * Created by manodyas on 8/31/2015.
  */
-public class LoadSymbolMapper implements RowMapper {
+public class LoadSymbolMapper implements RowMapper<Symbol> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public Symbol mapRow(ResultSet rs, int i) throws SQLException {
         Symbol symbol = new Symbol();
         symbol.setSymbolCode(rs.getString("l08_symbol_code"));
         symbol.setExchange(rs.getString("l08_exchange"));

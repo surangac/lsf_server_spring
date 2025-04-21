@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.util.Comment;
+import com.dfn.lsf.model.Comment;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,9 +8,9 @@ import java.sql.SQLException;
 /**
  * Created by manodyas on 8/10/2015.
  */
-public class AppCommentMapper implements org.springframework.jdbc.core.RowMapper {
+public class AppCommentMapper implements org.springframework.jdbc.core.RowMapper<Comment> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public Comment mapRow(ResultSet rs, int i) throws SQLException {
         Comment obj = new Comment();
         obj.setReversedFrom(rs.getString("l21_reserved_from"));
         obj.setReversedTo(rs.getString("l21_reserved_to"));

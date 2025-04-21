@@ -1,13 +1,13 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
 
-import com.dfn.lsf.gbl.bo.CashAcc;
+import com.dfn.lsf.model.CashAcc;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class CashAccMapper implements RowMapper {
+public class CashAccMapper implements RowMapper<CashAcc> {
 
     @Override
     public CashAcc mapRow(ResultSet rs, int i) throws SQLException {

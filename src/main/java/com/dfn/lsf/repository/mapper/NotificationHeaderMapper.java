@@ -1,7 +1,7 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.notification.Header;
-import com.dfn.lsf.gbl.bo.notification.Notification;
+import com.dfn.lsf.model.notification.Header;
+import com.dfn.lsf.model.notification.Notification;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -12,9 +12,9 @@ import java.util.List;
 /**
  * Created by Atchuthan on 8/24/2015.
  */
-public class NotificationHeaderMapper implements RowMapper {
+public class NotificationHeaderMapper implements RowMapper<Notification> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public Notification mapRow(ResultSet rs, int i) throws SQLException {
         Notification obj = new Notification();
         obj.setUid(rs.getString("N01_UID"));
         obj.setStatus("N01_STATUS");

@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.responseMsg.FTVInfo;
+import com.dfn.lsf.model.responseMsg.FTVInfo;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -9,9 +9,9 @@ import java.sql.SQLException;
 /**
  * Created by manodyas on 2/15/2016.
  */
-public class FTVDetailedInfoMapper implements RowMapper {
+public class FTVDetailedInfoMapper implements RowMapper<FTVInfo> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public FTVInfo mapRow(ResultSet rs, int i) throws SQLException {
         FTVInfo ftvInfo = new FTVInfo();
         ftvInfo.setCustomerID(rs.getString("l01_customer_id"));
         ftvInfo.setCustomerName(rs.getString("l01_full_name"));

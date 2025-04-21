@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.report.MarginInformation;
+import com.dfn.lsf.model.report.MarginInformation;
 import com.dfn.lsf.util.LSFUtils;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -10,9 +10,9 @@ import java.sql.SQLException;
 /**
  * Created by manodyas on 10/29/2015.
  */
-public class MarginInformationReportMapper implements RowMapper {
+public class MarginInformationReportMapper implements RowMapper<MarginInformation> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public MarginInformation mapRow(ResultSet rs, int i) throws SQLException {
         MarginInformation  marginInformation = new MarginInformation();
         marginInformation.setNumberOfCustomers(rs.getString("noofclient"));
         marginInformation.setMarginCommitment(String.valueOf(LSFUtils.roundUpDouble(rs.getString("margincommitment"))));

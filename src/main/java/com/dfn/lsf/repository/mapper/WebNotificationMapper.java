@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.notification.WebNotification;
+import com.dfn.lsf.model.notification.WebNotification;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -9,10 +9,10 @@ import java.sql.SQLException;
 /**
  * Created by Atchuthan on 8/13/2015.
  */
-public class WebNotificationMapper implements RowMapper {
+public class WebNotificationMapper implements RowMapper<WebNotification> {
 
     @Override
-    public Object mapRow(ResultSet rt, int i) throws SQLException {
+    public WebNotification mapRow(ResultSet rt, int i) throws SQLException {
         WebNotification obj =new WebNotification();
         obj.setMessageId(rt.getString("n04_message_id"));
         obj.setApplicationId(rt.getString("n04_l01_application_id"));

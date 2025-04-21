@@ -1,6 +1,6 @@
-package com.dao.mapper.reports;
+package com.dfn.lsf.repository.mapper.reports;
 
-import com.dfn.lsf.gbl.bo.report.ReportConfiguration;
+import com.dfn.lsf.model.report.ReportConfiguration;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -9,9 +9,9 @@ import java.sql.SQLException;
 /**
  * Created by isurul on 10/2/2016.
  */
-public class ReportConfigMapper implements RowMapper {
+public class ReportConfigMapper implements RowMapper<ReportConfiguration> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public ReportConfiguration mapRow(ResultSet rs, int i) throws SQLException {
         ReportConfiguration reportConfig = new ReportConfiguration();
         reportConfig.setReportId(rs.getInt("m04_report_id"));
         reportConfig.setReportName(rs.getString("m04_report_name"));

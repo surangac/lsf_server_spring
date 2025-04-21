@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.notification.NotificationMsgConfiguration;
+import com.dfn.lsf.model.notification.NotificationMsgConfiguration;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;

@@ -1,15 +1,15 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
 
-import com.dfn.lsf.gbl.bo.MurabahaProduct;
+import com.dfn.lsf.model.MurabahaProduct;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class MurabahaProductsMapper implements RowMapper {
+public class MurabahaProductsMapper implements RowMapper<MurabahaProduct> {
     @Override
-    public Object mapRow(ResultSet resultSet, int i) throws SQLException {
+    public MurabahaProduct mapRow(ResultSet resultSet, int i) throws SQLException {
         MurabahaProduct product = new MurabahaProduct();
         product.setProductType(resultSet.getInt("M07_TYPE"));
         product.setProfitMethod(resultSet.getString("M07_PROFIT_METHOD"));

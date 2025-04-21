@@ -1,15 +1,15 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.SymbolMarginabilityPercentage;
+import com.dfn.lsf.model.SymbolMarginabilityPercentage;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import org.springframework.jdbc.core.RowMapper;
 
-public class SymbolMarginabilityPercentageMapper  implements RowMapper {
+public class SymbolMarginabilityPercentageMapper  implements RowMapper<SymbolMarginabilityPercentage> {
 
     @Override
-    public Object mapRow(final ResultSet rs, final int i) throws SQLException {
+    public SymbolMarginabilityPercentage mapRow(final ResultSet rs, final int i) throws SQLException {
 
         SymbolMarginabilityPercentage sm = new SymbolMarginabilityPercentage();
 

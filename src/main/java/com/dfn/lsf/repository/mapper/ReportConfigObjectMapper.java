@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.ReportConfigObject;
+import com.dfn.lsf.model.ReportConfigObject;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -10,9 +10,9 @@ import java.util.ArrayList;
 /**
  * Created by manodyas on 10/20/2015.
  */
-public class ReportConfigObjectMapper implements RowMapper {
+public class ReportConfigObjectMapper implements RowMapper<ReportConfigObject> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public ReportConfigObject mapRow(ResultSet rs, int i) throws SQLException {
         ReportConfigObject reportConfigObject = new ReportConfigObject();
         reportConfigObject.setReportID(rs.getInt("m03_report_id"));
         reportConfigObject.setReportName(rs.getString("m03_report_name"));

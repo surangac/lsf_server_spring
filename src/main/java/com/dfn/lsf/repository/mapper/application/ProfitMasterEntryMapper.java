@@ -1,15 +1,15 @@
-package com.dao.mapper.application;
+package com.dfn.lsf.repository.mapper.application;
 
-import com.dfn.lsf.gbl.bo.ProfitCalculationMasterEntry;
+import com.dfn.lsf.model.ProfitCalculationMasterEntry;
 import com.dfn.lsf.util.LSFUtils;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class ProfitMasterEntryMapper implements RowMapper {
+public class ProfitMasterEntryMapper implements RowMapper<ProfitCalculationMasterEntry> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public ProfitCalculationMasterEntry mapRow(ResultSet rs, int i) throws SQLException {
         ProfitCalculationMasterEntry entry = new ProfitCalculationMasterEntry();
         if(rs.getString("m08_job_date") != null){
             entry.setJobDate(rs.getDate("m08_job_date"));

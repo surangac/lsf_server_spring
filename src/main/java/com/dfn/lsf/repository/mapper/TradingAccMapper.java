@@ -1,15 +1,15 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
 
-import com.dfn.lsf.gbl.bo.TradingAcc;
+import com.dfn.lsf.model.TradingAcc;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class TradingAccMapper implements RowMapper {
+public class TradingAccMapper implements RowMapper<TradingAcc> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public TradingAcc mapRow(ResultSet rs, int i) throws SQLException {
         TradingAcc obj = new TradingAcc();
 
         obj.setAccountId(rs.getString("L06_TRADING_ACC_ID"));

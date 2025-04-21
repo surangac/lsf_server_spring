@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.responseMsg.OrderContractCustomerInfo;
+import com.dfn.lsf.model.responseMsg.OrderContractCustomerInfo;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -12,9 +12,9 @@ import java.util.Date;
 /**
  * Created by manodyas on 6/9/2016.
  */
-public class OrderContractUserInfoMapper implements RowMapper {
+public class OrderContractUserInfoMapper implements RowMapper<OrderContractCustomerInfo>  {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public OrderContractCustomerInfo mapRow(ResultSet rs, int i) throws SQLException {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         OrderContractCustomerInfo info = new OrderContractCustomerInfo();
         info.setBranch(rs.getString("l01_bank_brch_name"));

@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.notification.Message;
+import com.dfn.lsf.model.notification.Message;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -11,10 +11,10 @@ import java.util.List;
 /**
  * Created by Atchuthan on 8/26/2015.
  */
-public class MessageMapper implements RowMapper {
+public class MessageMapper implements RowMapper<Message> {
 
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public Message mapRow(ResultSet rs, int i) throws SQLException {
         Message obj = new Message();
         obj.setUid(rs.getString("N04_UID"));
         obj.setTime(rs.getString("N04_TIME"));

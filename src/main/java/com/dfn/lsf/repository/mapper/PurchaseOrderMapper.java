@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.core.PurchaseOrder;
+import com.dfn.lsf.model.PurchaseOrder;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -13,9 +13,9 @@ import java.util.Date;
 /**
  * Created by Nuskya on 7/20/2015.
  */
-public class PurchaseOrderMapper implements RowMapper {
+public class PurchaseOrderMapper implements RowMapper<PurchaseOrder> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public PurchaseOrder mapRow(ResultSet rs, int i) throws SQLException {
         PurchaseOrder obj = new PurchaseOrder();
         Date dateForSettlementDateDisplay = null;
         DateFormat fromFormat = new SimpleDateFormat("ddMMyyyy");

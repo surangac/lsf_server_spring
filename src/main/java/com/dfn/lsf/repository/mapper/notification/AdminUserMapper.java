@@ -1,6 +1,6 @@
-package com.dao.mapper.notification;
+package com.dfn.lsf.repository.mapper.notification;
 
-import com.dfn.lsf.gbl.bo.notification.AdminUser;
+import com.dfn.lsf.model.notification.AdminUser;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -9,9 +9,9 @@ import java.sql.SQLException;
 /**
  * Created by isurul on 15/3/2016.
  */
-public class AdminUserMapper implements RowMapper {
+public class AdminUserMapper implements RowMapper<AdminUser> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public AdminUser mapRow(ResultSet rs, int i) throws SQLException {
         AdminUser adminUser = new AdminUser();
         adminUser.setUserName(rs.getString("m05_user_name"));
         adminUser.setName(rs.getString("m05_name"));

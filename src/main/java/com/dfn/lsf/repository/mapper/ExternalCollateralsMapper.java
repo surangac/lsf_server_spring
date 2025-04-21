@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.ExternalCollaterals;
+import com.dfn.lsf.model.ExternalCollaterals;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -9,9 +9,9 @@ import java.sql.SQLException;
 /**
  * Created by surangac on 1/28/2016.
  */
-public class ExternalCollateralsMapper implements RowMapper {
+public class ExternalCollateralsMapper implements RowMapper<ExternalCollaterals> {
     @Override
-    public Object mapRow(ResultSet resultSet, int i) throws SQLException {
+    public ExternalCollaterals mapRow(ResultSet resultSet, int i) throws SQLException {
         ExternalCollaterals mapper=new ExternalCollaterals();
         mapper.setId(resultSet.getInt("l27_id"));
         mapper.setApplicationId(resultSet.getInt("l27_application_id"));

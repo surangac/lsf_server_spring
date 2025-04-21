@@ -1,14 +1,14 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.Commodity;
+import com.dfn.lsf.model.Commodity;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class CommodityListMapper implements RowMapper {
+public class CommodityListMapper implements RowMapper<Commodity> {
     @Override
-    public Object mapRow(ResultSet resultSet, int i) throws SQLException {
+    public Commodity mapRow(ResultSet resultSet, int i) throws SQLException {
         Commodity commodity = new Commodity();
         commodity.setSymbolName(resultSet.getString("m12_commodity_name"));
         commodity.setSymbolCode(resultSet.getString("m12_commodity_code"));

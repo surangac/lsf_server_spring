@@ -1,15 +1,15 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.Documents;
+import com.dfn.lsf.model.Documents;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 
-public class DocumentsMapper implements RowMapper {
+public class DocumentsMapper implements RowMapper<Documents> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public Documents mapRow(ResultSet rs, int i) throws SQLException {
         Documents obj = new Documents();
 
         obj.setId(rs.getString("L03_DOC_ID"));

@@ -1,15 +1,14 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.responseMsg.SettlementListResponse;
-import com.dfn.lsf.gbl.bo.responseMsg.SettlementSummaryResponse;
+import com.dfn.lsf.model.responseMsg.SettlementSummaryResponse;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class SettlementListMapper implements RowMapper {
+public class SettlementListMapper implements RowMapper<SettlementSummaryResponse> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public SettlementSummaryResponse mapRow(ResultSet rs, int i) throws SQLException {
         SettlementSummaryResponse settlementSummary = new SettlementSummaryResponse();
         settlementSummary.setApplicationID(rs.getString("l01_app_id"));
         settlementSummary.setCustomerID(rs.getString("l01_customer_id"));

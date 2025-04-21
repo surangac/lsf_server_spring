@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.MurabahApplication;
+import com.dfn.lsf.model.MurabahApplication;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
@@ -9,9 +9,9 @@ import java.sql.SQLException;
 /**
  * Created by manodyas on 3/5/2017.
  */
-public class AdminRejectApplicationMapper implements RowMapper {
+public class AdminRejectApplicationMapper implements RowMapper<MurabahApplication> {
     @Override
-    public Object mapRow(ResultSet resultSet, int i) throws SQLException {
+    public MurabahApplication mapRow(ResultSet resultSet, int i) throws SQLException {
         MurabahApplication murabahApplication = new MurabahApplication();
         murabahApplication.setId(resultSet.getString("l01_app_id"));
         murabahApplication.setCustomerId(resultSet.getString("l01_customer_id"));

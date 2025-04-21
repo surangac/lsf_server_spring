@@ -1,6 +1,6 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.Documents;
+import com.dfn.lsf.model.Documents;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,9 +8,9 @@ import java.sql.SQLException;
 /**
  * Created by manodyas on 8/6/2015.
  */
-public class MAdminApplicationDocumentMapper implements org.springframework.jdbc.core.RowMapper{
+public class MAdminApplicationDocumentMapper implements org.springframework.jdbc.core.RowMapper<Documents> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public Documents mapRow(ResultSet rs, int i) throws SQLException {
         Documents obj = new Documents();
         obj.setId(rs.getString("l19_id"));
         obj.setOriginalFileName(rs.getString("l19_orig_file_name"));

@@ -1,15 +1,15 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.MarginabilityGroup;
+import com.dfn.lsf.model.MarginabilityGroup;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 
-public class MarginabilityGroupMapper implements RowMapper {
+public class MarginabilityGroupMapper implements RowMapper<MarginabilityGroup> {
     @Override
-    public Object mapRow(ResultSet rs, int i) throws SQLException {
+    public MarginabilityGroup mapRow(ResultSet rs, int i) throws SQLException {
         MarginabilityGroup obj = new MarginabilityGroup();
 
         obj.setId(rs.getString("l11_marginability_grp_id"));

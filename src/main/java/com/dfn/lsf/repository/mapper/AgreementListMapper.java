@@ -1,14 +1,14 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.Agreement;
+import com.dfn.lsf.model.Agreement;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class AgreementListMapper implements RowMapper {
+public class AgreementListMapper implements RowMapper<Agreement> {
     @Override
-    public Object mapRow(ResultSet resultSet, int i) throws SQLException {
+    public Agreement mapRow(ResultSet resultSet, int i) throws SQLException {
         Agreement agreement = new Agreement();
         agreement.setProductType(resultSet.getInt("m11_product_type"));
         agreement.setFinanceMethod(resultSet.getInt("m11_finance_method"));

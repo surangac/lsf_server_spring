@@ -1,14 +1,14 @@
-package com.dao.mapper;
+package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.gbl.bo.PhysicalDeliverOrder;
+import com.dfn.lsf.model.PhysicalDeliverOrder;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class PhysicalDeliveryOrderMapper implements RowMapper {
+public class PhysicalDeliveryOrderMapper implements RowMapper<PhysicalDeliverOrder> {
     @Override
-    public Object mapRow(ResultSet resultSet, int i) throws SQLException {
+    public PhysicalDeliverOrder mapRow(ResultSet resultSet, int i) throws SQLException {
         PhysicalDeliverOrder obj = new PhysicalDeliverOrder();
 
         obj.setClientName(resultSet.getString("L01_FULL_NAME"));
