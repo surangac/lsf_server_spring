@@ -1,24 +1,13 @@
 package com.dfn.lsf.config;
 
-import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-import com.dfn.lsf.service.scheduler.GlobalParametersService;
-
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @EnableScheduling
-@RequiredArgsConstructor
+@Slf4j
 public class ApplicationConfig {
-
-    private final GlobalParametersService globalParametersService;
-
-    @EventListener(ApplicationReadyEvent.class)
-    public void onApplicationReady() {
-        // Initialize global parameters when application starts
-        globalParametersService.initialize();
-    }
+    // Configuration class - no need for duplicate parameter loading
 } 

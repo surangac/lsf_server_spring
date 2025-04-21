@@ -106,12 +106,12 @@ public class OracleJdbcRepository implements OracleRepository {
                     .withSchemaName(schema)
                     .withCatalogName(packageName)
                     .withProcedureName(procedureName)
-                    .returningResultSet("CURSOR", rowMapper);
+                    .returningResultSet("pview", rowMapper);
             
             SqlParameterSource paramSource = new MapSqlParameterSource(params);
             Map<String, Object> result = jdbcCall.execute(paramSource);
             
-            return (List<T>) result.get("CURSOR");
+            return (List<T>) result.get("pview");
         } catch (Exception e) {
             logger.error("Error executing procedure {}.{}", 
                     packageName, procedureName, e);
@@ -131,7 +131,7 @@ public class OracleJdbcRepository implements OracleRepository {
             Map<String, Object> result = jdbcCall.execute(paramSource);
             
             @SuppressWarnings("unchecked")
-            List<Map<String, Object>> resultList = (List<Map<String, Object>>) result.get("PVIEW");
+            List<Map<String, Object>> resultList = (List<Map<String, Object>>) result.get("pview");
             return resultList != null ? resultList : Collections.emptyList();
         } catch (Exception e) {
             logger.error("Error executing procedure {}.{}", packageName, procedureName, e);

@@ -11,9 +11,9 @@ public final class IntegrationConstants {
     }
     
     // Base URLs
-    public static final String OMS_BASE_URL = "${integration.oms.base-url:http://localhost:8080/oms}";
-    public static final String NOTIFICATION_BASE_URL = "${integration.notification.base-url:http://localhost:8080/notification}";
-    public static final String IFLEX_BASE_URL = "${integration.iflex.base-url:http://localhost:8080/iflex}";
+    // public static final String OMS_BASE_URL = "${integration.oms.base-url:http://localhost:8080/oms}";
+    // public static final String NOTIFICATION_BASE_URL = "${integration.notification.base-url:http://localhost:8080/notification}";
+    // public static final String IFLEX_BASE_URL = "${integration.iflex.base-url:http://localhost:8080/iflex}";
     
     // OMS endpoints (mapped from original HTTP producer names)
     public static final String OMS_CUSTOMER_INFO_ENDPOINT = "/MubasherRESTAPI/api/RestSOA/processLsfRequest";

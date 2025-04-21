@@ -59,7 +59,6 @@ public class MurabahApplication extends MessageHeader {
     private String bankBranchName;
     private String city;
     private String poBox;
-    private int lsfAccountDeletionState;
     private int customerActivityID;
     private int purchaseOrderId;
     private String statusDescription;
@@ -77,6 +76,11 @@ public class MurabahApplication extends MessageHeader {
     private String investorAcc;
     private RemainTime remainTimeToSell;
     private int rollOverSeqNumber;
+    private boolean automaticSettlement;
+    private String lastProfitDate;
+    private String rolloverAppId;
+    private int rolloverCount;
+    private int lsfAccountDeletionState;
 
     public String getMlPortfolioNo() {
         return mlPortfolioNo;
@@ -509,14 +513,6 @@ public class MurabahApplication extends MessageHeader {
         this.poBox = poBox;
     }
 
-    public int getLsfAccountDeletionState() {
-        return lsfAccountDeletionState;
-    }
-
-    public void setLsfAccountDeletionState(int lsfAccountDeletionState) {
-        this.lsfAccountDeletionState = lsfAccountDeletionState;
-    }
-
     public int getCustomerActivityID() {
         return customerActivityID;
     }
@@ -643,5 +639,29 @@ public class MurabahApplication extends MessageHeader {
 
     public void setRollOverSeqNumber(int rollOverSeqNumber) {
         this.rollOverSeqNumber = rollOverSeqNumber;
+    }
+
+    public void setAutomaticSettlement(boolean automaticSettlement) {
+        this.automaticSettlement = automaticSettlement;
+    }
+
+    public void setLastProfitDate(String lastProfitDate) {
+        this.lastProfitDate = lastProfitDate;
+    }
+
+    public void setRolloverAppId(String rolloverAppId) {
+        this.rolloverAppId = rolloverAppId;
+    }
+
+    public void setRolloverCount(int rolloverCount) {
+        this.rolloverCount = rolloverCount;
+    }
+
+    public int getLsfAccountDeletionState() {
+        return lsfAccountDeletionState;
+    }
+
+    public void setLsfAccountDeletionState(int lsfAccountDeletionState) {
+        this.lsfAccountDeletionState = lsfAccountDeletionState;
     }
 }

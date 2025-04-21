@@ -22,6 +22,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Repository;
+import org.springframework.jdbc.core.RowMapper;
 
 import com.dfn.lsf.model.ActivityLog;
 import com.dfn.lsf.model.Agreement;
@@ -391,35 +392,33 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<MurabahApplication> geMurabahAppicationUserID(String customerID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_customer_id", customerID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_GET_BY_CUSTOMER_ID, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_GET_BY_CUSTOMER_ID, parameterMap, murabahApplicationRowMapper);
     }
     
     @Override
     public List<MurabahApplication> getAllMurabahAppicationsForUserID(String customerID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_customer_id", customerID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_GET_APPS_BY_CUSTOMER_ID, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_GET_APPS_BY_CUSTOMER_ID, parameterMap, murabahApplicationRowMapper);
     }
-
 
     @Override
     public List<MurabahApplication> geMurabahAppicationUserIDFilteredByClosedApplication(String customerID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_customer_id", customerID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_GET_NOT_CLOSED_APPS, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_GET_NOT_CLOSED_APPS, parameterMap, murabahApplicationRowMapper);
     }
-
 
     @Override
     public List<MurabahApplication> getNotGrantedApplication(String customerID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_customer_id", customerID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_NOT_GRANTED, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_NOT_GRANTED, parameterMap, murabahApplicationRowMapper);
     }
     
     @Override
     public List<MurabahApplication> getAllMurabahApplications() {
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_ALL, null, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_ALL, null, murabahApplicationRowMapper);
     }
 
     @Override
@@ -435,7 +434,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl01_from_date", fromDate);
         parameterMap.put("pl01_to_date", toDate);
         parameterMap.put("pl01_request_status", requestStatus);
-        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_FILTERED_APPLICATION, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_FILTERED_APPLICATION, parameterMap, murabahApplicationRowMapper);
         if (murabahApplications.size() > 0) {
             for (MurabahApplication murabahApplication : murabahApplications) {
                 if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
@@ -465,110 +464,27 @@ public class OracleUnifiedRepository implements LSFRepository {
     
     @Override
     public List<MurabahApplication> getSnapshotCurrentLevel(int requestStatus) {
-        List<Status> statusList = null;
-        List<Comment> commentList = null;
-        List<MurabahApplication> murabahApplications = null;
-        List<Agreement> agreementList = null;
-        List<PurchaseOrder> purchaseOrderList = null;
-
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_request_status", requestStatus);
-        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_SNAPSHOT, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
-        if (murabahApplications.size() > 0) {
-            for (MurabahApplication murabahApplication : murabahApplications) {
-                List<Comment> finalCommentList = new ArrayList<>();
-                if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
-                    statusList = getApplicationStatus(murabahApplication.getId());
-                    murabahApplication.setAppStatus(statusList);
-                    commentList = getApplicationComment(murabahApplication.getId());
-                    for (Comment comment : commentList) {
-                        if (Integer.parseInt(comment.getParentID()) == 0) {
-                            Comment tempComment = comment;
-                            for (Comment reply : commentList) {
-                                if (reply.getParentID().equalsIgnoreCase(tempComment.getCommentID().trim())) {
-                                    tempComment.setReply(reply);
-                                }
-                            }
-                            finalCommentList.add(tempComment);
-                        }
-                    }
-                    murabahApplication.setCommentList(finalCommentList);
-                    if (requestStatus == 14){
-                        murabahApplication.setInstitutionInvestAccount(GlobalParameters.getInstance().getInstitutionInvestAccount());
-                        agreementList = getActiveAgreements(Integer.parseInt(murabahApplication.getId()));
-                        murabahApplication.setAgreementList(agreementList);
-                        agreementList = null;
-
-                        purchaseOrderList = getAllPurchaseOrderforCommodity(murabahApplication.getId());
-                        murabahApplication.setPurchaseOrderList(purchaseOrderList);
-                        purchaseOrderList = null;
-                    }
-                }
-
-            }
-        }
-        return murabahApplications;
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_SNAPSHOT, parameterMap, murabahApplicationRowMapper);
     }
     
     @Override
     public List<MurabahApplication> getHistoryApplication(int filterCriteria, String filterValue, String fromDate, String toDate, int requestStatus) {
-        List<MurabahApplication> murabahApplications = null;
-        List<Status> statusList = null;
-        List<Comment> commentList = null;
-        List<Comment> finalCommentList = new ArrayList<>();
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_filter_criteria", filterCriteria);
         parameterMap.put("pl01_filter_value", filterValue);
         parameterMap.put("pl01_from_date", fromDate);
         parameterMap.put("pl01_to_date", toDate);
         parameterMap.put("pl01_request_status", requestStatus);
-        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_HISTORY_APPLICATION, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
-        return murabahApplications;
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_HISTORY_APPLICATION, parameterMap, murabahApplicationRowMapper);
     }
 
     @Override
     public List<MurabahApplication> getReversedApplication(int reversedStatus) {
-        List<MurabahApplication> murabahApplications = null;
-        List<Status> statusList = null;
-        List<Comment> finalCommentList = new ArrayList<>();
-        List<Comment> commentList = null;
-        List<Agreement> agreementList = null;
-        List<PurchaseOrder> purchaseOrderList = null;
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_request_status", reversedStatus);
-        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_REVERSED_APPLICATION, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
-        if (murabahApplications.size() > 0) {
-            for (MurabahApplication murabahApplication : murabahApplications) {
-                statusList = getApplicationStatus(murabahApplication.getId());
-                murabahApplication.setAppStatus(statusList);
-                commentList = getApplicationComment(murabahApplication.getId());
-                for (Comment comment : commentList) {
-                    if (Integer.parseInt(comment.getParentID()) == 0) {
-                        Comment tempComment = comment;
-                        for (Comment reply : commentList) {
-                            if (reply.getParentID().equalsIgnoreCase(tempComment.getCommentID().trim())) {
-                                tempComment.setReply(reply);
-                            }
-                        }
-                        finalCommentList.add(tempComment);
-                    }
-                }
-                commentList = null;
-                if (reversedStatus == 14) {
-                    agreementList = getActiveAgreements(Integer.parseInt(murabahApplication.getId()));
-                    murabahApplication.setAgreementList(agreementList);
-                    agreementList = null;
-
-                    purchaseOrderList = getAllPurchaseOrderforCommodity(murabahApplication.getId());
-                    murabahApplication.setPurchaseOrderList(purchaseOrderList);
-                    purchaseOrderList = null;
-                    murabahApplication.setInstitutionInvestAccount(GlobalParameters.getInstance().getInstitutionInvestAccount());
-                }
-                murabahApplication.setCommentList(finalCommentList);
-                finalCommentList = new ArrayList<>();
-            }
-        }
-        return murabahApplications;
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_REVERSED_APPLICATION, parameterMap, murabahApplicationRowMapper);
     }
     
     @Override
@@ -639,8 +555,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<MurabahApplication> getMurabahApplicationForCurrentLevelAndOverRoleStatus(String currentLevel) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_current_level", currentLevel);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_LEVEL_STATUS, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
-
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_LEVEL_STATUS, parameterMap, murabahApplicationRowMapper);
     }
 
     @Override
@@ -648,7 +563,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_page_size", pageSize);
         parameterMap.put("pl01_page_number", pageNumber);
-        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_LIMITED_APPROVED_CUSTOMER, parameterMap, new BeanPropertyRowMapper<>(MurabahApplication.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_LIMITED_APPROVED_CUSTOMER, parameterMap, murabahApplicationRowMapper);
     }
 
     @Override
@@ -1070,15 +985,15 @@ public class OracleUnifiedRepository implements LSFRepository {
     
     @Override
     public List<MarginabilityGroup> getMarginabilityGroups() {
-        return oracleRepository.getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_ALL_GROUPS_L11, null, new BeanPropertyRowMapper<>(MarginabilityGroup.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_ALL_GROUPS_L11, null, marginabilityGroupRowMapper);
     }
 
     @Override
-    public MarginabilityGroup getMarginabilityGroup(String groupId) {
-        Map<String, Object> parameterMap = new HashMap<>();
-        parameterMap.put("pl11_marginability_grp_id", groupId);
-        List<MarginabilityGroup> marginabilityGroupList =
-                oracleRepository.getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_MARGIN_GROUP_BY_ID, parameterMap, new BeanPropertyRowMapper<>(MarginabilityGroup.class));
+        public MarginabilityGroup getMarginabilityGroup(String groupId) {
+            Map<String, Object> parameterMap = new HashMap<>();
+            parameterMap.put("pl11_marginability_grp_id", groupId);
+            List<MarginabilityGroup> marginabilityGroupList =
+                    oracleRepository.getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_MARGIN_GROUP_BY_ID, parameterMap, marginabilityGroupRowMapper);
         if (marginabilityGroupList != null) {
             return marginabilityGroupList.size() > 0 ? marginabilityGroupList.get(0) : null;
         } else {
@@ -1088,7 +1003,7 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     @Override
     public List<MarginabilityGroup> getDefaultMarginGroups() {
-        return oracleRepository.getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_DEFAULT_GROUP_L11, null, new BeanPropertyRowMapper<>(MarginabilityGroup.class));
+        return oracleRepository.getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_DEFAULT_GROUP_L11, null, marginabilityGroupRowMapper);
     }
 
     @Override
@@ -3044,4 +2959,77 @@ public class OracleUnifiedRepository implements LSFRepository {
         return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L04_GET_USER_DOCS_BY_APPID, parameterMap, new BeanPropertyRowMapper<>(Documents.class));
 
     }
+
+    private final RowMapper<MurabahApplication> murabahApplicationRowMapper = (rs, rowNum) -> {
+        MurabahApplication application = new MurabahApplication();
+        application.setId(rs.getString("l01_app_id"));
+        application.setCustomerId(rs.getString("l01_customer_id"));
+        application.setFullName(rs.getString("l01_full_name"));
+        application.setOccupation(rs.getString("l01_occupation"));
+        application.setEmployer(rs.getString("l01_employer"));
+        application.setSelfEmp(rs.getInt("l01_is_self_emp") == 1);
+        application.setLineOfBusiness(rs.getString("l01_line_of_bisiness"));
+        application.setAvgMonthlyIncome(rs.getDouble("l01_avg_monthly_income"));
+        application.setFinanceRequiredAmt(rs.getDouble("l01_finance_req_amt"));
+        application.setAddress(rs.getString("l01_address"));
+        application.setMobileNo(rs.getString("l01_mobile_no"));
+        application.setTeleNo(rs.getString("l01_telephone_no"));
+        application.setEmail(rs.getString("l01_email"));
+        application.setFax(rs.getString("l01_fax"));
+        application.setDibAcc(rs.getString("l01_dib_acc"));
+        application.setTradingAcc(rs.getString("l01_trading_acc"));
+        application.setOtherBrkAvailable(rs.getInt("l01_is_other_brk_available") == 1);
+        application.setOtherBrkNames(rs.getString("l01_other_brk_names"));
+        application.setOtherBrkAvgPf(rs.getString("l01_other_brk_avg_pf"));
+        application.setOverallStatus(rs.getString("l01_overall_status"));
+        application.setCurrentLevel(rs.getInt("l01_current_level"));
+        application.setTypeofFacility(rs.getString("l01_type_of_facility"));
+        application.setDate(rs.getString("l01_date"));
+        application.setFacilityType(rs.getString("l01_facility_type"));
+        application.setProposalDate(rs.getString("l01_proposal_date"));
+        application.setProposedLimit(rs.getDouble("l01_proposal_limit"));
+        application.setReversedTo(rs.getString("l01_revised_to"));
+        application.setReversedFrom(rs.getString("l01_revised_from"));
+        application.setIsEditable(rs.getInt("l01_is_locked") == 0);
+        application.setIsReversed(rs.getInt("l01_is_reversed") == 1);
+        application.setIsEdited(rs.getInt("l01_is_edited") == 1);
+        application.setInitialRAPV(rs.getDouble("l01_initial_rapv"));
+        application.setCashAccount(rs.getString("l01_cash_acc"));
+        application.setAvailableCashBalance(rs.getDouble("l01_cash_balance"));
+        application.setTradingAccExchange(rs.getString("l01_trading_acc_exchange"));
+        application.setReviewDate(rs.getString("l01_review_date"));
+        application.setAdminFeeCharged(rs.getDouble("l01_admin_fee_charged"));
+        application.setMaximumNumberOfSymbols(rs.getInt("l01_max_symbol_cnt"));
+        application.setOtp(rs.getString("l01_otp"));
+        application.setOtpGeneratedTime(rs.getLong("l01_otp_generated_time"));
+        application.setCustomerReferenceNumber(rs.getString("l01_customer_ref_no"));
+        application.setZipCode(rs.getString("l01_zip_code"));
+        application.setBankBranchName(rs.getString("l01_bank_brch_name"));
+        application.setCity(rs.getString("l01_city"));
+        application.setPoBox(rs.getString("l01_pobox"));
+        application.setLsfAccountDeletionState(rs.getInt("l01_acc_closed_status"));
+        application.setPreferedLanguage(rs.getString("l01_prefered_language"));
+        application.setDiscountOnProfit(rs.getInt("l01_discount_on_profit"));
+        application.setProfitPercentage(rs.getDouble("l01_profit_percentage"));
+        application.setAutomaticSettlement(rs.getInt("l01_automatic_settlement") == 1);
+        application.setProductType(rs.getInt("l01_product_type"));
+        application.setLastProfitDate(rs.getString("l01_last_profit_date"));
+        application.setRolloverAppId(rs.getString("l01_rollover_app_id"));
+        application.setRolloverCount(rs.getInt("l01_rollover_count"));
+        return application;
+    };
+
+    private final RowMapper<MarginabilityGroup> marginabilityGroupRowMapper = (rs, rowNum) -> {
+        MarginabilityGroup marginabilityGroup = new MarginabilityGroup();
+        marginabilityGroup.setId(rs.getString("l11_marginability_grp_id"));
+        marginabilityGroup.setGroupName(rs.getString("l11_group_name"));
+        marginabilityGroup.setCreatedDate(rs.getString("l11_created_date"));
+        marginabilityGroup.setStatus(rs.getInt("l11_status"));
+        marginabilityGroup.setCreatedBy(rs.getString("l11_created_by"));
+        marginabilityGroup.setApprovedBy(rs.getString("l11_approved_by"));
+        marginabilityGroup.setIsDefault(rs.getInt("l11_is_default"));
+        marginabilityGroup.setAdditionalDetails(rs.getString("l11_additional_details"));
+        marginabilityGroup.setGlobalMarginablePercentage(rs.getDouble("l11_global_marginability_perc"));
+        return marginabilityGroup;
+    };
 }
