@@ -22,8 +22,7 @@ import java.util.Properties;
  */
 @Configuration
 @EnableJms
-@ConditionalOnProperty(name = "lsf.jms.enabled",
-                       havingValue = "true")
+@ConditionalOnProperty(name = "lsf.jms.enabled", havingValue = "true")
 public class JmsConfiguration {
 
     @Value("${spring.jms.jndi-name:java:/JmsXA}")

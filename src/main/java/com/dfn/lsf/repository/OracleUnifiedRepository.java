@@ -190,11 +190,11 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<MurabahApplication> getMurabahAppicationApplicationID(String applicationID) {
         try {
+            RowMapper<MurabahApplication> rowMapper = rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION);
             SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
                     .withCatalogName(DBConstants.PKG_L01_APPLICATION)
                     .withProcedureName(DBConstants.PROC_GET_BY_APPLICATION_ID)
-                    .returningResultSet("CURSOR", 
-                            new BeanPropertyRowMapper<>(MurabahApplication.class));
+                    .returningResultSet("pview", rowMapper);
             
             MapSqlParameterSource params = new MapSqlParameterSource()
                     .addValue("pl01_app_id", applicationID);
@@ -202,7 +202,7 @@ public class OracleUnifiedRepository implements LSFRepository {
             Map<String, Object> result = jdbcCall.execute(params);
             @SuppressWarnings("unchecked")
             List<MurabahApplication> applications = 
-                    (List<MurabahApplication>) result.get("CURSOR");
+                    (List<MurabahApplication>) result.get("pview");
             
             if (applications != null && !applications.isEmpty()) {
                 for (MurabahApplication application : applications) {

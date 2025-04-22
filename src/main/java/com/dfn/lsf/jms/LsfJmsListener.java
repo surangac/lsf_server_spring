@@ -24,8 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(name = "lsf.jms.enabled",
-                       havingValue = "true")
+@ConditionalOnProperty(name = "lsf.jms.enabled", havingValue = "true")
 public class LsfJmsListener {
     
     private final Gson gson;

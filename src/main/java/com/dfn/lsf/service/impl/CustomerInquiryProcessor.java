@@ -262,9 +262,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                                         (LinkedTreeMap<Object, Object>) customerInfoResponse.getResponseObject();
                                 if (resMapFromOMS.containsKey("fullName")) {
                                     if (murabahApplication.getFullName() != null) {
-                                        if (!murabahApplication.getFullName()
-                                                               .equalsIgnoreCase(resMapFromOMS.get("fullName")
-                                                                                              .toString())) {
+                                        if (!murabahApplication.getFullName().equalsIgnoreCase(resMapFromOMS.get("fullName").toString())) {
                                             murabahApplication.setFullName(resMapFromOMS.get("fullName").toString());
                                             isModified = true;
                                         }
