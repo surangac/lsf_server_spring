@@ -20,6 +20,10 @@ import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -524,15 +528,18 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                             }
                             List<PurchaseOrder> poList =
                                     lsfRepository.getPurchaseOrderForApplication(murabahApplication.getId());
-                            try {
-                                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-                                Date apprvDate = sdf.parse(poList.get(0).getApprovedDate());
-                                murabahApplication.setRemainTimeToSell(LSFUtils.getRemainTimeForGracePrd(
-                                        apprvDate,
-                                        GlobalParameters.getInstance()
-                                                        .getGracePeriodforCommoditySell()));
-                            } catch (ParseException e) {
-                                throw new RuntimeException(e);
+                            if (poList != null && !poList.isEmpty()) {
+                                try {
+                                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                                    LocalDateTime apprvDate = LocalDateTime.parse(poList.get(0).getApprovedDate(), formatter);
+                                    murabahApplication.setRemainTimeToSell(LSFUtils.getRemainTimeForGracePrd(
+                                            Date.from(apprvDate.atZone(ZoneId.systemDefault()).toInstant()),
+                                            GlobalParameters.getInstance().getGracePeriodforCommoditySell()));
+                                } catch (DateTimeParseException e) {
+                                    logger.error("Error parsing approved date for application {}: {}", 
+                                            murabahApplication.getId(), e.getMessage());
+                                    throw new RuntimeException("Invalid date format in approved date", e);
+                                }
                             }
                             if (murabahApplication.getRollOverAppId() == null) {
                                 murabahApplication.setRollOverAppId("-1");

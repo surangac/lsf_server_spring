@@ -357,7 +357,8 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
 
                             /*---- For ABIC approve the purchase Order Automatically. ---*/
                             CommonResponse approvalResponse = null;
-                            if (LSFUtils.getConfiguration("client").equalsIgnoreCase("ABIC")) {
+                            // remove this condition as it is not required as we are not using ABIC
+                            //if (LSFUtils.getConfiguration("client").equalsIgnoreCase("ABIC")) {
                                 Map<String, Object> requestMap = new HashMap<>();
                                 requestMap.put("status", 1);
                                 requestMap.put("applicationId", collaterals.getApplicationId());
@@ -372,7 +373,7 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
                                              + collaterals.getApplicationId());
                                 logger.debug("===========LSF : Auto Running Revaluation Process : , Status"
                                              + lsfCore.initialValuation(collaterals.getApplicationId()));
-                            }
+                           // }
                             /*----------------*/
                             application = lsfRepository.getMurabahApplication(collaterals.getApplicationId());
                             String respMessage = Integer.toString(application.getCurrentLevel())

@@ -880,7 +880,7 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     @Override
     public List<Status> getApplicationStatusFlow() {
-        return oracleRepository.getProcResult(DBConstants.PKG_M02_APP_STATE_FLOW, DBConstants.PROC_M02_GET_APP_STATE_FLOW, null, rowMapperFactory.getRowMapper(RowMapperI.APPLICATION_STATUS));
+        return oracleRepository.getProcResult(DBConstants.PKG_M02_APP_STATE_FLOW, DBConstants.PROC_M02_GET_APP_STATE_FLOW, null, rowMapperFactory.getRowMapper(RowMapperI.APP_STATE_FLOW));
     }
     
     @Override
