@@ -180,7 +180,7 @@ public class WebClientIntegrationService implements IntegrationService {
     public String sendMessageToOms(String requestBody) {
         try {
             log.info("OMS REQUEST: {}", requestBody);
-            String response = sendRequest(requestBody, omsBaseUrl);
+            String response = sendRequest(requestBody, omsBaseUrl + IntegrationConstants.OMS_CUSTOMER_INFO_ENDPOINT);
             log.info("OMS RESPONSE: {}", response);
             return response;
         } catch (Exception e) {

@@ -75,3 +75,8 @@ This project is a migration of the existing AKKA-based LSF server to Spring Boot
   - Update notification read status
   - Get message configuration
   - Get notification history
+
+
+.\gradlew clean build
+
+  copy build\libs\lsf-server-spring-1.0.0.jar release\lsf-server.jar

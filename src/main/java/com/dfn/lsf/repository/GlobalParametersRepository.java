@@ -51,6 +51,7 @@ public class GlobalParametersRepository {
             params.setColletralToMarginPercentage(rs.getDouble("m01_collatreal_to_margin_perc"));
             params.setMarketOpenTime(rs.getString("m01_market_open_time"));
             params.setMarketClosedTime(rs.getString("m01_market_closed_time"));
+            params.setMaxBrokerageLimit(rs.getLong("m01_max_brokerage_limit"));
             params.setVatPercentage(rs.getDouble("m01_vat_amount"));
             params.setMaxNumberOfActiveContracts(rs.getInt("m01_max_active_contracts"));
             params.setShareAdminFee(rs.getDouble("m01_share_admin_fee"));

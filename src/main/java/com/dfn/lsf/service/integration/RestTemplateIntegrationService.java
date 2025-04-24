@@ -175,7 +175,7 @@ public class RestTemplateIntegrationService implements IntegrationService {
     public String sendMessageToOms(String requestBody) {
         try {
             log.info("OMS REQUEST: {}", requestBody);
-            String response = sendRequest(requestBody, omsBaseUrl);
+            String response = sendRequest(requestBody, omsBaseUrl + IntegrationConstants.OMS_CUSTOMER_INFO_ENDPOINT);
             log.info("OMS RESPONSE: {}", response);
             return response;
         } catch (Exception e) {
@@ -336,7 +336,7 @@ public class RestTemplateIntegrationService implements IntegrationService {
     public String handleOmsRequest(String requestBody, String producerName) {
         log.info("OMS REQUEST: {}", requestBody);
         try {
-            String url = mapProducerNameToUrl(producerName, omsBaseUrl);
+            String url = mapProducerNameToUrl(producerName, omsBaseUrl + IntegrationConstants.OMS_CUSTOMER_INFO_ENDPOINT);
             String stringResponse = sendRequest(requestBody, url);
             log.info("OMS RESPONSE: {}", stringResponse);
             
@@ -351,7 +351,7 @@ public class RestTemplateIntegrationService implements IntegrationService {
     @Override
     public String acknowledgeReportGeneration(String requestBody, String producerName) {
         try {
-            String url = mapProducerNameToUrl(producerName, omsBaseUrl);
+            String url = mapProducerNameToUrl(producerName, omsBaseUrl + IntegrationConstants.OMS_CUSTOMER_INFO_ENDPOINT);
             sendRequest(requestBody, url);
             return null; // Original method doesn't actually use the response
         } catch (Exception e) {
@@ -423,7 +423,7 @@ public class RestTemplateIntegrationService implements IntegrationService {
     public CompletableFuture<String> sendRequestAsync(String requestBody, String producerName) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                String url = mapProducerNameToUrl(producerName, omsBaseUrl);
+                String url = mapProducerNameToUrl(producerName, omsBaseUrl + IntegrationConstants.OMS_CUSTOMER_INFO_ENDPOINT);
                 return sendRequest(requestBody, url);
             } catch (Exception e) {
                 log.error("Error in async request", e);

@@ -67,13 +67,14 @@ public class MurabahApplicationPersistProcessor implements MessageProcessor {
 
     private String createApplication(Map<String, Object> map) {
         ArrayList<Symbol> pflist = null;
-        String userName = "";
         String dibAcc;
+        String customerId = "";
 
-        if (map.containsKey("securityKey")) {
-            String[] response = CustomEncryption.getDecrypted(map.get("securityKey").toString()).split("\\|");
-            userName = response[0];
+
+        if (map.containsKey("customerId")) {
+            customerId = map.get("customerId").toString();
         }
+
         List<Symbol> symbolList = new ArrayList<>();
         CommonResponse cmr = new CommonResponse();
         if (map.get("tradingAcc").toString().equals("")) {
@@ -82,7 +83,7 @@ public class MurabahApplicationPersistProcessor implements MessageProcessor {
             return gson.toJson(cmr);
         }
         String tradingAcc = map.get("tradingAcc").toString();
-        List<MurabahApplication> applicationList = lsfRepository.getNotGrantedApplication(userName);
+        List<MurabahApplication> applicationList = lsfRepository.getNotGrantedApplication(customerId);
         //geMurabahAppicationUserIDFilteredByClosedApplication(userName);
         if (applicationList != null) {
             if (applicationList.size() != 0) {
@@ -141,7 +142,8 @@ public class MurabahApplicationPersistProcessor implements MessageProcessor {
         murabahApplication.setFinanceRequiredAmt(Double.parseDouble(map.get("financeRequiredAmt").toString()));
 
         double totalOutstanding = lsfRepository.getMasterAccountOutstanding();
-        double maxAvailableCashBalanceInMasterAccount = GlobalParameters.getInstance().getMaxBrokerageLimit()
+        Long maxBrokerageLimit = GlobalParameters.getInstance().getMaxBrokerageLimit();
+        double maxAvailableCashBalanceInMasterAccount = (maxBrokerageLimit != null ? maxBrokerageLimit : 0.0) 
                                                         - totalOutstanding;
         logger.debug("===========MaxBrokerageLimit :" + GlobalParameters.getInstance().getMaxBrokerageLimit());
         logger.debug("===========ABIC Outstanding :" + totalOutstanding);
