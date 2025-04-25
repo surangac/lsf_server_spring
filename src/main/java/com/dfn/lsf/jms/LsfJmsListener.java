@@ -1,6 +1,5 @@
 package com.dfn.lsf.jms;
 
-
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
@@ -14,7 +13,6 @@ import com.dfn.lsf.service.impl.UpdateOrderStatusProcessor;
 import com.dfn.lsf.util.LsfConstants;
 import com.google.gson.Gson;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -22,7 +20,6 @@ import lombok.extern.slf4j.Slf4j;
  * Replaces the AKKA-based implementation in the original system
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 @ConditionalOnProperty(name = "lsf.jms.enabled", havingValue = "true")
 public class LsfJmsListener {
@@ -34,11 +31,26 @@ public class LsfJmsListener {
     private final SettlementCalculationProcessor settlementCalculationProcessor;
     private final DepositResponseHandlingProcessor depositWithdrawProcessor;
     
+    public LsfJmsListener(
+            Gson gson,
+            ExchangeAccountProcessor exchangeAccountProcessor,
+            LsfOmsValidatorAbicProcessor lsfOmsValidatorProcessor,
+            UpdateOrderStatusProcessor updateOrderStatusProcessor,
+            SettlementCalculationProcessor settlementCalculationProcessor,
+            DepositResponseHandlingProcessor depositWithdrawProcessor) {
+        this.gson = gson;
+        this.exchangeAccountProcessor = exchangeAccountProcessor;
+        this.lsfOmsValidatorProcessor = lsfOmsValidatorProcessor;
+        this.updateOrderStatusProcessor = updateOrderStatusProcessor;
+        this.settlementCalculationProcessor = settlementCalculationProcessor;
+        this.depositWithdrawProcessor = depositWithdrawProcessor;
+    }
+    
     /**
-     * Handles messages from the JBoss TO_LSF_QUEUE
+     * Handles messages from the ActiveMQ TO_LSF_QUEUE
      * @param message Text message from JMS queue
      */
-    @JmsListener(destination = "${lsf.jms.queue.to-lsf:TO_LSF_QUEUE}")
+    @JmsListener(destination = "${lsf.jms.queue.to-lsf:TO_LSF_QUEUE}", containerFactory = "jmsListenerContainerFactory")
     public void handleJmsMessage(String message) {
         log.info("Received message from JMS queue: {}", message);
         
@@ -85,10 +97,10 @@ public class LsfJmsListener {
     }
     
     /**
-     * Process message using the LsfCoreProcessor
+     * Process message using the ExchangeAccountProcessor
      */
     private void accountUpdateProcessor(String message, String subMessageType) {
-        log.info("Processing with core processor: {}", subMessageType);
+        log.info("Processing with account processor: {}", subMessageType);
         exchangeAccountProcessor.process(message);
     }
     
@@ -100,19 +112,27 @@ public class LsfJmsListener {
         lsfOmsValidatorProcessor.process(message);
     }
 
+    /**
+     * Process message using the UpdateOrderStatusProcessor
+     */
     private void processOrderStatusUpdate(String message, String subMessageType) {
         log.info("Processing order status update: {}", subMessageType);
         updateOrderStatusProcessor.process(message);
     }
 
+    /**
+     * Process message using the SettlementCalculationProcessor
+     */
     private void processWithSettlementCalculation(String message, String subMessageType) {
         log.info("Processing with settlement calculation: {}", subMessageType);
         settlementCalculationProcessor.process(message);
     }
 
+    /**
+     * Process message using the DepositResponseHandlingProcessor
+     */
     private void processWithDepositWithdraw(String message, String subMessageType) {
         log.info("Processing with deposit/withdraw: {}", subMessageType);
         depositWithdrawProcessor.process(message);
     }
-
-} 
+}

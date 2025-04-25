@@ -1256,7 +1256,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl13_l01_app_id", applicationId);
         parameterMap.put("pl13_l08_exchange", exchange);
-        return oracleRepository.getProcResult(DBConstants.PKG_L13_SYMBOL_WISH_LIST, DBConstants.PROC_GET_WISH_LIST_SYMBOLS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
+        return oracleRepository.getProcResult(DBConstants.PKG_L13_SYMBOL_WISH_LIST, DBConstants.PROC_GET_WISH_LIST_SYMBOLS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.EXCHANGE_SYMBOLS));
     }
 
     @Override
