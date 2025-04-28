@@ -718,7 +718,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<Documents> getComparedCustomerDocumentList(String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl04_l01_app_id", applicationID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L04_GET_USER_DOCS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.USER_APPLICATION_DOCUMENTS));
+        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L04_GET_USER_DOCS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.USER_DOCUMENTS));
 
     }
     
