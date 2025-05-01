@@ -15,36 +15,31 @@ import com.dfn.lsf.model.requestMsg.OMSQueueRequest;
 import com.dfn.lsf.model.responseMsg.OMSQueueResponse;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
-import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.util.Helper;
 import com.dfn.lsf.util.LSFUtils;
 import com.dfn.lsf.util.LsfConstants;
-import com.google.gson.Gson;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.google.gson.Gson;
 
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class LsfOmsValidatorAbicProcessor implements MessageProcessor   {
+public class LsfOmsValidatorAbicProcessor {
 
     private final Gson gson;
     private final LSFRepository lsfRepository;
     private final Helper helper;
     private final LsfCoreService lsfCoreService;
 
-    @Override
-    public String process(String messageString) {
-        Map<String, Object> requestMap = gson.fromJson(messageString, new com.google.gson.reflect.TypeToken<Map<String, Object>>(){}.getType());
-        Integer subMessageType = (Integer) requestMap.get("subMessageType");
-        OMSQueueRequest request = gson.fromJson((String) requestMap.get("request"), OMSQueueRequest.class);
+    public OMSQueueResponse process(OMSQueueRequest request) {
         
         OMSQueueResponse response = new OMSQueueResponse();
-        log.info("Processing core operation request with subMessageType: {}", subMessageType);
+        log.info("Processing core operation request with subMessageType: {}", request.getMessageType());
 
-        switch (subMessageType) {
+        switch (request.getMessageType()) {
             case LsfConstants.APPROVE_ORDER_FOR_FTV: {
                 log.debug("===========LSF :Validating Order");
                 response.setReqType(LsfConstants.RESPONSE_APPROVE_ORDER_FOR_FTV);
@@ -68,16 +63,18 @@ public class LsfOmsValidatorAbicProcessor implements MessageProcessor   {
                 break;
             }
         }
-        return null;
+        return response;
     }
 
-    private String validateFtvForFirstMargineCall(OMSQueueRequest request, OMSQueueResponse response) {
+    private void validateFtvForFirstMargineCall(OMSQueueRequest request, OMSQueueResponse response) {
         //List<MurabahApplication> applicationList = lsfRepository.geMurabahAppicationUserID(request.getCustomerId());
         MurabahApplication application = lsfRepository.getMurabahApplication(request.getContractId());
         response.setParams(request.getPendingId());
         if (application == null) {
             response.setApproved(false);
-             gson.toJson(response);
+            response.setRejectCode(1);
+            log.debug("===========LSF : Application not found for contract id :" + request.getContractId());
+            return;
         }
         MApplicationCollaterals collaterals=(MApplicationCollaterals)lsfCoreService.reValuationProcess(application,true);
         log.debug("===========LSF : Current FTV :" + collaterals.getFtv() + " , Current Outstanding Balance :" + collaterals.getOutstandingAmount() + " , Order Value :" + request.getAmount());
@@ -156,10 +153,9 @@ public class LsfOmsValidatorAbicProcessor implements MessageProcessor   {
         }
         log.debug("===========LSF :LSF Response to OMS Validation Message :" + gson.toJson(response));
         helper.OMSValidationResponseRelated(gson.toJson(response));
-        return gson.toJson(response);
     }
 
-    private Object validateFTVForAgreedLimit(OMSQueueRequest request, OMSQueueResponse response) {
+    private void validateFTVForAgreedLimit(OMSQueueRequest request, OMSQueueResponse response) {
         MurabahApplication application = null;
         try {
             application = lsfRepository.getMurabahApplication(request.getContractId());
@@ -169,7 +165,6 @@ public class LsfOmsValidatorAbicProcessor implements MessageProcessor   {
         response.setParams(request.getPendingId());
         if (application == null) {
             response.setApproved(false);
-            gson.toJson(response);
         }
         MApplicationCollaterals collaterals =(MApplicationCollaterals)lsfCoreService.reValuationProcess(application,true);
         log.debug("===========LSF : Current FTV :" + collaterals.getFtv() + " , Current Outstanding Balance :" + collaterals.getOutstandingAmount());
@@ -183,7 +178,6 @@ public class LsfOmsValidatorAbicProcessor implements MessageProcessor   {
         }
         log.debug("===========LSF :LSF Response to OMS Validation Message :" + gson.toJson(response));
         helper.OMSValidationResponseRelated(gson.toJson(response));
-        return gson.toJson(response);
     }
 
     private Object handleRIALogOut(OMSQueueRequest request) {
@@ -206,7 +200,6 @@ public class LsfOmsValidatorAbicProcessor implements MessageProcessor   {
         response.setParams(request.getPendingId());
         if (application == null) {
             response.setApproved(false);
-            gson.toJson(response);
         }
 
         MApplicationCollaterals collaterals=(MApplicationCollaterals)lsfCoreService.updateHoldingsProcessor(application);

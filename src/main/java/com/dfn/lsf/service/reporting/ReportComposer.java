@@ -2,6 +2,7 @@ package com.dfn.lsf.service.reporting;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.dfn.lsf.model.ReportConfigObject;
 import com.dfn.lsf.model.ReportCompletedResponse;
@@ -38,6 +39,7 @@ import com.dfn.lsf.model.GlobalParameters;
 @Slf4j
 @RequiredArgsConstructor
 @Service
+@Transactional
 public class ReportComposer {
 
     private final LSFRepository lsfRepository;
@@ -49,93 +51,84 @@ public class ReportComposer {
     private String LSF_IMG_PATH;
 
     public Object generateReport(ReportConfigObject reportConfigObject) {
-        Map<String, Object> parameterMap = new HashMap<>();
-        parameterMap = getParameters(reportConfigObject);
-        Collection<Map<String, ?>> reportDataList = new ArrayList<>();
-        reportDataList = getData(reportConfigObject);
         try {
-            ReportCompletedResponse response = (ReportCompletedResponse) getReportAsStream(reportDataList, parameterMap, reportConfigObject);
-            return response;
+            Map<String, Object> parameterMap = getParameters(reportConfigObject);
+            Collection<Map<String, ?>> reportDataList = getData(reportConfigObject);
+            return getReportAsStream(reportDataList, parameterMap, reportConfigObject);
         } catch (Exception e) {
-            ReportCompletedResponse response = new ReportCompletedResponse(-1, null, reportConfigObject.getReportDestination(), reportConfigObject.getAdminUserID(), null, null);
-            return response;
+            log.error("Error generating report: {}", e.getMessage(), e);
+            return new ReportCompletedResponse(-1, null, reportConfigObject.getReportDestination(), 
+                reportConfigObject.getAdminUserID(), null, null);
         }
-
     }
 
     public Object generateReport(ReportConfigObject reportConfigObject, StockConcentrationRptData stockConcentrationRptData) {
-        Map<String, Object> parameterMap = new HashMap<>();
-        OutputStream  response= null;
-        parameterMap = getParameters(reportConfigObject,stockConcentrationRptData);
-        Collection<Map<String, ?>> reportDataList = new ArrayList<>();
-        reportDataList = getData(reportConfigObject, stockConcentrationRptData);
         try {
-            response = (OutputStream) getReportAsStream(reportDataList, parameterMap, reportConfigObject);
-            return response;
+            Map<String, Object> parameterMap = getParameters(reportConfigObject, stockConcentrationRptData);
+            Collection<Map<String, ?>> reportDataList = getData(reportConfigObject, stockConcentrationRptData);
+            return getReportAsStream(reportDataList, parameterMap, reportConfigObject);
         } catch (Exception e) {
-            return response;
+            log.error("Error generating stock concentration report: {}", e.getMessage(), e);
+            return null;
         }
     }
 
-    private static Object getReportAsStream(Collection<Map<String, ?>> reportDataList, Map parameterMap, ReportConfigObject reportConfigObject)
-            throws IOException, JRException {
-
-        try {
-            InputStream inputStream = new FileInputStream(reportConfigObject.getTemplatePath());
+    private Object getReportAsStream(Collection<Map<String, ?>> reportDataList, Map<String, Object> parameterMap, 
+            ReportConfigObject reportConfigObject) throws IOException, JRException {
+        
+        try (InputStream inputStream = new FileInputStream(reportConfigObject.getTemplatePath())) {
             JasperReport jasperReport = (JasperReport) JRLoader.loadObject(inputStream);
-            JRMapCollectionDataSource mapCollectionDataSource = new JRMapCollectionDataSource(reportDataList);
-            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameterMap, mapCollectionDataSource);
-            OutputStream outputStream = new ByteArrayOutputStream();
-            String tempFileName = "";
-            if (reportConfigObject.getReportID() == LsfConstants.INVESTMENT_OFFER_LETTER_RPOERT) {
-                tempFileName = reportConfigObject.getReportName() + "_" + reportConfigObject.getApplicationID();
-            } else {
-                tempFileName = reportConfigObject.getReportName() + "." + System.nanoTime();
-            }
-
+            JRMapCollectionDataSource dataSource = new JRMapCollectionDataSource(reportDataList);
+            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameterMap, dataSource);
+            
+            String tempFileName = generateTempFileName(reportConfigObject);
             String fileFormat = reportConfigObject.getFormat();
-            String filePath = reportConfigObject.getReportDestination() + "/" + tempFileName
-                    + "." + fileFormat;
-            JRExporter exporter = null;
-            switch (fileFormat) {
-                case "pdf":
-                    exporter = new JRPdfExporter();
-                    break;
-                case "xlsx":
-                    exporter = new JRXlsxExporter();
-                    break;
-                case "html":
-                    exporter = new JRHtmlExporter();
-                    break;
-                default:
-                    exporter = new JRPdfExporter();
-            }
-            exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
-            if(reportConfigObject.getReportID() != LsfConstants.STOCK_CONCENTRATION_REPORT){
-                exporter.setParameter(JRExporterParameter.OUTPUT_FILE_NAME, filePath);
-            }else{
-                exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, outputStream);
-            }
-            exporter.setParameter(JRExporterParameter.CHARACTER_ENCODING, "UTF-8");
+            String filePath = reportConfigObject.getReportDestination() + "/" + tempFileName + "." + fileFormat;
+            
+            JRExporter exporter = createExporter(fileFormat);
+            configureExporter(exporter, jasperPrint, filePath, reportConfigObject);
             exporter.exportReport();
-            inputStream.close();
-            ReportCompletedResponse response = new ReportCompletedResponse(1, filePath, reportConfigObject.getReportDestination(), reportConfigObject.getAdminUserID(), reportConfigObject.getFormat(), tempFileName);
 
-            if(reportConfigObject.getReportID() != LsfConstants.STOCK_CONCENTRATION_REPORT){
-                log.info("===========LSF :Report Generated : " + filePath);
-                return response;
-            }else{
-                log.info("===========LSF :Report outputStreamed for report :" + reportConfigObject.getReportName());
-                return  outputStream;
+            if (reportConfigObject.getReportID() != LsfConstants.STOCK_CONCENTRATION_REPORT) {
+                log.info("Report Generated: {}", filePath);
+                return new ReportCompletedResponse(1, filePath, reportConfigObject.getReportDestination(), 
+                    reportConfigObject.getAdminUserID(), reportConfigObject.getFormat(), tempFileName);
+            } else {
+                log.info("Report outputStreamed for report: {}", reportConfigObject.getReportName());
+                return new ByteArrayOutputStream();
             }
-
         } catch (Exception e) {
-            ReportCompletedResponse response = new ReportCompletedResponse(-1, null, reportConfigObject.getReportDestination(), reportConfigObject.getAdminUserID(), null, null);
-            return response;
-
+            log.error("Error in report generation: {}", e.getMessage(), e);
+            return new ReportCompletedResponse(-1, null, reportConfigObject.getReportDestination(), 
+                reportConfigObject.getAdminUserID(), null, null);
         }
+    }
 
+    private String generateTempFileName(ReportConfigObject reportConfigObject) {
+        if (reportConfigObject.getReportID() == LsfConstants.INVESTMENT_OFFER_LETTER_RPOERT) {
+            return reportConfigObject.getReportName() + "_" + reportConfigObject.getApplicationID();
+        }
+        return reportConfigObject.getReportName() + "." + System.nanoTime();
+    }
 
+    private JRExporter createExporter(String fileFormat) {
+        return switch (fileFormat.toLowerCase()) {
+            case "pdf" -> new JRPdfExporter();
+            case "xlsx" -> new JRXlsxExporter();
+            case "html" -> new JRHtmlExporter();
+            default -> new JRPdfExporter();
+        };
+    }
+
+    private void configureExporter(JRExporter exporter, JasperPrint jasperPrint, String filePath, 
+            ReportConfigObject reportConfigObject) {
+        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+        if (reportConfigObject.getReportID() != LsfConstants.STOCK_CONCENTRATION_REPORT) {
+            exporter.setParameter(JRExporterParameter.OUTPUT_FILE_NAME, filePath);
+        } else {
+            exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, new ByteArrayOutputStream());
+        }
+        exporter.setParameter(JRExporterParameter.CHARACTER_ENCODING, "UTF-8");
     }
 
     public Map getParameters(ReportConfigObject reportConfigObject) {
@@ -344,3 +337,4 @@ public class ReportComposer {
         return strDate;
     }
 }
+

@@ -6,7 +6,6 @@ import java.util.Map;
 import com.dfn.lsf.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import com.dfn.lsf.model.CommonResponse;
@@ -63,15 +62,15 @@ public class AuthenticationProcessor implements MessageProcessor {
                     default -> {
                         CommonResponse cmr = new CommonResponse();
                         cmr.setResponseCode(500);
-                        cmr.setErrorMessage(ErrorCodes.ERROR_INVALIED_BANK_ACC.errorDescription());
+                        cmr.setErrorMessage(ErrorCodes.ERROR_EXCEPTION.errorDescription());
                         yield gson.toJson(cmr);
                     }
                 };
             }
-            CommonResponse cmr = new CommonResponse();
-                        cmr.setResponseCode(500);
-                        cmr.setErrorMessage(ErrorCodes.ERROR_INVALIED_BANK_ACC.errorDescription());
-                        return gson.toJson(cmr);
+            CommonResponse response = new CommonResponse();
+            response.setResponseCode(401);
+            response.setErrorMessage("Invalid or expired session");
+            return gson.toJson(response);
         } catch (Exception ex) {
             CommonResponse cmr = new CommonResponse();
             cmr.setResponseCode(500);

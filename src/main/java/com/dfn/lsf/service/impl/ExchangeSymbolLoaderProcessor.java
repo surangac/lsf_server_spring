@@ -1,6 +1,5 @@
 package com.dfn.lsf.service.impl;
 
-import com.dfn.lsf.model.CommonResponse;
 import com.dfn.lsf.model.GlobalParameters;
 import com.dfn.lsf.model.Symbol;
 import com.dfn.lsf.model.SymbolListResponse;
@@ -8,17 +7,14 @@ import com.dfn.lsf.model.requestMsg.CommonInqueryMessage;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.util.Helper;
-import com.dfn.lsf.util.LSFUtils;
 import com.dfn.lsf.util.LsfConstants;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Used in end of the route.
@@ -27,45 +23,19 @@ import java.util.Map;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ExchangeSymbolLoaderProcessor implements MessageProcessor {
-
-    private static final Logger logger = LoggerFactory.getLogger(ExchangeSymbolLoaderProcessor.class);
 
     private final Gson gson;
     private final LSFRepository lsfRepository;
     private final Helper helper;
 
     @Override
+    // schedule to run every 10 minutes
+    @Scheduled(fixedRateString = "${scheduler.exchange.symbol.loader.rate:600000}")
     public String process(String request) {
-        Map<String, Object> map = new HashMap<String, Object>();
-        CommonResponse cmr = new CommonResponse();
-        map = gson.fromJson(request, map.getClass());
-        String actionType = map.get("subMessageType").toString();
-
-/*
-        List<String> exchangeList = new ArrayList<>();
-*/
-        String[] exchangeArray = null;
-        String exchanges = LSFUtils.getConfiguration("exchanges");
-        if (exchanges.contains(",")) {
-            exchangeArray = exchanges.split(",");
-        } else {
-            exchangeArray = new String[1];
-            exchangeArray[0] = exchanges;
-        }
-        //String[] exchangeList = new String[]{ "ADSM", "DFM", "TDWL"};
-
-      /*  String defaultExchange = GlobalParameters.getInstance().getDefaultExchange();
-        exchangeList.add(defaultExchange);*/
-        switch (actionType) {
-            case LsfConstants.LOAD_INIT_DATA: /*-----------Sync All the Exchange Symbols-----------*/
-                for (int j = 0; j < exchangeArray.length; j++) {
-                    syncSymbols(exchangeArray[j]);
-                    cmr.setResponseCode(200);
-                    cmr.setResponseMessage("Symbols Loaded");
-                }
-                return gson.toJson(cmr);
-        }
+        String exchange = GlobalParameters.getInstance().getDefaultExchange();
+        syncSymbols(exchange);
         return null;
     }
 
@@ -92,7 +62,7 @@ public class ExchangeSymbolLoaderProcessor implements MessageProcessor {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error in syncSymbols: {}", e.getMessage());
         }
     }
 }

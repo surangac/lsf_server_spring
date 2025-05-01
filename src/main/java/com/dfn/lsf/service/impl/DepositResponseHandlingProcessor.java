@@ -32,7 +32,7 @@ import static com.dfn.lsf.util.LsfConstants.DEPOSIT_SUCCESS_RESPONSE;
 @Service
 @RequiredArgsConstructor
 @MessageType(DEPOSIT_SUCCESS_RESPONSE)
-public class DepositResponseHandlingProcessor implements MessageProcessor {
+public class DepositResponseHandlingProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(DepositResponseHandlingProcessor.class);
 
@@ -40,25 +40,20 @@ public class DepositResponseHandlingProcessor implements MessageProcessor {
     private final LSFRepository lsfRepository;
     private final Helper helper;
 
-    @Override
-    public String process(String request) {
-        Map<String, Object> map = new HashMap<String, Object>();
-        OMSQueueRequest omsRequest = gson.fromJson((String) request, OMSQueueRequest.class);
-        map = gson.fromJson(request, map.getClass());
+    public void process(OMSQueueRequest omsRequest) {
+
         int messageType = omsRequest.getMessageType();
         switch (messageType) {
             case DEPOSIT_SUCCESS_RESPONSE:
-                return processB2BDepositResponse(map);/*----------Deposit Success Response-----------*/
-            default:
-                return null;
+                processB2BDepositResponse(omsRequest);/*----------Deposit Success Response-----------*/
+            case LsfConstants.WITHDRAW_SUCCESS_RESPONSE:
+                processB2BWithdrawResponse(omsRequest);
         }
     }
 
-    public String processB2BDepositResponse(Map<String, Object> map) {
-        String referenceNo = map.get("referenceNo").toString();
-        //  int status = Integer.parseInt(map.get("status").g(0)/*.replace(".0","")*/);
-        //String narration = map.get("narration").toString();
-        double status = Double.parseDouble(map.get("status").toString());
+    private void processB2BDepositResponse(OMSQueueRequest omsRequest) {
+        String referenceNo = omsRequest.getReferenceNo();
+        double status = omsRequest.getStatus();
         logger.info("===========LSF :Deposit Response Receive from , PoID: "
                     + referenceNo
                     + " , status :"
@@ -89,11 +84,6 @@ public class DepositResponseHandlingProcessor implements MessageProcessor {
                     LsfConstants.RESPONSE_RECEIVED_B2B_FAILED,
                     LsfConstants.DEPOSIT);
         }
-
-       /* po.setApprovalStatus(approvalStatus);
-        po.setApprovedById(approvedbyId);
-        po.setApprovedByName(approvedbyName);*/
-        return null;
     }
 
     private OrderBasket createPOInstruction(PurchaseOrder purchaseOrder) {
@@ -126,5 +116,16 @@ public class DepositResponseHandlingProcessor implements MessageProcessor {
         return resultMap[0].equals("1");
     }
 
+    private void processB2BWithdrawResponse(OMSQueueRequest omsRequest){
+        String referenceNo = omsRequest.getReferenceNo();
+        double status = omsRequest.getStatus();
+        logger.info("===========LSF :Withdraw Response Receive from , referenceNo: " + referenceNo + " , status :" + status /*+ " , narration:" + narration */);
+        if(status > 0){
+            lsfRepository.updateDepositStatus(referenceNo, LsfConstants.RESPONSE_RECEIVED_B2B_SUCCESS, LsfConstants.WITHDRAW);
+        }else{
+            lsfRepository.updateDepositStatus(referenceNo, LsfConstants.RESPONSE_RECEIVED_B2B_FAILED, LsfConstants.WITHDRAW);
+
+        }
+    }
 
 }

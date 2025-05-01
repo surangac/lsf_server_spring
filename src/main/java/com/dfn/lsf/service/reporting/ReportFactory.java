@@ -41,9 +41,10 @@ public class ReportFactory {
         for (String parameter : inputParameters) {
             parameterMap.put(parameter, requestMap.get(parameter));
         }
-        Object object = lsfRepository.getParamsForReporting(reportConfig.getPackageName(),
+        List<Map<String, Object>> responseList = lsfRepository.getParamsForReporting(reportConfig.getPackageName(),
                 reportConfig.getParamProcedure(), reportConfig.getClassName(), parameterMap);
-        return object == null ? new HashMap<String, Object>() : (Map<String, Object>) object;
+
+        return responseList != null && !responseList.isEmpty() ? responseList.get(0) : new HashMap<>();
     }
 
     public GeneratedResponse saveReport(Collection<Map<String, ?>> reportDataList, Map parameterMap,

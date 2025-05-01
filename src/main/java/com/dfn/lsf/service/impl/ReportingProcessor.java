@@ -38,59 +38,59 @@ public class ReportingProcessor implements MessageProcessor {
     @Override
     public String process(String request) {
         log.info("Report processor received a request.");
-            ReportResponse response = null;
-            String rawMessage = (String) request;
-            HashMap<String, String> requestMap = new HashMap<>();
-            requestMap = gson.fromJson(rawMessage, requestMap.getClass());
+        ReportResponse response = null;
+        String rawMessage = (String) request;
+        HashMap<String, String> requestMap = new HashMap<>();
+        requestMap = gson.fromJson(rawMessage, requestMap.getClass());
 
-            String reportName = String.valueOf(requestMap.get("report_name"));
-            String reportFormat = String.valueOf(requestMap.get("report_format"));
-            String reportParams = String.valueOf(requestMap.get("report_summ"));
-            if (!reportName.equals("null")) {
-                ReportConfiguration reportConfig = lsfRepository.getReportConfiguration(reportName);
-                reportConfig.setRequestMap(requestMap);
+        String reportName = String.valueOf(requestMap.get("report_name"));
+        String reportFormat = String.valueOf(requestMap.get("report_format"));
+        String reportParams = String.valueOf(requestMap.get("report_summ"));
+        if (!reportName.equals("null")) {
+            ReportConfiguration reportConfig = lsfRepository.getReportConfiguration(reportName);
+            reportConfig.setRequestMap(requestMap);
 
-                if (reportFormat.equalsIgnoreCase("GRID")) {
-                    List<?> reportDataList = (List) reportFactory.getReportData(requestMap, reportConfig);
+            if (reportFormat.equalsIgnoreCase("GRID")) {
+                List<?> reportDataList = (List) reportFactory.getReportData(requestMap, reportConfig);
+                Map<String, Object> parameterMap = reportFactory.getReportParameters(requestMap, reportConfig);
+                response = new GridResponse();
+                response.setData(reportDataList, parameterMap);
+            } else if (reportFormat.equals("null")) {
+                log.info("Error in generating the report: invalid report format");
+            } else {
+                reportConfig.setFormat(reportFormat);
+                String reportReturnType = String.valueOf(requestMap.get("return_type"));
+                if (reportReturnType.equalsIgnoreCase("REALTIME")) {
+                    List<Map<String, ?>>reportDataList = (List<Map<String, ?>>) reportFactory.getReportData(requestMap, reportConfig);
                     Map<String, Object> parameterMap = reportFactory.getReportParameters(requestMap, reportConfig);
-                    response = new GridResponse();
-                    response.setData(reportDataList, parameterMap);
-                } else if (reportFormat.equals("null")) {
-                    log.info("Error in generating the report: invalid report format");
+                    OutputStream outputStream = reportFactory.getReportAsStream(reportDataList, parameterMap, reportConfig);
+                    response = new StreamingResponse();
+                    response.setData(outputStream);
                 } else {
-                    reportConfig.setFormat(reportFormat);
-                    String reportReturnType = String.valueOf(requestMap.get("return_type"));
-                    if (reportReturnType.equalsIgnoreCase("REALTIME")) {
-                        List<Map<String, ?>>reportDataList = (List<Map<String, ?>>) reportFactory.getReportData(requestMap, reportConfig);
-                        Map<String, Object> parameterMap = reportFactory.getReportParameters(requestMap, reportConfig);
-                        OutputStream outputStream = reportFactory.getReportAsStream(reportDataList, parameterMap, reportConfig);
-                        response = new StreamingResponse();
-                        response.setData(outputStream);
-                    } else {
-                        /*This is for generating report asynchronously. Synchronous send-receive will timeout for larger reports.
-                        * Send only one_way = true requests this path*/
-                        List<Map<String, ?>> reportDataList = (List<Map<String, ?>>) reportFactory.getReportData(requestMap, reportConfig);
-                        Map<String, Object> parameterMap = reportFactory.getReportParameters(requestMap, reportConfig);
+                    /*This is for generating report asynchronously. Synchronous send-receive will timeout for larger reports.
+                    * Send only one_way = true requests this path*/
+                    List<Map<String, ?>> reportDataList = (List<Map<String, ?>>) reportFactory.getReportData(requestMap, reportConfig);
+                    Map<String, Object> parameterMap = reportFactory.getReportParameters(requestMap, reportConfig);
 
-                        response = reportFactory.saveReport(reportDataList, parameterMap, reportConfig);
+                    response = reportFactory.saveReport(reportDataList, parameterMap, reportConfig);
 
-                        try {
-                            helper.acknowledgeReportGeneration(gson.toJson(response), LsfConstants.HTTP_PRODUCER_LSF_ADMIN_REPORT_ACK);
-                        } catch (Exception e) {
-                            log.info("Error in report response: couldn't find producer!!!"); 
-                        }
+                    try {
+                        helper.acknowledgeReportGeneration(gson.toJson(response), LsfConstants.HTTP_PRODUCER_LSF_ADMIN_REPORT_ACK);
+                    } catch (Exception e) {
+                        log.info("Error in report response: couldn't find producer!!!"); 
                     }
                 }
-            } else {
-                log.info("Error in generating the report: empty report name");
             }
+        } else {
+            log.info("Error in generating the report: empty report name");
+        }
 
-            if (response != null) {
-                return gson.toJson(response.returnResponse());
-            } else {
-                log.info("There is nothing to respond!!!");
-                return "No data";
-            }
+        if (response != null) {
+            return gson.toJson(response.returnResponse());
+        } else {
+            log.info("There is nothing to respond!!!");
+            return "No data";
+        }
     }
 
 }

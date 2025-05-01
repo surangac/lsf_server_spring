@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -62,8 +63,9 @@ public class SettlementCalculationProcessor implements MessageProcessor {
         }
         return gson.toJson(cmr);
     }
-
-    private void runSettlementCalculation() {
+// schedule to run every day at 8:00 AM and 4:00 PM 
+    @Scheduled(cron = "0 0 8,16 * * *")
+    public void runSettlementCalculation() {
         String masterCashAccount = null;
         logger.info("===========LSF : Settlement Calculation Request Received  :");
         List<MurabahApplication> murabahApplicationList = lsfRepository.getOrderContractSingedApplications();//

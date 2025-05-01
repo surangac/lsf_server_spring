@@ -25,9 +25,9 @@ import static com.dfn.lsf.util.LsfConstants.UPDATE_ORDER_STATUS_PROCESS;
 @Service
 @MessageType(UPDATE_ORDER_STATUS_PROCESS)
 @RequiredArgsConstructor
-public class UpdateOrderStatusProcessor implements MessageProcessor {
+public class UpdateOrderStatusProcessor {
 
-    private static final Logger logger = LoggerFactory.getLogger(ExchangeAccountProcessor.class);
+    private static final Logger logger = LoggerFactory.getLogger(UpdateOrderStatusProcessor.class);
 
     private final Gson gson;
     private final LSFRepository lsfRepository;
@@ -35,14 +35,7 @@ public class UpdateOrderStatusProcessor implements MessageProcessor {
     private final LsfCoreService lsfCore;
     private final NotificationManager notificationManager;
 
-    @Override
-    public String process(String request) {
-        upadateOrderStatus(request);
-        return null;
-    }
-
-    private Object upadateOrderStatus(String rawMessage) {
-        OMSQueueRequest omsRequest = gson.fromJson(rawMessage, OMSQueueRequest.class);
+    public String process(OMSQueueRequest omsRequest) {
         OrderStatusResponse statusResponse = new OrderStatusResponse();
         statusResponse.setOrderId(omsRequest.getCorrelationId());
         statusResponse.setOrderStatus(omsRequest.getStatus());

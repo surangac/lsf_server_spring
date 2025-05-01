@@ -5,13 +5,12 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import com.dfn.lsf.model.CommonResponse;
 import com.dfn.lsf.model.MessageHeader;
-import com.dfn.lsf.repository.LSFRepository;
+import com.dfn.lsf.service.security.SessionValidationInternalResponse;
+import com.dfn.lsf.service.security.SessionValidator;
 import com.dfn.lsf.util.LsfConstants;
 import com.google.gson.Gson;
 
@@ -28,6 +27,7 @@ public class RequestDispatcherService {
     private final Map<Integer, MessageProcessor> messageProcessors;
 
     private final Gson gson = new Gson();
+    private final SessionValidator sessionValidator;
     
     /**
      * Dispatches client requests to appropriate processor
@@ -42,15 +42,17 @@ public class RequestDispatcherService {
             logger.info("Dispatching client request - Message Type: {}, Sub Message Type: {}, Correlation ID: {}", 
                     header.getMessageType(), header.getSubMessageType(), correlationId);
             
-            // Validate session if not an authorization request
-            if (!isAuthorizationRequest(header) && !validateSession(header.getSecurityKey())) {
-                logger.warn("Invalid session detected for request - Correlation ID: {}", correlationId);
-                return handleInvalidSession();
-            }
-            
             // Find appropriate processor by message type
             int messageType = Integer.parseInt(header.getMessageType());
             MessageProcessor processor = messageProcessors.get(messageType);
+
+            // Validate session if not an authorization request
+            if (!isAuthorizationRequest(header) && !validateSession(header.getSecurityKey())) {
+                logger.warn("Invalid session detected for request - Correlation ID: {}", correlationId);
+                return handleInvalidSession(processor, request);
+            }
+            
+
             if (processor == null) {
                 logger.error("No processor found for message type: {}", header.getMessageType());
                 return createErrorResponse("Unknown message type");
@@ -82,11 +84,11 @@ public class RequestDispatcherService {
             logger.info("Dispatching admin request - Message Type: {}, Sub Message Type: {}, Correlation ID: {}", 
                     header.getMessageType(), header.getSubMessageType(), correlationId);
             
-            // Validate session if not an authorization request
-            if (!isAuthorizationRequest(header) && !validateSession(header.getSecurityKey())) {
-                logger.warn("Invalid session detected for admin request - Correlation ID: {}", correlationId);
-                return handleInvalidSession();
-            }
+            // // Validate session if not an authorization request
+            // if (!isAuthorizationRequest(header) && !validateSession(header.getSecurityKey())) {
+            //     logger.warn("Invalid session detected for admin request - Correlation ID: {}", correlationId);
+            //     return handleInvalidSession();
+            // }
             
             // Find appropriate processor by message type
             int messageType = Integer.parseInt(header.getMessageType());
@@ -112,30 +114,29 @@ public class RequestDispatcherService {
     /**
      * Checks if the request is an authorization request
      */
+
     private boolean isAuthorizationRequest(MessageHeader header) {
-        // return Integer.parseInt(header.getMessageType()) == LsfConstants.MESSAGE_TYPE_AUTHORIZATION_PROCESS;
-        return true;
+        return (Integer.parseInt(header.getMessageType()) == LsfConstants.MESSAGE_TYPE_AUTHORIZATION_PROCESS) && (header.getSecurityKey().equalsIgnoreCase(""));
     }
     
     /**
      * Validates session using repository
      */
     private boolean validateSession(String securityKey) {
-        // if (securityKey == null || securityKey.isEmpty()) {
-        //     return false;
-        // }
-        
-        return true; //lsfRepository.validateSession(securityKey);
+        if (securityKey == null || securityKey.isEmpty()) {
+            return false;
+        }
+        SessionValidationInternalResponse response = sessionValidator.validateSession(securityKey);
+        return response.isValidate();
     }
     
     /**
      * Handles invalid session
      */
-    private String handleInvalidSession() {
-        CommonResponse response = new CommonResponse();
-        response.setResponseCode(401);
-        response.setErrorMessage("Invalid or expired session");
-        return gson.toJson(response);
+    private String handleInvalidSession(MessageProcessor processor, String request) {
+        logger.info("Processing Authentication request with processor: {}", processor.getClass().getSimpleName());
+        String response = processor.process(request);
+        return response;
     }
     
     /**
