@@ -40,17 +40,17 @@ public class AuditInquiryProcessor implements MessageProcessor {
     public  String process(String request) {
         log.info("Processing audit inquiry request: {}", request);
         Map<String, Object> requestMap = gson.fromJson(request, new TypeToken<Map<String, Object>>() {}.getType());
-        String requestType = (String) requestMap.get("requestType");
+        String subMessageType = (String) requestMap.get("subMessageType");
         String response = null;
 
-        switch (requestType) {
+        switch (subMessageType) {
             case LsfConstants.GET_APPLICATION_STATUS_SUMMARY: {//application summary status
                 return getApplicationStatusSummary();
             }
             case LsfConstants.GET_CUSTOMER_SUMMARY_INFO: /*-----Get Customer Details for Order Contract-----*/
                 return getCustomerSummaryInfo(requestMap);
             default:
-                log.error("Invalid request type: {}", requestType);
+                log.error("Invalid request type: {}", subMessageType);
                 return null;
         }
     }
