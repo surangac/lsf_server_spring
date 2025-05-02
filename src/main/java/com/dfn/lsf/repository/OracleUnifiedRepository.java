@@ -655,7 +655,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<ApplicationStatus> applicationStatusSummary() {
         return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION,
-                DBConstants.PROC_L01_GET_APP_STATUS_SUMMARY, new HashMap<String, Object>(), rowMapperFactory.getRowMapper(RowMapperI.APPLICATION_STATUS));
+                DBConstants.PROC_L01_GET_APP_STATUS_SUMMARY, new HashMap<String, Object>(), rowMapperFactory.getRowMapper(RowMapperI.APP_STATUS_SUMMARY));
     }
 
     @Override
