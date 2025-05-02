@@ -31,13 +31,17 @@ public class ExchangeSymbolLoaderProcessor implements MessageProcessor {
     private final Helper helper;
 
     @Override
-    // schedule to run every 10 minutes
-    @Scheduled(fixedRateString = "${scheduler.exchange.symbol.loader.rate:600000}")
     public String process(String request) {
-        String exchange = GlobalParameters.getInstance().getDefaultExchange();
-        syncSymbols(exchange);
+        syncSymbolsProcessor();
         return null;
     }
+
+    @Scheduled(fixedRateString = "${scheduler.exchange.symbol.loader.rate:600000}")
+    public void syncSymbolsProcessor() {
+        String exchange = GlobalParameters.getInstance().getDefaultExchange();
+        syncSymbols(exchange);
+    }
+
 
     private void syncSymbols(String exchangeCode) {
         try {

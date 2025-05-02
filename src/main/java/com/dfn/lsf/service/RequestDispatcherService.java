@@ -26,7 +26,7 @@ public class RequestDispatcherService {
     
     private final Map<Integer, MessageProcessor> messageProcessors;
 
-    private final Gson gson = new Gson();
+    private final Gson gson;
     private final SessionValidator sessionValidator;
     
     /**
