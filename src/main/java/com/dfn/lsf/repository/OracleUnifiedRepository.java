@@ -224,7 +224,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("psymbolCode", symbolCode);
 
-        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_l08_GET_SYMBOL_DIS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
+        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_l08_GET_SYMBOL_DIS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL_DESCRIPTION));
     }
     
     @Override

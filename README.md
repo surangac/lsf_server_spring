@@ -80,3 +80,5 @@ This project is a migration of the existing AKKA-based LSF server to Spring Boot
 .\gradlew clean build
 
   copy build\libs\lsf-server-spring-1.0.0.jar release\lsf-server.jar
+
+  cp build/libs/lsf-server-spring-1.0.0.jar release/lsf-server.jar

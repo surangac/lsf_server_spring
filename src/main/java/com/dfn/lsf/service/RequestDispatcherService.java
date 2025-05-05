@@ -47,10 +47,10 @@ public class RequestDispatcherService {
             MessageProcessor processor = messageProcessors.get(messageType);
 
             // Validate session if not an authorization request
-            if (!isAuthorizationRequest(header) && !validateSession(header.getSecurityKey())) {
-                logger.warn("Invalid session detected for request - Correlation ID: {}", correlationId);
-                return handleInvalidSession(processor, request);
-            }
+            // if (!isAuthorizationRequest(header) && !validateSession(header.getSecurityKey())) {
+            //     logger.warn("Invalid session detected for request - Correlation ID: {}", correlationId);
+            //     return handleInvalidSession(processor, request);
+            // }
             
 
             if (processor == null) {

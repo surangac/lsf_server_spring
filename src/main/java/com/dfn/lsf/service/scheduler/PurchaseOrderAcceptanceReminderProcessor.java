@@ -14,7 +14,7 @@ import com.dfn.lsf.model.PurchaseOrder;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.util.LSFUtils;
-import com.dfn.lsf.util.LsfConstants;   
+import com.dfn.lsf.util.LsfConstants;
 import com.dfn.lsf.util.NotificationManager;
 import com.google.gson.Gson;
 
@@ -79,9 +79,4 @@ public class PurchaseOrderAcceptanceReminderProcessor {
         //return true;
 
     }
-
-    public static void main(String[] args) {
-        System.out.println((Long.valueOf(LSFUtils.getCurrentMiliSecondAsString()) - Long.valueOf("1478167602482")) >= (LsfConstants.MILISECONDS_TO_HOUR * 0.1));
-    }
-
 }
