@@ -693,7 +693,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<Symbol> getInitialAppPortfolio(String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl20_app_id", applicationID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L20_APP_PORTFOLIO, DBConstants.PROC_L20_GET_INITIAL_PORTFOLIO, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
+        return oracleRepository.getProcResult(DBConstants.PKG_L20_APP_PORTFOLIO, DBConstants.PROC_L20_GET_INITIAL_PORTFOLIO, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.INITIAL_PORTFOLIO));
 
     }
 
