@@ -130,9 +130,36 @@ public class OracleJdbcRepository implements OracleRepository {
             SqlParameterSource paramSource = new MapSqlParameterSource(params);
             Map<String, Object> result = jdbcCall.execute(paramSource);
             
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> resultList = (List<Map<String, Object>>) result.get("pview");
-            return resultList != null ? resultList : Collections.emptyList();
+            if (!result.isEmpty()) {
+                // Try uppercase key first (Oracle often returns uppercase)
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> resultList = (List<Map<String, Object>>) result.get("PVIEW");
+                
+                // If null, try lowercase key
+                if (resultList == null) {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> lowercaseResult = (List<Map<String, Object>>) result.get("pview");
+                    resultList = lowercaseResult;
+                }
+                
+                // If both are null, look for any other list in the result
+                if (resultList == null) {
+                    for (String key : result.keySet()) {
+                        Object value = result.get(key);
+                        if (value instanceof List) {
+                            @SuppressWarnings("unchecked")
+                            List<Map<String, Object>> listValue = (List<Map<String, Object>>) value;
+                            resultList = listValue;
+                            logger.info("Found result list with key: {}", key);
+                            break;
+                        }
+                    }
+                }
+                
+                return resultList != null ? resultList : Collections.emptyList();
+            } else {
+                return Collections.emptyList();
+            }
         } catch (Exception e) {
             logger.error("Error executing procedure {}.{}", packageName, procedureName, e);
             return Collections.emptyList();
