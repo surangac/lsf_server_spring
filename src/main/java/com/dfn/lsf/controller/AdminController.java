@@ -36,7 +36,7 @@ public class AdminController {
      * Handles admin report requests
      * Maps to consumer "httpAdminReport" in ABIC_InitComponents
      */
-    @PostMapping("/admin/lsf/report")
+    @PostMapping("/lsf/report/all")
     public ResponseEntity<String> handleAdminReportRequest(@RequestBody String request) {
         logger.info("Received admin report request: {}", request);
         String response = dispatcherService.dispatchAdminRequest(request);
@@ -47,7 +47,7 @@ public class AdminController {
      * Handles report download requests
      * Maps to consumer "httpReportDownload" in ABIC_InitComponents
      */
-    @PostMapping("/admin/lsf/report/download")
+    @PostMapping("/lsf/report/download")
     public ResponseEntity<String> handleReportDownloadRequest(@RequestBody String request) {
         logger.info("Received report download request: {}", request);
         String response = dispatcherService.dispatchAdminRequest(request);

@@ -41,6 +41,7 @@ dependencies {
     
     // Oracle JDBC Driver
     implementation 'com.oracle.database.jdbc:ojdbc11:23.3.0.23.09'
+    implementation 'com.oracle.database.nls:orai18n:23.3.0.23.09'
     
     // JSON Processing - maintain compatibility with existing GSON usage
     implementation 'com.google.code.gson:gson:2.10.1'

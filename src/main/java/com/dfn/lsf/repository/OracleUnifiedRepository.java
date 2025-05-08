@@ -465,13 +465,60 @@ public class OracleUnifiedRepository implements LSFRepository {
         return murabahApplicationListResponse;
     }
     
+    // @Override
+    // public List<MurabahApplication> getSnapshotCurrentLevel(int requestStatus) {
+    //     Map<String, Object> parameterMap = new HashMap<>();
+    //     parameterMap.put("pl01_request_status", requestStatus);
+    //     return oracleRepository.<MurabahApplication>getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_SNAPSHOT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
+    // }
+    
     @Override
     public List<MurabahApplication> getSnapshotCurrentLevel(int requestStatus) {
+        List<Status> statusList = null;
+        List<Comment> commentList = null;
+        List<MurabahApplication> murabahApplications = null;
+        List<Agreement> agreementList = null;
+        List<PurchaseOrder> purchaseOrderList = null;
+
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_request_status", requestStatus);
-        return oracleRepository.<MurabahApplication>getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_SNAPSHOT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
+        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_SNAPSHOT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
+            if (murabahApplications.size() > 0) {
+            for (MurabahApplication murabahApplication : murabahApplications) {
+                List<Comment> finalCommentList = new ArrayList<>();
+                if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
+                    statusList = getApplicationStatus(murabahApplication.getId());
+                    murabahApplication.setAppStatus(statusList);
+                    commentList = getApplicationComment(murabahApplication.getId());
+                    for (Comment comment : commentList) {
+                        if (Integer.parseInt(comment.getParentID()) == 0) {
+                            Comment tempComment = comment;
+                            for (Comment reply : commentList) {
+                                if (reply.getParentID().equalsIgnoreCase(tempComment.getCommentID().trim())) {
+                                    tempComment.setReply(reply);
+                                }
+                            }
+                            finalCommentList.add(tempComment);
+                        }
+                    }
+                    murabahApplication.setCommentList(finalCommentList);
+                    if (requestStatus == 14){
+                        murabahApplication.setInstitutionInvestAccount(GlobalParameters.getInstance().getInstitutionInvestAccount());
+                        agreementList = getActiveAgreements(Integer.parseInt(murabahApplication.getId()));
+                        murabahApplication.setAgreementList(agreementList);
+                        agreementList = null;
+
+                        purchaseOrderList = getAllPurchaseOrderforCommodity(murabahApplication.getId());
+                        murabahApplication.setPurchaseOrderList(purchaseOrderList);
+                        purchaseOrderList = null;
+                    }
+                }
+
+            }
+        }
+        return murabahApplications;
     }
-    
+
     @Override
     public List<MurabahApplication> getHistoryApplication(int filterCriteria, String filterValue, String fromDate, String toDate, int requestStatus) {
         Map<String, Object> parameterMap = new HashMap<>();
