@@ -22,9 +22,4 @@ public class StreamingResponse implements ReportResponse {
     public void setData(Object data, Object summary) {
         this.data = (OutputStream) data;
     }
-
-    @Override
-    public OutputStream returnResponse() {
-        return data;
-    }
 }

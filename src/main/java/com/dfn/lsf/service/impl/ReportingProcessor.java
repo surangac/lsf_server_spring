@@ -86,7 +86,7 @@ public class ReportingProcessor implements MessageProcessor {
         }
 
         if (response != null) {
-            return gson.toJson(response.returnResponse());
+            return gson.toJson(response);
         } else {
             log.info("There is nothing to respond!!!");
             return "No data";

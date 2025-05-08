@@ -1,6 +1,5 @@
 package com.dfn.lsf.model.report;
 
-import com.google.gson.Gson;
 
 /**
  * Created by isurul on 18/3/2016.
@@ -22,10 +21,5 @@ public class GeneratedResponse implements ReportResponse {
     @Override
     public void setData(Object dataList, Object summary) {
 
-    }
-
-    @Override
-    public Object returnResponse() {
-        return (new Gson().toJson(this));
     }
 }

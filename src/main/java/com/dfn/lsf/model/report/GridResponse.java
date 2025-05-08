@@ -58,9 +58,4 @@ public class GridResponse implements ReportResponse {
         this.fields = fields == null ? new ArrayList<>() : (List) fields;
         this.parameters = parameters == null ? new HashMap<>() : (Map) parameters;
     }
-
-    @Override
-    public String returnResponse() {
-        return (new Gson()).toJson(this);
-    }
 }

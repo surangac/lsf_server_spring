@@ -20,9 +20,4 @@ public class SimpleResponse implements ReportResponse {
     public void setData(Object data, Object summary) {
         this.data = (String) data;
     }
-
-    @Override
-    public String returnResponse() {
-        return data;
-    }
 }

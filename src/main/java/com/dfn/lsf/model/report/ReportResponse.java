@@ -7,5 +7,4 @@ package com.dfn.lsf.model.report;
 public interface ReportResponse {
     void setData(Object dataList);
     void setData(Object dataList, Object summary);
-    Object returnResponse();
 }
