@@ -1,80 +1,81 @@
-# Compiled class files
+### Java ###
 *.class
-target/
-build/
-out/
-bin/
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
 
-# Gradle
+### Spring Boot ###
+application-*.yml
+application-*.properties
+!application-example.yml
+!application-example.properties
+
+### Log files ###
+*.log
+logs/
+log/
+
+### Gradle ###
 .gradle/
-gradle/
-gradlew.bat
-gradlew
+build/
 !gradle/wrapper/gradle-wrapper.jar
-**/.gradle/**/*.lock
-**/.gradle/**/*.bin
-**/.gradle/**/*.ser
-**/.gradle/**/fileHashes/
-**/.gradle/**/nb-cache/
+!gradle/wrapper/gradle-wrapper.properties
 
-# IntelliJ IDEA
+### IntelliJ IDEA ###
 .idea/
 *.iws
 *.iml
 *.ipr
+out/
 
-# Eclipse
-.settings/
+### Eclipse ###
+.apt_generated
 .classpath
-.project
 .factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
 
-# VS Code
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
 .vscode/
+*.code-workspace
 
-# Spring Boot
-spring-boot-*.jar
-application-*.yml
-application-*.properties
-!application.yml
-!application.properties
-
-# Logs
-logs/
-*.log
-log/
-
-# OS Files
+### Mac OS ###
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+### Windows ###
 Thumbs.db
-desktop.ini
+Thumbs.db:encryptable
+ehthumbs.db
+*.stackdump
+[Dd]esktop.ini
 
-# Package Files
-*.jar
-*.war
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-# Docker
-docker/
-.env
-
-# Node.js
-node_modules/
-npm-debug.log
-
-# JVM crash logs
-hs_err_pid*
-
-# Application specific
-application-*.yml
-application-*.properties
-!application.yml
-!application.properties
-
-# Temporary files
+### Linux ###
 *~
-*.swp
-*.swo
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+### Project specific ###
+/target/
+/config/application-dev.yml
+/config/application-prod.yml
+/release/*.jar
+!/release/lsf-server.jar 
