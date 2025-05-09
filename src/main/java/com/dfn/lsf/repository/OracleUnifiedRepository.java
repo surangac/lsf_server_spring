@@ -1101,13 +1101,13 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("p08_exchange", exchange);
         parameterMap.put("pl08_app_id", appId);
 
-        List<Map<String, Object>> result = oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL,
+        List<SymbolMarginabilityPercentage> result = oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL,
                                                                        DBConstants.PROC__l08_GET_SYMBOL_MARGINABILITY_PERC,
                                                                        parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL_MARGINABILITY_PERCENTAGE));
 
-        if(result != null && result.size() > 0) {
-            return Double.valueOf(result.get(0).get("marginability_perc").toString());
-        }
+        if(result != null && !result.isEmpty()) {
+                return result.get(0).getMarginabilityPercentage();
+            }
 
         return 0;
     }

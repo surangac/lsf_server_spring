@@ -5,7 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-
 public class SymbolMarginabilityPercentage {
 
     private String symbolCode;
