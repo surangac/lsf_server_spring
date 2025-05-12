@@ -22,6 +22,7 @@ import com.dfn.lsf.util.IntegrationConstants;
 import com.dfn.lsf.util.LsfConstants;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.dfn.lsf.model.QueMsgDto;
 
 import reactor.core.publisher.Mono;
 
@@ -142,9 +143,9 @@ public class WebClientIntegrationService implements IntegrationService {
     }
     
     @Override
-    public boolean sendSmsNotification(String requestBody) {
+    public boolean sendSmsNotification(QueMsgDto queMsgDto) {
         try {
-            sendRequest(requestBody, notificationBaseUrl + IntegrationConstants.SMS_ENDPOINT);
+            sendRequest(queMsgDto, notificationBaseUrl + IntegrationConstants.SMS_ENDPOINT);
             return true;
         } catch (Exception e) {
             log.error("Error sending SMS notification", e);
@@ -153,9 +154,9 @@ public class WebClientIntegrationService implements IntegrationService {
     }
     
     @Override
-    public boolean sendEmailNotification(String requestBody) {
+    public boolean sendEmailNotification(QueMsgDto queMsgDto) {
         try {
-            sendRequest(requestBody, notificationBaseUrl + IntegrationConstants.EMAIL_ENDPOINT);
+            sendRequest(queMsgDto, notificationBaseUrl + IntegrationConstants.EMAIL_ENDPOINT);
             return true;
         } catch (Exception e) {
             log.error("Error sending email notification", e);
@@ -444,7 +445,7 @@ public class WebClientIntegrationService implements IntegrationService {
      * @param url Target URL
      * @return Response as JSON string
      */
-    private String sendRequest(String requestBody, String url) {
+    private String sendRequest(Object requestBody, String url) {
         return webClient.post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_JSON)

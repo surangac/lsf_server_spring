@@ -21,7 +21,7 @@ import java.util.concurrent.Executors;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-
+import com.dfn.lsf.model.QueMsgDto;
 @ExtendWith(MockitoExtension.class)
 public class RestTemplateIntegrationServiceTest {
 
@@ -83,9 +83,13 @@ public class RestTemplateIntegrationServiceTest {
         
         when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(String.class)))
                 .thenReturn(mockResponse);
+        
+        QueMsgDto queMsgDto = new QueMsgDto();
+        queMsgDto.setQueueName("thirdPartySmsQueue");
+        queMsgDto.setMessage(requestBody);
 
         // Act
-        boolean result = integrationService.sendSmsNotification(requestBody);
+        boolean result = integrationService.sendSmsNotification(queMsgDto);
 
         // Assert
         assertTrue(result);
@@ -103,8 +107,12 @@ public class RestTemplateIntegrationServiceTest {
         when(restTemplate.postForObject(anyString(), any(HttpEntity.class), eq(String.class)))
                 .thenThrow(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
 
+        QueMsgDto queMsgDto = new QueMsgDto();
+        queMsgDto.setQueueName("thirdPartySmsQueue");
+        queMsgDto.setMessage(requestBody);
+
         // Act
-        boolean result = integrationService.sendSmsNotification(requestBody);
+        boolean result = integrationService.sendSmsNotification(queMsgDto);
 
         // Assert
         assertFalse(result);

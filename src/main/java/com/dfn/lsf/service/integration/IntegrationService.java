@@ -1,8 +1,11 @@
 package com.dfn.lsf.service.integration;
 
 import com.dfn.lsf.model.CommonResponse;
+
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import com.dfn.lsf.model.QueMsgDto;
 
 /**
  * Integration service for making HTTP requests to external systems
@@ -85,18 +88,18 @@ public interface IntegrationService {
     /**
      * Send SMS notification
      *
-     * @param requestBody Request body as JSON string
+     * @param queMsgDto QueMsgDto object
      * @return Success status
      */
-    boolean sendSmsNotification(String requestBody);
+    boolean sendSmsNotification(QueMsgDto queMsgDto);
 
     /**
      * Send email notification
      *
-     * @param requestBody Request body as JSON string
+     * @param queMsgDto QueMsgDto object
      * @return Success status
      */
-    boolean sendEmailNotification(String requestBody);
+    boolean sendEmailNotification(QueMsgDto queMsgDto);
 
     /**
      * Send message to iFlex system

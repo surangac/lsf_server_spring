@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.dfn.lsf.model.CommonResponse;
@@ -14,12 +15,15 @@ import com.dfn.lsf.model.Symbol;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.integration.IntegrationService;
 import com.google.gson.Gson;
+import com.dfn.lsf.model.QueMsgDto;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class Helper {
     private static final transient Logger logger = LoggerFactory.getLogger(Helper.class);
     private static final Gson gson = new Gson();
@@ -27,10 +31,11 @@ public class Helper {
     private final LSFRepository lsfRepository;
     private final IntegrationService integrationService;
 
-    public Helper(LSFRepository lsfRepository, IntegrationService integrationService) {
-        this.lsfRepository = lsfRepository;
-        this.integrationService = integrationService;
-    }
+    @Value("${integration.notification.third.party.sms.queue}")
+    private String thirdPartySmsQueue;
+
+    @Value("${integration.notification.third.party.email.queue}")
+    private String thirdPartyEmailQueue;
 
     public String getCustomerRelatedOMSData(String message) {
         logger.info("===========LSF : OMS REQUEST" + message);
@@ -103,7 +108,10 @@ public class Helper {
 
     public boolean sendToSMSProducer(String message) {
         try {
-            integrationService.sendSmsNotification(message);
+            QueMsgDto queMsgDto = new QueMsgDto();
+            queMsgDto.setQueueName(thirdPartySmsQueue);
+            queMsgDto.setMessage(message);
+            integrationService.sendSmsNotification(queMsgDto);
             return true;
         } catch (Exception e) {
             logger.error("Error sending SMS notification", e);
@@ -113,7 +121,10 @@ public class Helper {
 
     public boolean sendToEmailProducer(String message) {
         try {
-            integrationService.sendEmailNotification(message);
+            QueMsgDto queMsgDto = new QueMsgDto();
+            queMsgDto.setQueueName(thirdPartyEmailQueue);
+            queMsgDto.setMessage(message);
+            integrationService.sendEmailNotification(queMsgDto);
             return true;
         } catch (Exception e) {
             logger.error("Error sending email notification", e);

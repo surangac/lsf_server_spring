@@ -23,6 +23,7 @@ import com.dfn.lsf.util.IntegrationConstants;
 import com.dfn.lsf.util.LsfConstants;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.dfn.lsf.model.QueMsgDto;
 
 /**
  * Implementation of IntegrationService using RestTemplate
@@ -137,9 +138,9 @@ public class RestTemplateIntegrationService implements IntegrationService {
     }
     
     @Override
-    public boolean sendSmsNotification(String requestBody) {
+    public boolean sendSmsNotification(QueMsgDto queMsgDto) {
         try {
-            sendRequest(requestBody, notificationBaseUrl + IntegrationConstants.SMS_ENDPOINT);
+            sendRequest(queMsgDto, notificationBaseUrl + IntegrationConstants.SMS_ENDPOINT);
             return true;
         } catch (Exception e) {
             log.error("Error sending SMS notification", e);
@@ -148,9 +149,9 @@ public class RestTemplateIntegrationService implements IntegrationService {
     }
     
     @Override
-    public boolean sendEmailNotification(String requestBody) {
+    public boolean sendEmailNotification(QueMsgDto queMsgDto) {
         try {
-            sendRequest(requestBody, notificationBaseUrl + IntegrationConstants.EMAIL_ENDPOINT);
+            sendRequest(queMsgDto, notificationBaseUrl + IntegrationConstants.EMAIL_ENDPOINT);
             return true;
         } catch (Exception e) {
             log.error("Error sending email notification", e);
@@ -439,19 +440,19 @@ public class RestTemplateIntegrationService implements IntegrationService {
      * @param url Target URL
      * @return Response as JSON string
      */
-    private String sendRequest(String requestBody, String url) {
+    private String sendRequest(Object requestBody, String url) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             
-            HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+            HttpEntity<Object> entity = new HttpEntity<>(requestBody, headers);
             return restTemplate.postForObject(url, entity, String.class);
         } catch (RestClientException e) {
             log.error("Error in HTTP request to {}", url, e);
             throw new RuntimeException("Error in HTTP request: " + e.getMessage(), e);
         }
     }
-    
+
     /**
      * Map producer name to URL
      *
