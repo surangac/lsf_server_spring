@@ -2812,6 +2812,13 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
+    public List<Agreement> getAgreements(){
+        String GET_AGREEMENTS = "select * from m11_agreements";
+        return oracleRepository.query(GET_AGREEMENTS, null, "AgreementList");
+    }
+
+
+    @Override
     public String updateMurabahaProduct(MurabahaProduct murabahaProduct) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pm07_type", murabahaProduct.getProductType());

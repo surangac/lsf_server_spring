@@ -530,4 +530,5 @@ public interface LSFRepository {
     List<FTVInfo> getDetailedFTVList(String fromDate, String toDate, int settlementSts);
     List<MurabahApplication> getApprovedPurchaseOrderApplicationList(Object fromDate, Object toDate);
     List<MurabahApplication> getBlackListedApplications();
+    List<Agreement> getAgreements();
 }

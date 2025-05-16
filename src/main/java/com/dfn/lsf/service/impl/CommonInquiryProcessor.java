@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.dfn.lsf.util.*;
 import org.springframework.stereotype.Service;
@@ -302,6 +303,13 @@ public class CommonInquiryProcessor implements MessageProcessor {
         CommonResponse cmr = new CommonResponse();
         try {
             List<MurabahaProduct> productsList = lsfRepository.getMurabahaProducts();
+            List<Agreement> agreementsList = lsfRepository.getAgreements();
+
+            for (MurabahaProduct product : productsList) {
+                product.setStatus(product.getStatus());
+                List<Agreement> agreements = agreementsList.stream().filter(agreement -> agreement.getProductType() == product.getProductType()).collect(Collectors.toList());
+                product.setAgreement(agreements);
+            }
 
             cmr.setResponseCode(200);
             cmr.setResponseObject(productsList);
