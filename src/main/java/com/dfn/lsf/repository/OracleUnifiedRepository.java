@@ -933,7 +933,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<LiquidityType> getLiquidityTypes() {
         String GET_LIQUIDITY_TYPES="select * from l10_liquidity_type";
-        return oracleRepository.query(GET_LIQUIDITY_TYPES, null, "LiquidityType");
+        return oracleRepository.query(GET_LIQUIDITY_TYPES, null, RowMapperI.LIQUIDITY_TYPES.toString());
     }
 
     @Override
