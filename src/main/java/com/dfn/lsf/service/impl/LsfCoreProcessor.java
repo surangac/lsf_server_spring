@@ -211,8 +211,6 @@ public class LsfCoreProcessor implements MessageProcessor {
             purchaseOrderListResponse.setCustomerAddress(murabahApplication.getAddress());
         }
         List<PurchaseOrder> orderList = null;
-        double administrativeFee = GlobalParameters.getInstance().getSimaCharges() + GlobalParameters.getInstance().getTransferCharges();
-        double vatAmount = LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(administrativeFee));
         try {
             orderList = lsfRepository.getAllPurchaseOrder(applicationId);
             if (orderList.size() > 0) {
@@ -221,12 +219,13 @@ public class LsfCoreProcessor implements MessageProcessor {
                     po.setTotalOutStandingBalance(mApplicationCollaterals.getOutstandingAmount());
                 }
                 purchaseOrderListResponse.setPurchaseOrderList(orderList);
-                PurchaseOrder purchaseOrder = orderList.get(0);
-                if (purchaseOrder.getSimaCharges() > 0 || purchaseOrder.getTransferCharges() > 0) {
-                    purchaseOrderListResponse.setAdministrationFee(purchaseOrder.getSimaCharges() + purchaseOrder.getTransferCharges() + vatAmount);
-                } else {
-                    purchaseOrderListResponse.setAdministrationFee(administrativeFee + vatAmount);
+
+                double administrationFee = GlobalParameters.getInstance().getComodityAdminFee() + GlobalParameters.getInstance().getComodityFixedFee();
+                if (murabahApplication.getFinanceMethod().equals("1")) {
+                    administrationFee = GlobalParameters.getInstance().getShareAdminFee() + GlobalParameters.getInstance().getShareFixedFee();  
                 }
+                purchaseOrderListResponse.setAdministrationFee(administrationFee);
+
                 purchaseOrderListResponse.setDailyFtvList(lsfRepository.getFTVsummaryForDashBoard(applicationId));
             }
         } catch (Exception ex) {

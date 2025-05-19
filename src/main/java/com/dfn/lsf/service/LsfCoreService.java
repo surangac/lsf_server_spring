@@ -1028,9 +1028,11 @@ public class LsfCoreService {
         Map<String, Object> resMap = new HashMap<>();
         resMap = gson.fromJson(result, resMap.getClass());
         ArrayList<Map<String, Object>> lsfTrd = (ArrayList<Map<String, Object>>) resMap.get("responseObject");
-        Map<String, Object> lsfTrdAccnt = (Map<String, Object>) lsfTrd.get(0).get("tradingAccount");
-        tradingAcc.setExchange(lsfTrdAccnt.get("exchange").toString());
-        tradingAcc.setAccountId(lsfTrdAccnt.get("accountId").toString());
+        if (lsfTrd.size() > 0) {
+            Map<String, Object> lsfTrdAccnt = (Map<String, Object>) lsfTrd.get(0).get("tradingAccount");
+            tradingAcc.setExchange(lsfTrdAccnt.get("exchange").toString());
+            tradingAcc.setAccountId(lsfTrdAccnt.get("accountId").toString());
+        }
         return tradingAcc;
     }
 

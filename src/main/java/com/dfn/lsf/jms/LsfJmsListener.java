@@ -73,6 +73,7 @@ public class LsfJmsListener {
                     
                 case LsfConstants.EXCHANGE_ACCOUNT_DELETION_RESPONSE:
                 case LsfConstants.INVESTOR_ACCOUNT_CREATION_RESPONSE:
+                case LsfConstants.EXCHANGE_ACCOUNT_CREATION_RESPONSE:
                     // Account creation responses handled by core processor
                     return accountUpdateProcessor(omsRequest, "accountCreationResponse");
                     
