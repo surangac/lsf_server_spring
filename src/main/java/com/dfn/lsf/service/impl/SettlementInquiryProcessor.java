@@ -98,46 +98,62 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                     settlementSummary.setApplicationID(applicationID);
                     settlementSummary.setCustomerID(userID);
                     settlementSummary.setOrderID(purchaseOrder.getId());
-                    settlementSummary.setLoanAmount(purchaseOrder.getOrderCompletedValue());
+                    
                     settlementSummary.setSettlementDate(formatSettlementDate(String.valueOf(purchaseOrder.getSettlementDate())));
                     settlementSummary.setSettelmentStatus(purchaseOrder.getSettlementStatus());
                     settlementSummary.setLsfAccountDeletionState(murabahApplication.getLsfAccountDeletionState());
                     settlementSummary.setDiscountOnProfit(murabahApplication.getDiscountOnProfit());
                     settlementSummary.setProductType(murabahApplication.getProductType());
-                    cashAcc = lsfCore.getLsfTypeCashAccountForUser(userID, applicationID);
-                    if (cashAcc != null) {
-                        // remove pending settle from the available cash balance due to T+2 implementation
-                        if (cashAcc.getNetReceivable() > 0) {
-                            settlementSummary.setAvailableCashBalance(cashAcc.getCashBalance()
-                                                                      - cashAcc.getNetReceivable());
-                        } else {
-                            settlementSummary.setAvailableCashBalance(cashAcc.getCashBalance());
-                        }
-                    }
+                    
+                    
                     logger.info("===========LSF : (settlementSummaryApplication)-Product TYpe  : "
                                 + murabahApplication.getProductType());
-                    if (murabahApplication.getProductType() != 3) {
-                        orderProfit = lsfRepository.getSummationOfProfitUntilToday(applicationID,
-                                                                                   purchaseOrder.getId());
-                        if (orderProfit != null) {
-                            settlementSummary.setCumulativeProfit(orderProfit.getCumulativeProfitAmount());
-                            settlementSummary.setLoanProfit(purchaseOrder.getProfitAmount());
-                            // settlementSummary.setTotalSettlementAmount(settlementSummary.getLoanAmount() +
-                            // settlementSummary.getCumulativeProfit());
-                        } else {
-                            // settlementSummary.setTotalSettlementAmount(settlementSummary.getLoanAmount());
-                            settlementSummary.setLoanProfit(purchaseOrder.getProfitAmount()); //change for DIB
+
+                    if (murabahApplication.getFinanceMethod().equals("1")) {
+
+                        settlementSummary.setLoanAmount(purchaseOrder.getOrderCompletedValue());
+
+                        cashAcc = lsfCore.getLsfTypeCashAccountForUser(userID, applicationID);
+                        if (cashAcc != null) {
+                            // remove pending settle from the available cash balance due to T+2 implementation
+                            if (cashAcc.getNetReceivable() > 0) {
+                                settlementSummary.setAvailableCashBalance(cashAcc.getCashBalance()
+                                                                            - cashAcc.getNetReceivable());
+                            } else {
+                                settlementSummary.setAvailableCashBalance(cashAcc.getCashBalance());
+                            }
                         }
+
+                        if (murabahApplication.getProductType() != 3) {
+                            orderProfit = lsfRepository.getSummationOfProfitUntilToday(applicationID,
+                                                                                       purchaseOrder.getId());
+                            if (orderProfit != null) {
+                                settlementSummary.setCumulativeProfit(orderProfit.getCumulativeProfitAmount());
+                                settlementSummary.setLoanProfit(purchaseOrder.getProfitAmount());
+                                // settlementSummary.setTotalSettlementAmount(settlementSummary.getLoanAmount() +
+                                // settlementSummary.getCumulativeProfit());
+                            } else {
+                                // settlementSummary.setTotalSettlementAmount(settlementSummary.getLoanAmount());
+                                settlementSummary.setLoanProfit(purchaseOrder.getProfitAmount()); //change for DIB
+                            }
+                        } else {
+                            OrderProfit profit = lsfCore.calculateConditionalProfit(collaterals,
+                                                                                    purchaseOrder,
+                                                                                    murabahApplication.getDiscountOnProfit());
+                            settlementSummary.setOrderProfit(profit);
+                            settlementSummary.setCumulativeProfit(profit.getChargeCommissionAmt());
+                            logger.info("===========LSF : (settlementSummaryApplication)-Settlement Profit Target Comm : "
+                                        + profit.getTargetCommission()
+                                        + ", Traded Comm :"
+                                        + profit.getTradedCommission());
+                        }
+
+
                     } else {
-                        OrderProfit profit = lsfCore.calculateConditionalProfit(collaterals,
-                                                                                purchaseOrder,
-                                                                                murabahApplication.getDiscountOnProfit());
-                        settlementSummary.setOrderProfit(profit);
-                        settlementSummary.setCumulativeProfit(profit.getChargeCommissionAmt());
-                        logger.info("===========LSF : (settlementSummaryApplication)-Settlement Profit Target Comm : "
-                                    + profit.getTargetCommission()
-                                    + ", Traded Comm :"
-                                    + profit.getTradedCommission());
+                        settlementSummary.setLoanAmount(purchaseOrder.getOrderValue());
+                        settlementSummary.setAvailableCashBalance(murabahApplication.getAvailableCashBalance());
+                        settlementSummary.setCumulativeProfit(purchaseOrder.getProfitAmount());
+                        settlementSummary.setTotalSettlementAmount(purchaseOrder.getOrderSettlementAmount());
                     }
 
                     if (purchaseOrder.getCustomerApproveStatus() == 0) {
