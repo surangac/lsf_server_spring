@@ -147,13 +147,14 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                                         + ", Traded Comm :"
                                         + profit.getTradedCommission());
                         }
-
+                        lsfCore.calculateFTV(collaterals);
 
                     } else {
                         settlementSummary.setLoanAmount(purchaseOrder.getOrderValue());
                         settlementSummary.setAvailableCashBalance(murabahApplication.getAvailableCashBalance());
                         settlementSummary.setCumulativeProfit(purchaseOrder.getProfitAmount());
                         settlementSummary.setTotalSettlementAmount(purchaseOrder.getOrderSettlementAmount());
+                        lsfCore.calcualateFtvForCommodity(collaterals, murabahApplication);
                     }
 
                     if (purchaseOrder.getCustomerApproveStatus() == 0) {
@@ -182,7 +183,6 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                     } else {
                         settlementSummary.setRollOverAppId(murabahApplication.getRollOverAppId());
                     }
-                    lsfCore.calculateFTV(collaterals);
                     settlementSummary.setFtv(collaterals.getFtv());
                     settlementSummaryResponseList.add(settlementSummary);
                 }

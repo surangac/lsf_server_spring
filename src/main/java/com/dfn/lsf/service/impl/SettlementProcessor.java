@@ -160,7 +160,7 @@ public class SettlementProcessor implements MessageProcessor {
         application.setOverallStatus(String.valueOf(16));
         String fromAccount = application.getCashAccount();
 
-        if(application.getAvailableCashBalance() < settlementAmount){
+        if(application.getAvailableCashBalance() < settlementAmount) {
             responseCode = 500;
             responseMessage = "Insufficient balance in the customer cash account";
             return gson.toJson(commonResponse);

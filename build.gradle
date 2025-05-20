@@ -75,6 +75,10 @@ dependencies {
     testImplementation 'org.mockito:mockito-junit-jupiter:5.7.0'
     testImplementation 'com.h2database:h2:2.2.224' // For in-memory testing
     testImplementation 'org.assertj:assertj-core:3.24.2'
+
+    // Caffeine cache dependency
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
 }
 
 test {

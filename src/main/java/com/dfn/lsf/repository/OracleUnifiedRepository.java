@@ -9,6 +9,9 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.text.ParseException;
 
 import javax.sql.DataSource;
@@ -85,6 +88,8 @@ import com.dfn.lsf.util.DBConstants;
 import com.dfn.lsf.util.LSFUtils;
 import com.dfn.lsf.util.LsfConstants;
 import com.dfn.lsf.util.RowMapperI;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 @Repository
 public class OracleUnifiedRepository implements LSFRepository {
@@ -176,6 +181,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
     
     @Override
+    @Cacheable(value = "murabahApplications", key = "#applicationId", unless = "#result == null")
     public MurabahApplication getMurabahApplication(String applicationId) {
         try {
             List<MurabahApplication> applications = getMurabahAppicationApplicationID(applicationId);
@@ -300,6 +306,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     /// refactor the code to use the new repository
     
     @Override
+    @CacheEvict(value = "murabahApplications", key = "#murabahApplication.id")
     public String updateMurabahApplication(MurabahApplication murabahApplication) {
 
         Map<String, Object> parameterMap = new HashMap<>();
@@ -592,6 +599,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
+    @CacheEvict(value = "murabahApplications", key = "#applicationID")
     public String updateMarginabilityGroupAndStockConcentration(String stockConcentrationGroup, String marginabilityGroup, String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_l12_stock_conc_grp_id", stockConcentrationGroup);
@@ -706,6 +714,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
+    @CacheEvict(value = "murabahApplications", key = "#applicationId")
     public String updateLastProfitCycleDate(String applicationId) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_app_id", applicationId);
@@ -2701,6 +2710,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
+    @CacheEvict(value = "murabahApplications", key = "#application.id")
     public String updateApplicationOtp(MurabahApplication application) {
         Map<String, Object> paraMap = new HashMap<>();
         paraMap.put("pl01_app_id", application.getId());
@@ -2729,6 +2739,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         }
 
     @Override
+    @CacheEvict(value = "murabahApplications", key = "#applicationId")
     public String updateActivity(String applicationId, int activityId) {
         Map<String, Object> paraMap = new HashMap<>();
         paraMap.put("pl01_app_id", applicationId);
