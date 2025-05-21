@@ -216,20 +216,25 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
 
                 collaterals.setReadyForColleteralTransfer(true);
                 List<PurchaseOrder> purchaseOrderList = lsfRepository.getPurchaseOrderForApplication(fromDBApp.getId());
-                double adminFee = GlobalParameters.getInstance().getSimaCharges() + GlobalParameters.getInstance()
-                                                                                                    .getTransferCharges();
-                if (purchaseOrderList != null && purchaseOrderList.size() > 0) {
-                    PurchaseOrder purchaseOrder = purchaseOrderList.get(0);
-                    if (purchaseOrder.getSimaCharges() > 0 || purchaseOrder.getTransferCharges() > 0) {
-                        adminFee = purchaseOrder.getSimaCharges() + purchaseOrder.getTransferCharges();
+                
+                if (fromDBApp.getFinanceMethod().equals("1")) {
+                    double adminFee = GlobalParameters.getInstance().getShareAdminFee();
+                    if (purchaseOrderList != null && purchaseOrderList.size() > 0) {
+                        PurchaseOrder purchaseOrder = purchaseOrderList.get(0);
+                        if (purchaseOrder.getSimaCharges() > 0 || purchaseOrder.getTransferCharges() > 0) {
+                            adminFee = purchaseOrder.getSimaCharges() + purchaseOrder.getTransferCharges();
+                        }
                     }
+                    collaterals.setAdminFee(adminFee);
+                } else {
+                    collaterals.setAdminFee(GlobalParameters.getInstance().getComodityAdminFee());
                 }
-                double vatAmount = LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(adminFee));
-                collaterals.setAdminFee(adminFee);
+                
+                double vatAmount = LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(collaterals.getAdminFee()));
                 collaterals.setVatAmount(vatAmount);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error in getPortfolioForCollaterals", e);
         }
         return gson.toJson(collaterals);
     }

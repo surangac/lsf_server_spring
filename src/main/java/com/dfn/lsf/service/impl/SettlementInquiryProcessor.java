@@ -378,7 +378,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
 
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
             SimpleDateFormat sdf2 = new SimpleDateFormat("ddMMyyyy");
-            Object response = lsfCore.reValuationProcess(oldApplication, true);
+            MApplicationCollaterals response = lsfCore.reValuationProcess(oldApplication, true);
             try {
                 crntDate = new Date();
                 settlementDate = sdf2.parse(purchaseOrders.get(0).getSettlementDate());
@@ -397,8 +397,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                 logger.info("===========LSF : Rollover period validation failed , Application ID :" + map.get("appId"));
                 return gson.toJson(cmr);
             } else if (response != null
-                       && GlobalParameters.getInstance().getMinRolloverRatio() > lsfRepository.getFTVforToday(appID)
-                                                                                              .getFtv()) {
+                       && GlobalParameters.getInstance().getMinRolloverRatio() > response.getFtv()) {
                 cmr.setResponseCode(500);
                 cmr.setErrorMessage("Minimum Rollover Ratio Validation failed");
                 cmr.setErrorCode(LsfConstants.ERROR_NOT_IN_ROLLOVER_RATIO);
@@ -438,11 +437,6 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                                                                     oldApplication.getProductType(),
                                                                     2);
                 newApplication.setId(id);
-//                try {
-//                    NotificationManager.sendNotification(newApplication);
-//                } catch (ComponentLookUpException e) {
-//                    logger.info(e);
-//                }
                 logger.info("===========LSF : New Murabah Application Created to rollover, Application ID :"
                             + id
                             + " , User ID:"

@@ -447,7 +447,7 @@ public class LsfCoreService {
     }
 
 
-    public Object reValuationProcess(MurabahApplication application,boolean considerBlockAmount) {
+    public MApplicationCollaterals reValuationProcess(MurabahApplication application,boolean considerBlockAmount) {
         log.debug("===========LSF : (revaluatingApplication) applicationID :" + application.getId());
         CommonResponse response = new CommonResponse();
         CommonInqueryMessage inqueryMessage = new CommonInqueryMessage();
@@ -686,14 +686,15 @@ public class LsfCoreService {
 
     public void calculateFTV(MApplicationCollaterals collaterals) { /*-----Calculate FTV for ABIC-----*/
         MurabahApplication application = lsfRepository.getMurabahApplication(collaterals.getApplicationId());
-        if (application == null && application.getFinanceMethod().equals("2")) {
+        if (application != null && application.getFinanceMethod().equalsIgnoreCase("2")) {
             calcualateFtvForCommodity(collaterals, application);
-        }
-        if (collaterals.getOutstandingAmount() > 0) {
-            double ftv = (collaterals.getNetTotalColleteral()/collaterals.getOutstandingAmount()) * 100.0;
-            collaterals.setFtv(LSFUtils.ceilTwoDecimals(ftv));
-        }else{
-            collaterals.setFtv(0.0);
+        } else {
+            if (collaterals.getOutstandingAmount() > 0) {
+                double ftv = (collaterals.getNetTotalColleteral()/collaterals.getOutstandingAmount()) * 100.0;
+                collaterals.setFtv(LSFUtils.ceilTwoDecimals(ftv));
+            }else{
+                collaterals.setFtv(0.0);
+            }
         }
     }
 

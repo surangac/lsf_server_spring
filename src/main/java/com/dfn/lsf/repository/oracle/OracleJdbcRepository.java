@@ -184,7 +184,7 @@ public class OracleJdbcRepository implements OracleRepository {
                 
                 return (List<T>) namedParameterJdbcTemplate.query(
                         query, 
-                        paramSource, 
+                        paramSource,
                         rowMapper
                 );
             } catch (DataAccessException e) {

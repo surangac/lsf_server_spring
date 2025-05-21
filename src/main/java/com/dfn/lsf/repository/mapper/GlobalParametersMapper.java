@@ -98,6 +98,9 @@ public class GlobalParametersMapper implements RowMapper<GlobalParameters> {
         _instant.setComodityAdminFee(rs.getDouble("m01_comodity_admin_fee"));
         _instant.setGracePeriodforCommoditySell(rs.getInt("m01_grace_per_commodity_sell"));
         _instant.setInstitutionInvestAccount(rs.getString("m01_institution_invest_acc"));
+        _instant.setMinRolloverPeriod(rs.getInt("m01_min_rollover_period"));
+        _instant.setMaxRolloverPeriod(rs.getInt("m01_max_rollover_period"));
+        _instant.setMinRolloverRatio(rs.getInt("m01_min_rollover_ratio"));
 
         return _instant;
     }

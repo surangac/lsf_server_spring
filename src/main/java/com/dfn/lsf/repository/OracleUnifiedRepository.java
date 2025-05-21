@@ -871,7 +871,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<Documents> getApplicationAdminDocs(String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl19_app_id", applicationID);
-        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L19_GET_UADMIN_DOCS_BY_APPLID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.USER_APPLICATION_DOCUMENTS));
+        return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L19_GET_UADMIN_DOCS_BY_APPLID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.ADMIN_APPLICATION_DOCUMENTS));
     }
     
     @Override

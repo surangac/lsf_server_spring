@@ -895,15 +895,10 @@ public class LsfCoreProcessor implements MessageProcessor {
             PurchaseOrder po = purchaseOrders.get(0);
             if (po.getCustomerApproveStatus() == 1 && !(application.getLsfAccountDeletionState() == LsfConstants.REQUEST_SENT_TO_OMS || application.getLsfAccountDeletionState() == LsfConstants.ACCOUNT_DELETION_SUCCESS || application.getLsfAccountDeletionState() == LsfConstants.EXCHANGE_ACCOUNT_DELETION_FAILED_FROM_EXCHANGE || application.getLsfAccountDeletionState() == LsfConstants.SHARE_TRANSFER_FAILED_WITH_EXCHANGE)) {
                 if (application != null) {
-                    Object response = lsfCore.reValuationProcess(application,true);
-                    if (response instanceof MApplicationCollaterals) {
-                        MApplicationCollaterals collaterals = (MApplicationCollaterals) response;
-                        log.info("===========LSF : (reqDashBoardPFSummary)-LSF-SERVER RESPONSE  : " + gson.toJson(collaterals));
-                        getBPDetails(collaterals, applicationID);
-                        return gson.toJson(collaterals);
-                    } else {
-                        return null;
-                    }
+                    MApplicationCollaterals response = lsfCore.reValuationProcess(application,true);
+                    log.info("===========LSF : (reqDashBoardPFSummary)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
+                    getBPDetails(response, applicationID);
+                    return gson.toJson(response);
                 } else {
                     return null;
                 }
