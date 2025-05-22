@@ -798,7 +798,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public String updateDocumentMaster(Documents documents) {
         Map<String, Object> parameterMap = new HashMap<>();
-        parameterMap.put("pl03_doc_id", documents.getId());
+        parameterMap.put("pl03_doc_id", Integer.parseInt(documents.getId()));
         parameterMap.put("pl03_doc_name", documents.getDocumentName());
         parameterMap.put("pl03_is_required", documents.isRequired() ? 1 : 0);
         parameterMap.put("pl03_created_by", documents.getCreatedBy());

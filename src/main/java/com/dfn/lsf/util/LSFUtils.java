@@ -160,7 +160,7 @@ public class LSFUtils {
         return response;
     }
 
-    public static boolean isPurchaseOrderCreationAllowed(){ /*----PO Submission should be allowed until 1h 15min before market close time---*/
+    public static boolean isPurchaseOrderCreationAllowed(boolean bypassUmessage){ /*----PO Submission should be allowed until 1h 15min before market close time---*/
         boolean response = false;
         try {
             String closedTime = GlobalParameters.getInstance().getMarketClosedTime();
@@ -180,6 +180,9 @@ public class LSFUtils {
         } catch(Exception e) {
             System.out.println("Exception is " + e.toString());
             response = false;
+        }
+        if (bypassUmessage) {
+            return true;
         }
         return response;
     }

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.dfn.lsf.util.*;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.dfn.lsf.model.BPSummary;
@@ -58,6 +58,9 @@ public class LsfCoreProcessor implements MessageProcessor {
     private final Helper helper;
     private final LsfCoreService lsfCore;
     private final NotificationManager notificationManager;
+
+    @Value("${app.bypass.umessage:false}")
+    private boolean bypassUmessage;
     
     @Override
     public String process(String request) {
@@ -246,7 +249,7 @@ public class LsfCoreProcessor implements MessageProcessor {
 
         MApplicationCollaterals collaterals = lsfRepository.getApplicationCollateral(po.getApplicationId());
 
-        if (LSFUtils.isPurchaseOrderCreationAllowed()) { /*----PO Submission should be allowed until 1h 15min before market close time---*/
+        if (LSFUtils.isPurchaseOrderCreationAllowed(bypassUmessage)) { /*----PO Submission should be allowed until 1h 15min before market close time---*/
 
             MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(po.getApplicationId());
             if (Integer.parseInt(murabahApplication.getOverallStatus()) < 0 || murabahApplication.getCurrentLevel() == GlobalParameters.getInstance().getGetAppCloseLevel()) {
@@ -256,36 +259,10 @@ public class LsfCoreProcessor implements MessageProcessor {
                 log.debug("===========LSF : (createPurchaseOrder)-LSF-SERVER RESPONSE  : " + gson.toJson(commonResponse));
                 return gson.toJson(commonResponse);
             }
+            boolean lsfTrdAccCreated = sendAccountCreationRequestToOMS(murabahApplication);
+            boolean isCommodity = murabahApplication.getFinanceMethod().equals("2");
 
-
-            /*---------------------------------------*/
-            boolean lsfTrdAccCreated = false;
-            boolean isCommodity = false;
-            if (financeMethod == 1){
-                CommonInqueryMessage accountCreationRequest = new CommonInqueryMessage();
-
-                /*---Creating  LSF Accounts for User-----*/
-                accountCreationRequest.setReqType(LsfConstants.CREATE_ACCOUNT);
-                accountCreationRequest.setCustomerId(murabahApplication.getCustomerId());
-                accountCreationRequest.setContractId(murabahApplication.getId());
-
-                if (GlobalParameters.getInstance().getBaseCurrency() != null) {
-                    accountCreationRequest.setCurrency(GlobalParameters.getInstance().getBaseCurrency());
-                } else {
-                    accountCreationRequest.setCurrency("SAR");
-                }
-                accountCreationRequest.setExchange(murabahApplication.getTradingAccExchange());
-                accountCreationRequest.setTradingAccountId(murabahApplication.getTradingAcc());
-                log.debug("===========LSF : Creating Accounts in OMS fro Application ID :" + murabahApplication.getId());
-                lsfTrdAccCreated = lsfCore.createAccounts(accountCreationRequest);
-                isCommodity = false;
-            }else {
-                lsfTrdAccCreated = false;
-                isCommodity = true;
-            }
-
-            if (isCommodity || lsfTrdAccCreated) {
-
+            if (lsfTrdAccCreated || isCommodity) {
                 if(murabahApplication.getProfitPercentage()>0){
                     // use the appliaction level profit %
                     po.setProfitPercentage(murabahApplication.getProfitPercentage());
@@ -320,7 +297,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                 /*----Sending Automatic Order Approval---*/
 
                 log.debug("===========LSF : Sending Automatic Order Approval ,poId :" + po.getId() + ", Application ID:" + po.getApplicationId());
-                log.debug("===========LSF : Automatic Order Approval ,status :" + approvePurchaseOrderABIC(po, collaterals, commonResponse, financeMethod));
+                approvePurchaseOrderABIC(po, collaterals, commonResponse, financeMethod);
 
                 log.debug("===========LSF : (createPurchaseOrder)-LSF-SERVER RESPONSE  : " + gson.toJson(commonResponse));
                 return gson.toJson(commonResponse);
@@ -339,13 +316,12 @@ public class LsfCoreProcessor implements MessageProcessor {
             log.debug("===========LSF : (createPurchaseOrder)-LSF-SERVER RESPONSE  : " + gson.toJson(commonResponse));
             return gson.toJson(commonResponse);
         }
-
-
     }
 
     protected String approvePurchaseOrderABIC(PurchaseOrder purchaseOrder, MApplicationCollaterals collaterals, CommonResponse cmr, int financeMethod) {
-
         String applicationId = "";
+        boolean isLsfTypeCashAccExist = false;
+        boolean isLsfTypeTradingAccExist = false;
         try {
             String poId = purchaseOrder.getId();
             applicationId = purchaseOrder.getApplicationId();
@@ -354,129 +330,81 @@ public class LsfCoreProcessor implements MessageProcessor {
             String approvedbyName = "SYSTEM";
             int approvalStatus = 1;
             log.info("===========LSF : (approvePurchaseOrder)-REQUEST, poID :" + poId + " , applicationID:" + applicationId + " ,approvedById: " + approvedbyId + ", approvedbyName" + approvedbyName + " ,approvalStatus:" + approvalStatus);
+            OrderBasket orderBasket = createPOInstruction(purchaseOrder);
 
-            if (approvalStatus > 0) { /*---Will run only this block---*/
-                OrderBasket orderBasket = createPOInstruction(purchaseOrder);
-                boolean isOrderCreated = false;
-                if (financeMethod == 1) {
-                    isOrderCreated = setPOInstructionToOMS(orderBasket, purchaseOrder.getApplicationId());
-                }
-                if (isOrderCreated || financeMethod != 1) {
+            cmr.setResponseCode(200);
+            MurabahApplication application = lsfRepository.getMurabahApplication(applicationId);
+            cmr.setResponseMessage(Integer.toString(application.getCurrentLevel()) + "|" + application.getOverallStatus());
+            notificationManager.sendNotification(application);/*---Send Notification---*/
+            lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_PO_CREATED_WAITING_TO_ORDER_FILL);
+
+            MApplicationCollaterals completeCollateral = lsfRepository.getApplicationCompleteCollateral(applicationId);
+
+            CommonInqueryMessage request = new CommonInqueryMessage();
+            Map<String, Object> resultMap = new HashMap<>();
+
+            String result = "";
+            TradingAcc t = null;
+
+            request.setCustomerId(application.getCustomerId());
+            request.setReqType(LsfConstants.GET_LSF_TYPE_TRADING_ACCOUNTS);
+            request.setContractId(applicationId);
+            result = (String) helper.sendMessageToOms(gson.toJson(request));
+            resultMap.clear();
+            resultMap = gson.fromJson((String) result, resultMap.getClass());
+            ArrayList<Map<String, Object>> lsfTrd = (ArrayList<Map<String, Object>>) resultMap.get("responseObject");
+            String tradingAccId;
+            for (Map<String, Object> trd : lsfTrd) {
+                Map<String, Object> mpTRadingAcc = (Map<String, Object>) trd.get("tradingAccount");
+                tradingAccId = mpTRadingAcc.get("accountId").toString();
+                t = completeCollateral.isTradingAccountLSFTypeExist(tradingAccId);
+                t.setExchange(mpTRadingAcc.get("exchange").toString());
+                t.setApplicationId(applicationId);
+                t.setLsfType(true);
+                isLsfTypeTradingAccExist = true;
+            }
+            
+            result = "";
+            String cashAccid = null;
+            request.setReqType(LsfConstants.GET_LSF_TYPE_CASH_ACCOUNTS);
+            request.setContractId(applicationId);
+            result = (String) helper.sendMessageToOms(gson.toJson(request));
+            resultMap.clear();
+            resultMap = gson.fromJson((String) result, resultMap.getClass());
+            ArrayList<Map<String, Object>> lsfcash = (ArrayList<Map<String, Object>>) resultMap.get("responseObject");
+            for (Map<String, Object> cash : lsfcash) {
+                cashAccid = cash.get("accountNo").toString();
+                CashAcc c = completeCollateral.isCashAccLSFTypeExist(cashAccid);
+                c.setCashBalance(Double.parseDouble(cash.get("balance").toString()));
+                c.setApplicationId(applicationId);
+                c.setLsfType(true);
+                isLsfTypeCashAccExist = true;
+            }
+
+            lsfRepository.addEditCompleteCollateral(completeCollateral); /*----Update LSF Type Cash & Trading Accounts------*/
+
+            /*----- creating investor account for LSF type cash account----*/
+            if (isLsfTypeCashAccExist && isLsfTypeTradingAccExist) {
+                boolean isInvestorAccountCreated = createInvestorAccount(cashAccid, applicationId);
+                boolean isExchangeAccountCreated = createExchangeAccount(t.getAccountId(), t.getExchange(), applicationId);
+                // send order to OMS if Exchagne account created successfully
+                if (isInvestorAccountCreated && isExchangeAccountCreated) {
                     lsfRepository.addPurchaseOrder(purchaseOrder);
                     lsfRepository.addEditCollaterals(collaterals);
                     purchaseOrder.setApprovalStatus(approvalStatus);
                     purchaseOrder.setApprovedById(approvedbyId);
                     purchaseOrder.setApprovedByName(approvedbyName);
                     lsfRepository.approveRejectOrder(purchaseOrder);
-                    cmr.setResponseCode(200);
-                    MurabahApplication application = lsfRepository.getMurabahApplication(applicationId);
-                    cmr.setResponseMessage(Integer.toString(application.getCurrentLevel()) + "|" + application.getOverallStatus());
-                    notificationManager.sendNotification(application);/*---Send Notification---*/
-                    lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_PO_CREATED_WAITING_TO_ORDER_FILL);
-
-                    MApplicationCollaterals completeCollateral = lsfRepository.getApplicationCompleteCollateral(applicationId);
-
-                    //MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(applicationId);
-                    CommonInqueryMessage request = new CommonInqueryMessage();
-                    Map<String, Object> resultMap = new HashMap<>();
-
-                    String result = "";
-                    TradingAcc t = null;
-
                     if (financeMethod == 1) {
-                        /*---- request for LSF Type Trading Accounts----*/
-                        request.setCustomerId(application.getCustomerId());
-                        request.setReqType(LsfConstants.GET_LSF_TYPE_TRADING_ACCOUNTS);
-//                        request.setReqType(47);
-                        request.setContractId(applicationId);
-                        result = (String) helper.sendMessageToOms(gson.toJson(request));
-                        resultMap.clear();
-                        resultMap = gson.fromJson((String) result, resultMap.getClass());
-                        ArrayList<Map<String, Object>> lsfTrd = (ArrayList<Map<String, Object>>) resultMap.get("responseObject");
-                        String tradingAccId;
-                        for (Map<String, Object> trd : lsfTrd) {
-                            Map<String, Object> mpTRadingAcc = (Map<String, Object>) trd.get("tradingAccount");
-                            tradingAccId = mpTRadingAcc.get("accountId").toString();
-                            t = completeCollateral.isTradingAccountLSFTypeExist(tradingAccId);
-                            t.setExchange(mpTRadingAcc.get("exchange").toString());
-                            t.setApplicationId(applicationId);
-                            t.setLsfType(true);
-                        }
+                        setPOInstructionToOMS(orderBasket, applicationId);
                     }
-                /*----request for LSF type Cash Acc-----*/
-                    result = "";
-                    String cashAccid = null;
-                    request.setReqType(LsfConstants.GET_LSF_TYPE_CASH_ACCOUNTS);
-                    request.setContractId(applicationId);
-                    result = (String) helper.sendMessageToOms(gson.toJson(request));
-                    resultMap.clear();
-                    resultMap = gson.fromJson((String) result, resultMap.getClass());
-                    ArrayList<Map<String, Object>> lsfcash = (ArrayList<Map<String, Object>>) resultMap.get("responseObject");
-                    for (Map<String, Object> cash : lsfcash) {
-                        cashAccid = cash.get("accountNo").toString();
-                        CashAcc c = completeCollateral.isCashAccLSFTypeExist(cashAccid);
-                        c.setCashBalance(Double.parseDouble(cash.get("balance").toString()));
-                        c.setApplicationId(applicationId);
-                        c.setLsfType(true);
-                    }
-
-                    lsfRepository.addEditCompleteCollateral(completeCollateral); /*----Update LSF Type Cash & Trading Accounts------*/
-
-                    /*----- creating investor account for LSF type cash account----*/
-                    if (completeCollateral.isLSFCashAccExist() && completeCollateral.isLSFTradingAccExist()) {
-                        log.debug("===========LSF : Creating Investor Account for Application ID :" + application.getId() + " , Cash Account ID:" + cashAccid);
-                        AccountCreationRequest createInvestorAccount = new AccountCreationRequest();
-                        createInvestorAccount.setReqType(LsfConstants.CREATE_INVESTOR_ACCOUNT);
-                        createInvestorAccount.setFromCashAccountNo(cashAccid);
-                        String omsResponseForInvestorAccountCreation = helper.cashAccountRelatedOMS(gson.toJson(createInvestorAccount));
-                        CommonResponse investorAccountResponse = helper.processOMSCommonResponseAccountCreation(omsResponseForInvestorAccountCreation);
-                        lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_SENT_INVESTOR_ACCOUNT_CREATION);
-
-                        if (investorAccountResponse.getResponseCode() == -2) { /*---If Investor Account is already created---*/
-                            log.debug("===========LSF :Investor Account Already Created  for Application ID :" + application.getId() + " , Cash Account ID:" + cashAccid);
-                            AccountCreationRequest createExchangeAccount = new AccountCreationRequest();
-                            createExchangeAccount.setReqType(LsfConstants.CREATE_EXCHANGE_ACCOUNT);
-                            createExchangeAccount.setTradingAccountId(t!=null? t.getAccountId(): "");
-                            createExchangeAccount.setExchange(t !=null ?t.getExchange():"");
-                            log.debug("===========LSF : Creating Exchange Account for Trading Account :" + createExchangeAccount.getTradingAccountId());
-                            String omsResponseForExchangeAccountCreation = helper.cashAccountRelatedOMS(gson.toJson(createExchangeAccount));
-                            CommonResponse exchangeAccountResponse = helper.processOMSCommonResponseAccountCreation(omsResponseForExchangeAccountCreation);
-                            if (exchangeAccountResponse.getResponseCode() == 1) {
-                                lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATED_AND_SENT_EXCHANGE_ACCOUNT_CREATION);
-                            } else {
-                                lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATED_FAILED_TO_SUBMIT_EXCHANGE_ACCOUNT_CREATION);
-                            }
-
-                        } else if (investorAccountResponse.getResponseCode() == -1) {
-                            lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATION_FAILED_OMS);
-                        }
-
-                    }
-
-
                 } else {
                     cmr.setResponseCode(500);
-                    cmr.setErrorMessage("Order send to OMS Failed");
-                    cmr.setErrorCode(LsfConstants.ERROR_ORDER_SEND_TO_OMS_FAILED);
+                    cmr.setErrorMessage("Order Creation failed, Exchagne and Investor account creation failed");
                     lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_PO_CREATION_FAILED);
                 }
-            } else {
-                if (lsfRepository.approveRejectOrder(purchaseOrder).equalsIgnoreCase("1")) {
-                    MApplicationCollaterals blockedColaterals = lsfRepository.getApplicationCompleteCollateral(applicationId);
-                    CommonResponse commonResponse = (CommonResponse) lsfCore.releaseCollaterals(blockedColaterals);
-                    if (commonResponse.getResponseCode() == 200) {
-                        cmr.setResponseCode(200);
-                    } else {
-                        cmr.setResponseCode(200);
-                        cmr.setErrorMessage("Collatral Release failed from OMS");
-                        cmr.setErrorCode(LsfConstants.ERROR_COLLATRAL_RELEASE_FAILED_FROM_OMS);
-                    }
-
-                } else {
-                    cmr.setResponseCode(200);
-                    cmr.setErrorMessage("Order Rejection failed");
-                }
             }
+            
         } catch (Exception ex) {
             cmr.setResponseCode(500);
             cmr.setErrorMessage("Order Approve failed");
@@ -484,6 +412,61 @@ public class LsfCoreProcessor implements MessageProcessor {
         }
         log.debug("===========LSF : (approvePurchaseOrder)-LSF-SERVER RESPONSE  : " + gson.toJson(cmr));
         return gson.toJson(cmr);
+    }
+
+    protected boolean sendAccountCreationRequestToOMS(MurabahApplication murabahApplication) {
+        CommonInqueryMessage accountCreationRequest = new CommonInqueryMessage();
+        /*---Creating  LSF Accounts for User-----*/
+        accountCreationRequest.setReqType(LsfConstants.CREATE_ACCOUNT);
+        accountCreationRequest.setCustomerId(murabahApplication.getCustomerId());
+        accountCreationRequest.setContractId(murabahApplication.getId());
+
+        if (GlobalParameters.getInstance().getBaseCurrency() != null) {
+            accountCreationRequest.setCurrency(GlobalParameters.getInstance().getBaseCurrency());
+        } else {
+            accountCreationRequest.setCurrency("SAR");
+        }
+        accountCreationRequest.setExchange(murabahApplication.getTradingAccExchange());
+        accountCreationRequest.setTradingAccountId(murabahApplication.getTradingAcc());
+        log.debug("===========LSF : Creating Accounts in OMS fro Application ID :" + murabahApplication.getId());
+        return lsfCore.createAccounts(accountCreationRequest);
+    }
+
+    protected boolean createInvestorAccount(String cashAccId, String applicationId) {
+        log.debug("===========LSF : Creating Investor Account for Application ID :" + applicationId + " , Cash Account ID:" + cashAccId);
+        AccountCreationRequest createInvestorAccount = new AccountCreationRequest();
+        createInvestorAccount.setReqType(LsfConstants.CREATE_INVESTOR_ACCOUNT);
+        createInvestorAccount.setFromCashAccountNo(cashAccId);
+        String omsResponseForInvestorAccountCreation = helper.cashAccountRelatedOMS(gson.toJson(createInvestorAccount));
+        CommonResponse investorAccountResponse = helper.processOMSCommonResponseAccountCreation(omsResponseForInvestorAccountCreation);
+        lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_SENT_INVESTOR_ACCOUNT_CREATION);
+        if (investorAccountResponse.getResponseCode() == -2) { 
+            log.debug("===========LSF :Investor Account Already Created  for Application ID :" + applicationId + " , Cash Account ID:" + cashAccId);
+            return true;
+        } else if (investorAccountResponse.getResponseCode() == -1) {
+            lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATION_FAILED_OMS);
+            return false;
+        }
+        return true;
+    }
+
+    protected boolean createExchangeAccount(String tradingAccId, String exchange, String applicationId) {
+        AccountCreationRequest createExchangeAccount = new AccountCreationRequest();
+        createExchangeAccount.setReqType(LsfConstants.CREATE_EXCHANGE_ACCOUNT);
+        createExchangeAccount.setTradingAccountId(tradingAccId);
+        createExchangeAccount.setExchange(exchange);
+        String omsResponseForExchangeAccountCreation = helper.cashAccountRelatedOMS(gson.toJson(createExchangeAccount));
+        CommonResponse exchangeAccountResponse = helper.processOMSCommonResponseAccountCreation(omsResponseForExchangeAccountCreation);
+        if (exchangeAccountResponse.getResponseCode() == 1) {
+            lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATED_AND_SENT_EXCHANGE_ACCOUNT_CREATION);
+            return true;
+        } else {
+            if (bypassUmessage) {
+                return true;
+            }
+            lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATED_FAILED_TO_SUBMIT_EXCHANGE_ACCOUNT_CREATION);
+            return false;
+        }
     }
 
     protected String approvePurchaseOrder(Map<String, Object> map) {
@@ -960,13 +943,15 @@ public class LsfCoreProcessor implements MessageProcessor {
         return BPSummary;
     }
     private String updatePurchaseOrdByAdmin(Map<String, Object> map){
-        log.info("updatePurchaseOrdByAdmin :" +map.get("id").toString());
+        String statusChangedIP = map.get("ipAddress").toString();
+        String applicationID = map.get("id").toString();
+        log.info("updatePurchaseOrdByAdmin : " + applicationID);
         CommonResponse cmr = new CommonResponse();
         try {
-            PurchaseOrder po = lsfRepository.getSinglePurchaseOrder(map.get("id").toString());
+            PurchaseOrder po = lsfRepository.getSinglePurchaseOrder(applicationID);
+            MurabahApplication fromDB = lsfRepository.getMurabahApplication(applicationID);
             po.setSellButNotSettle((int) Double.parseDouble(map.get("sellButNotSettle").toString()));
             po.setIsPhysicalDelivery((int) Double.parseDouble(map.get("isPhysicalDelivery").toString()));
-//            List<Commodity> commodityList = gson.fromJson(map.get("commodityList"),)
             List<Commodity> commodityList = (List<Commodity>) map.get("commodityList");
             List<Commodity> commodities = new ArrayList<>();
             if (commodityList != null) {
@@ -991,17 +976,26 @@ public class LsfCoreProcessor implements MessageProcessor {
             }
             po.setCommodityList(commodities);
             lsfRepository.updatePurchaseOrderByAdmin(po);
+
+            String statusMessage = "Purchase order submited by ADMIN";
+            String statusChangedUserid = "Admin";
+            String statusChangedUserName = "Admin";
+            
+            String responseMessage = lsfRepository.approveApplication(1, fromDB.getId(), statusMessage, statusChangedUserid, statusChangedUserName, statusChangedIP);
+
+            notificationManager.sendNotification(fromDB);/*---Sending Notification---*/
             cmr.setResponseCode(200);
-            cmr.setResponseMessage("Successfully Updated the Purchase order by admin");
+            cmr.setResponseMessage(responseMessage + "|" + "Successfully Updated the Purchase order by admin");
             log.info("Successfully Updated the Purchase order by admin");
         }catch (Exception e){
             cmr.setErrorCode(500);
             cmr.setErrorMessage("PO Update Failed");
             log.error("PO Update Failed", e);
         }
-
         return gson.toJson(cmr);
     }
+
+
     private String commodityPOExecution(Map<String, Object> map){
         CommonResponse cmr = new CommonResponse();
         try {
@@ -1014,7 +1008,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             po = lsfRepository.getSinglePurchaseOrder(po.getId());
 
 
-            if(map.containsKey("ipAddress")){
+            if(map.containsKey("ipAddress")) {
                 String statusChangedIP = map.get("ipAddress").toString();
                     if(LSFUtils.validateAdminApproveAction(statusChangedIP)){ /*---Check the time interval of Admin approvals for the particular ip---*/
                         List<MurabahApplication> applicationList = null;
@@ -1036,21 +1030,21 @@ public class LsfCoreProcessor implements MessageProcessor {
                                     String statusChangedUserName = "Admin";
                                     String responseMessage = "";
 
-                                    responseMessage = lsfRepository.approveApplication(appStatus, fromDB.getId(), statusMessage, statusChangedUserid, statusChangedUserName, statusChangedIP);
-                                    if (appStatus < 0 && appStatus != -1) { /*---if the application is permanent reject---*/
-                                        CommonInqueryMessage blackListRequest = new CommonInqueryMessage();
-                                        blackListRequest.setReqType(LsfConstants.BLACK_LIST_CUSTOMER);
-                                        blackListRequest.setCustomerId(fromDB.getCustomerId());
-                                        blackListRequest.setChangeParameter(1);
-                                        blackListRequest.setValue("1");
-                                        blackListRequest.setParams("Customer need to be Black Listed");
-                                        log.info("===========LSF : Sending Black List Request to OMS:" + gson.toJson(blackListRequest));
-                                        String omsResponse = helper.omsCommonRequests(gson.toJson(blackListRequest));
-                                        log.info("===========LSF : OMS Response to  Black List Request :" + omsResponse);
+                                    // responseMessage = lsfRepository.approveApplication(appStatus, fromDB.getId(), statusMessage, statusChangedUserid, statusChangedUserName, statusChangedIP);
+                                    // if (appStatus < 0 && appStatus != -1) { /*---if the application is permanent reject---*/
+                                    //     CommonInqueryMessage blackListRequest = new CommonInqueryMessage();
+                                    //     blackListRequest.setReqType(LsfConstants.BLACK_LIST_CUSTOMER);
+                                    //     blackListRequest.setCustomerId(fromDB.getCustomerId());
+                                    //     blackListRequest.setChangeParameter(1);
+                                    //     blackListRequest.setValue("1");
+                                    //     blackListRequest.setParams("Customer need to be Black Listed");
+                                    //     log.info("===========LSF : Sending Black List Request to OMS:" + gson.toJson(blackListRequest));
+                                    //     String omsResponse = helper.omsCommonRequests(gson.toJson(blackListRequest));
+                                    //     log.info("===========LSF : OMS Response to  Black List Request :" + omsResponse);
 
-                                    }
+                                    // }
 
-                                    notificationManager.sendNotification(fromDB);/*---Sending Notification---*/
+                                    // notificationManager.sendNotification(fromDB);/*---Sending Notification---*/
                                     cmr.setResponseCode(200);
                                     cmr.setResponseMessage(responseMessage); /*---currentLevel|approveState---*/
                                 }
