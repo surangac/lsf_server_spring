@@ -72,12 +72,12 @@ public class LsfCoreService {
         }
     }
 
-    public Object transferCollaterals(String applicationId) {
+    public CommonResponse transferCollaterals(String applicationId) {
         MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(applicationId);
         return transferCollaterals(collaterals);
     }
 
-    public Object transferCollaterals(MApplicationCollaterals collaterals) {
+    public CommonResponse transferCollaterals(MApplicationCollaterals collaterals) {
         CommonResponse commonResponse = new CommonResponse();
         try {
             if (collaterals != null) {

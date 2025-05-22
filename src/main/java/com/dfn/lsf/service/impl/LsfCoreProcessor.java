@@ -701,6 +701,13 @@ public class LsfCoreProcessor implements MessageProcessor {
 
     protected String processOrderAgreement(Map<String, Object> map) { /*---Approve Order Contract---*/
         CommonResponse response = new CommonResponse();
+        if (!LSFUtils.isMarketOpened()) {
+            response.setResponseCode(500);
+            response.setErrorMessage("Signing/Rejecting Order Agreement is not allowed at the moment due to market unavailability");
+            response.setErrorCode(LsfConstants.ERROR_SIGNING_ORDER_AGREEMENT_IS_NOT_ALLOWED_MARCCKET_CLOSED);
+            log.debug("===========LSF : (reqApproveOrderAgreement)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
+            return gson.toJson(response);
+        }
         String applicationID = null;
         if (map.containsKey("id")) {
             applicationID = map.get("id").toString();
@@ -710,156 +717,82 @@ public class LsfCoreProcessor implements MessageProcessor {
         MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(applicationID);
 
         if (murabahApplication.getCurrentLevel() != 18 && (murabahApplication !=null && !(murabahApplication.getAdminFeeCharged() > 0))) { /*---If order is already liquidate---*/
-            if (LSFUtils.isMarketOpened()) {//*---If market is closed stop signing order contract---*/
-                int responseCode = 200;
-                String responseMessage = "Successful";
-                String orderId = null;
-                String approveStatus = null;
-                String statusComment = null;
-                String statusChangedIP = "";
-                CommonResponse liquidateResponse;
-                String orderStatusChangeResponse = "";
+            int responseCode = 200;
+            String responseMessage = "Successful";
+            String orderId = null;
+            String approveStatus = null;
+            String statusComment = null;
+            String statusChangedIP = "";
 
-
-                if (map.containsKey("orderID")) {
-                    orderId = map.get("orderID").toString();
+            if (map.containsKey("orderID")) {
+                orderId = map.get("orderID").toString();
+            }
+            if (map.containsKey("approveStatus")) {
+                approveStatus = map.get("approveStatus").toString();
+            }
+            if (map.containsKey("comment")) {
+                statusComment = map.get("comment").toString();
+            }
+            if (map.containsKey("ipAddress")) {
+                statusChangedIP = map.get("ipAddress").toString();
+            }
+            log.debug("===========LSF : (reqApproveOrderAgreement)-Request  : " + gson.toJson(map) + " , Application ID: " + applicationID);
+            //   lsfCore.addContractDetailsToMap(applicationID, map);/*---Add Order Contract singed customer data to Map---*/
+            if (approveStatus !=null && approveStatus.equalsIgnoreCase("1")) { /*---- If Client accept the agreement----*/
+                if(!collaterals.isExchangeAccountCreated()) {
+                    response.setResponseCode(500);
+                    response.setErrorMessage("Exchange Account not yet created.");
+                    response.setErrorCode(LsfConstants.ERROR_EXCHNAGE_ACCOUNT_NOT_YET_CREATED);
+                    log.debug("===========LSF : (reqApproveOrderAgreement)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
+                    return gson.toJson(response);
                 }
-                if (map.containsKey("approveStatus")) {
-                    approveStatus = map.get("approveStatus").toString();
-                }
-                if (map.containsKey("comment")) {
-                    statusComment = map.get("comment").toString();
-                }
-                if (map.containsKey("ipAddress")) {
-                    statusChangedIP = map.get("ipAddress").toString();
-                }
-                log.debug("===========LSF : (reqApproveOrderAgreement)-Request  : " + gson.toJson(map) + " , Application ID: " + applicationID);
-                //   lsfCore.addContractDetailsToMap(applicationID, map);/*---Add Order Contract singed customer data to Map---*/
-                if (approveStatus !=null && approveStatus.equalsIgnoreCase("1")) { /*---- If Client accept the agreement----*/
-                    if(murabahApplication.getFinanceMethod().equalsIgnoreCase("1") && !collaterals.isExchangeAccountCreated()){
-                        response.setResponseCode(500);
-                        response.setErrorMessage("Exchange Account not yet created.");
-                        response.setErrorCode(LsfConstants.ERROR_EXCHNAGE_ACCOUNT_NOT_YET_CREATED);
-                        log.debug("===========LSF : (reqApproveOrderAgreement)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
-                        return gson.toJson(response);
-                    }
 
-                    List<PurchaseOrder> purchaseOrders = lsfRepository.getPurchaseOrderForApplication(applicationID);
-                    if (purchaseOrders != null && purchaseOrders.size() > 0) {
-                        PurchaseOrder purchaseOrder = purchaseOrders.get(0);
-                        // CommonResponse response = new CommonResponse();
-                        response = (CommonResponse) lsfCore.releaseCollaterals(collaterals); /*-----Releasing Collaterals----*/
-                        log.debug("===========LSF : Released Collateral from OMS :" + purchaseOrder.getId() + " , Application ID :" + applicationID + "Status :" + response.getResponseCode());
+                List<PurchaseOrder> purchaseOrders = lsfRepository.getPurchaseOrderForApplication(applicationID);
+                if (purchaseOrders != null && purchaseOrders.size() > 0) {
+                    PurchaseOrder purchaseOrder = purchaseOrders.get(0);
+                    // CommonResponse response = new CommonResponse();
+                    response = (CommonResponse) lsfCore.releaseCollaterals(collaterals); /*-----Releasing Collaterals----*/
+                    log.debug("===========LSF : Released Collateral from OMS :" + purchaseOrder.getId() + " , Application ID :" + applicationID + "Status :" + response.getResponseCode());
 
-                        AdminFeeRequest adminChargeRequest = new AdminFeeRequest(); /*---Sending Admin Fee Request----*/
-                        adminChargeRequest.setReqType(LsfConstants.ADMIN_FEE_REQUEST);
-                        adminChargeRequest.setFromCashAccountNo(murabahApplication.getCashAccount());
-                        double adminFee = GlobalParameters.getInstance().getSimaCharges() + GlobalParameters.getInstance().getTransferCharges();
-                        double vatAmount=LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(adminFee));
-                        adminChargeRequest.setAmount(adminFee+vatAmount);
-                        adminChargeRequest.setBrokerVat(vatAmount);
-                        adminChargeRequest.setExchangeVat(0.0);
-                        response = helper.processOMSCommonResponseAdminFee(helper.sendMessageToOms(gson.toJson(adminChargeRequest)).toString());
+                    AdminFeeRequest adminChargeRequest = new AdminFeeRequest(); /*---Sending Admin Fee Request----*/
+                    adminChargeRequest.setReqType(LsfConstants.ADMIN_FEE_REQUEST);
+                    adminChargeRequest.setFromCashAccountNo(murabahApplication.getCashAccount());
+                    double adminFee = GlobalParameters.getInstance().getSimaCharges() + GlobalParameters.getInstance().getTransferCharges();
+                    double vatAmount=LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(adminFee));
+                    adminChargeRequest.setAmount(adminFee+vatAmount);
+                    adminChargeRequest.setBrokerVat(vatAmount);
+                    adminChargeRequest.setExchangeVat(0.0);
+                    response = helper.processOMSCommonResponseAdminFee(helper.sendMessageToOms(gson.toJson(adminChargeRequest)).toString());
 
-                        if (response.getResponseCode() == 200) {
-                            murabahApplication.setAdminFeeCharged(adminChargeRequest.getAmount());
-                            lsfRepository.updateMurabahApplication(murabahApplication);
-                            log.info("===========LSF : Admin Fee Successfully updated Application " + murabahApplication.getCustomerId() + " Customer id " + murabahApplication.getCustomerId() + " Cash Account " + murabahApplication.getCashAccount());
-                            lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARGED);
-                            log.info("===========LSF : Admin Fee Successfully Charged , CustomerID" + murabahApplication.getCustomerId() + " , Application ID :" + murabahApplication.getId() + " , Account ID:" + murabahApplication.getCashAccount() + " , Total Amount:" + (adminFee +vatAmount) + " ,Vat Amount:" + vatAmount);
-                            //update admin fee in PO level,just to keep the record
-                            lsfRepository.updateAdminFee(GlobalParameters.getInstance().getSimaCharges(),GlobalParameters.getInstance().getTransferCharges(),vatAmount,purchaseOrder.getId());
-                            CommonResponse shareTransferResponse = null;
-                            shareTransferResponse = (CommonResponse) lsfCore.transferToLsfAccount(murabahApplication.getId(), purchaseOrder.getId());/*---transferring po symbols to lsf account--*/
-                            if (shareTransferResponse.getResponseCode() == 1) {
-                                log.debug("===========LSF : Transferred PO symbols  :" + purchaseOrder.getId() + " , Application ID :" + murabahApplication.getId() + "Status :" + shareTransferResponse);
-                                log.debug("===========LSF : Transferring Collaterals  to LSF type Account :" + purchaseOrder.getId());
-                                lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_SENT);
-                                response = (CommonResponse) lsfCore.transferCollaterals(collaterals); /*----Transferring Application Collaterals to LSF Account-----*/
-
-                                if (response.getResponseCode() == 200) {
-                                    log.debug("===========LSF : Collateral transfer  to LSF type Account Request Sent to OMS :" + purchaseOrder.getId() + " , Application ID :" + murabahApplication.getId() + "Status :" + response);
-
-                                } else {
-                                    log.debug("===========LSF: Failed To Send Collateral Transfer to OMS");
-                                    lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_FAILED_TO_OMS);
-                                }
-
-                                try {
-                                    notificationManager.sendNotification(murabahApplication);
-                                } catch (Exception e) {  
-                                    log.error("Error sending notification", e);
-                                }
-
-                            } else {
-                                lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_FAILED_TO_OMS);
-                                log.debug("===========LSF: Collateral & PO Symbol Transfer Failed.");
-                            }
-
-
-                        } else {
-                            lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARG_FAILED);
-                            log.info("===========LSF : Admin Fee Request Failed, ApplicationID :" + murabahApplication.getId() + ", Account ID :" + murabahApplication.getCashAccount());
-                        }
-                        // this is moved to end as order application should be moved to next stage after all above is completed
-                        lsfRepository.updateCustomerOrderStatus(purchaseOrder.getId(), "1", statusComment, statusChangedIP);
-                        log.debug("===========LSF : Order and Application  Status Changed Successfully, Order ID :" + purchaseOrder.getId() + " , Application ID :" + murabahApplication.getId());
-                    }
-
-                } else if (approveStatus !=null && approveStatus.equalsIgnoreCase("-1")) { /*---If Client Reject the Agreement---*/
-                    log.debug("===========LSF :Order Contract Rejected, Order Contract Rejected, Release Collateral from OMS :" + orderId + " , Application ID :" + applicationID + "Status :" + response.getResponseCode());
-                    response = (CommonResponse) lsfCore.releaseCollaterals(collaterals); /*-----Release Blocked Collaterals------*/
-                    liquidateResponse = (CommonResponse) lsfCore.liquidate(orderId);/*---liquidating customer symbols---*/
-                    if (liquidateResponse.getResponseCode() == 1) {
-                        log.debug("===========LSF : Symbol Liquidation Successful , Order ID :" + orderId + " , Application ID :" + applicationID);
-                        orderStatusChangeResponse = lsfRepository.updateCustomerOrderStatus(orderId, approveStatus, statusComment, statusChangedIP);//updating user & order status
-                        if (orderStatusChangeResponse.equalsIgnoreCase("1")) {
-                            log.debug("===========LSF : Order and Application  Status Changed Successfully, Order ID :" + orderId + " , Application ID :" + applicationID + " Approve State :" + approveStatus);
-                            lsfRepository.updateActivity(applicationID, LsfConstants.STATUS_ORDER_CONTRACT_REJECTED);
-                        }
-
-                        if(collaterals.isExchangeAccountCreated()){
-                            TradingAcc lsfTradingAcc = lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(),murabahApplication.getId());
-                            CashAcc  lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(),murabahApplication.getId());
-
-                            AccountDeletionRequestState accountDeletionRequestState = lsfCore.closeLSFAccount(applicationID, lsfTradingAcc.getAccountId(), murabahApplication.getTradingAcc(), lsfCashAccount.getAccountId(), murabahApplication.getCashAccount());
-
-                            if (accountDeletionRequestState.isSent()) {
-                                log.info("===========LSF :(customerRejectOrderContract)- Account Deletion Request Sent to OMS, Application ID :" + applicationID);
-                            }
-                        }else{
-                            log.info("===========LSF :(customerRejectOrderContract)- Account Deletion Request not Sent as Exchange Account has not been created.");
-                        }
+                    if (response.getResponseCode() == 200) {
+                        murabahApplication.setAdminFeeCharged(adminChargeRequest.getAmount());
+                        lsfRepository.updateMurabahApplication(murabahApplication);
+                        log.info("===========LSF : Admin Fee Successfully updated Application " + murabahApplication.getCustomerId() + " Customer id " + murabahApplication.getCustomerId() + " Cash Account " + murabahApplication.getCashAccount());
+                        lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARGED);
+                        log.info("===========LSF : Admin Fee Successfully Charged , CustomerID" + murabahApplication.getCustomerId() + " , Application ID :" + murabahApplication.getId() + " , Account ID:" + murabahApplication.getCashAccount() + " , Total Amount:" + (adminFee +vatAmount) + " ,Vat Amount:" + vatAmount);
+                        //update admin fee in PO level,just to keep the record
+                        lsfRepository.updateAdminFee(GlobalParameters.getInstance().getSimaCharges(),GlobalParameters.getInstance().getTransferCharges(),vatAmount,purchaseOrder.getId());
+                        transferCollateralsToLSFAccount(murabahApplication, purchaseOrder, collaterals);
+                        transferPOToLSFAccount(murabahApplication, purchaseOrder);
 
                     } else {
-                        log.error("===========LSF : Liquidation Failed , Order ID :" + orderId + " , Application ID :" + applicationID);
-                        responseCode = 500;
-                        responseMessage = "Failure while liquidating symbols. ";
+                        lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARG_FAILED);
+                        log.info("===========LSF : Admin Fee Request Failed, ApplicationID :" + murabahApplication.getId() + ", Account ID :" + murabahApplication.getCashAccount());
                     }
-                    /*----- sending the Notification----*/
-                    try {
-                        if (orderStatusChangeResponse.equalsIgnoreCase("1")) {
-                            MurabahApplication application = lsfRepository.getMurabahApplication(applicationID);
-                            notificationManager.sendNotification(application);
-                        }
-                    } catch (Exception ex) {
-                        log.error("Error sending notification", ex);
-                    }
+                    lsfRepository.updateCustomerOrderStatus(purchaseOrder.getId(), "1", statusComment, statusChangedIP);
+                    log.debug("===========LSF : Order and Application  Status Changed Successfully, Order ID :" + purchaseOrder.getId() + " , Application ID :" + murabahApplication.getId());
                 }
 
-                response.setResponseCode(responseCode);
-                response.setResponseMessage(responseMessage);
-                response.setErrorMessage(responseMessage);
-                log.debug("===========LSF : (reqApproveOrderAgreement)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
-                return gson.toJson(response);
-            } else {
-                response.setResponseCode(500);
-                response.setErrorMessage("Signing/Rejecting Order Agreement is not allowed at the moment due to market unavailability");
-                response.setErrorCode(LsfConstants.ERROR_SIGNING_ORDER_AGREEMENT_IS_NOT_ALLOWED_MARCCKET_CLOSED);
-                log.debug("===========LSF : (reqApproveOrderAgreement)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
-                return gson.toJson(response);
+            } else if (approveStatus !=null && approveStatus.equalsIgnoreCase("-1")) { /*---If Client Reject the Agreement---*/
+                log.debug("===========LSF :Order Contract Rejected, Order Contract Rejected, Release Collateral from OMS :" + orderId + " , Application ID :" + applicationID + "Status :" + response.getResponseCode());
+                response = (CommonResponse) lsfCore.releaseCollaterals(collaterals);
+                liquidateOrder(orderId, murabahApplication, approveStatus, statusComment, statusChangedIP, collaterals);   
             }
-
+            response.setResponseCode(responseCode);
+            response.setResponseMessage(responseMessage);
+            response.setErrorMessage(responseMessage);
+            log.debug("===========LSF : (reqApproveOrderAgreement)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
+            return gson.toJson(response);
         } else {
             response.setResponseCode(500);
             response.setErrorMessage("Order has been liquidated due to purchase order not acceptance or Already Approved");
@@ -867,6 +800,85 @@ public class LsfCoreProcessor implements MessageProcessor {
             log.debug("===========LSF : (reqApproveOrderAgreement)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
             return gson.toJson(response);
         }
+    }
+
+    private void liquidateOrder(String orderId, MurabahApplication murabahApplication, String approveStatus, String statusComment, String statusChangedIP, MApplicationCollaterals collaterals) {
+        String applicationID = murabahApplication.getId();
+        if (!murabahApplication.getFinanceMethod().equalsIgnoreCase("1")) {
+            if(collaterals.isExchangeAccountCreated()) {
+                TradingAcc lsfTradingAcc = lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(),murabahApplication.getId());
+                CashAcc  lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(),murabahApplication.getId());
+
+                AccountDeletionRequestState accountDeletionRequestState = lsfCore.closeLSFAccount(applicationID, lsfTradingAcc.getAccountId(), murabahApplication.getTradingAcc(), lsfCashAccount.getAccountId(), murabahApplication.getCashAccount());
+
+                if (accountDeletionRequestState.isSent()) {
+                    log.info("===========LSF :(customerRejectOrderContract)- Account Deletion Request Sent to OMS, Application ID :" + applicationID);
+                }
+            } else {
+                log.info("===========LSF :(customerRejectOrderContract)- Account Deletion Request not Sent as Exchange Account has not been created.");
+            }
+            return;
+        }
+        
+        CommonResponse liquidateResponse = (CommonResponse) lsfCore.liquidate(orderId);
+        if (liquidateResponse.getResponseCode() == 1) {
+            log.debug("===========LSF : Symbol Liquidation Successful , Order ID :" + orderId + " , Application ID :" + applicationID);
+            String orderStatusChangeResponse = lsfRepository.updateCustomerOrderStatus(orderId, approveStatus, statusComment, statusChangedIP);//updating user & order status
+            if (orderStatusChangeResponse.equalsIgnoreCase("1")) {
+                log.debug("===========LSF : Order and Application  Status Changed Successfully, Order ID :" + orderId + " , Application ID :" + applicationID + " Approve State :" + approveStatus);
+                lsfRepository.updateActivity(applicationID, LsfConstants.STATUS_ORDER_CONTRACT_REJECTED);
+                notificationManager.sendNotification(murabahApplication);
+            }
+
+            if(collaterals.isExchangeAccountCreated()) {
+                TradingAcc lsfTradingAcc = lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(),murabahApplication.getId());
+                CashAcc  lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(),murabahApplication.getId());
+
+                AccountDeletionRequestState accountDeletionRequestState = lsfCore.closeLSFAccount(applicationID, lsfTradingAcc.getAccountId(), murabahApplication.getTradingAcc(), lsfCashAccount.getAccountId(), murabahApplication.getCashAccount());
+
+                if (accountDeletionRequestState.isSent()) {
+                    log.info("===========LSF :(customerRejectOrderContract)- Account Deletion Request Sent to OMS, Application ID :" + applicationID);
+                }
+            } else {
+                log.info("===========LSF :(customerRejectOrderContract)- Account Deletion Request not Sent as Exchange Account has not been created.");
+            }
+
+        }
+    }
+
+    private void transferCollateralsToLSFAccount(MurabahApplication murabahApplication, PurchaseOrder purchaseOrder, MApplicationCollaterals collaterals) {
+        log.debug("===========LSF : Transferring Collaterals  to LSF type Account :" + purchaseOrder.getId());
+        lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_SENT);
+        CommonResponse response = (CommonResponse) lsfCore.transferCollaterals(collaterals);
+
+        if (response.getResponseCode() == 200) {
+            log.debug("===========LSF : Collateral transfer  to LSF type Account Request Sent to OMS :" + purchaseOrder.getId() + " , Application ID :" + murabahApplication.getId() + "Status :" + response);
+
+        } else {
+            log.debug("===========LSF: Failed To Send Collateral Transfer to OMS");
+            lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_FAILED_TO_OMS);
+        }
+    }
+
+    private void transferPOToLSFAccount(MurabahApplication murabahApplication, PurchaseOrder purchaseOrder) {
+        if (!murabahApplication.getFinanceMethod().equalsIgnoreCase("1")) {
+            log.debug("===========LSF : Transfer PO to LSF Account is not allowed for this application.");
+            return;
+        }
+
+        CommonResponse shareTransferResponse = (CommonResponse) lsfCore.transferToLsfAccount(murabahApplication.getId(), purchaseOrder.getId());
+        if (shareTransferResponse.getResponseCode() == 1) {
+            log.debug("===========LSF : Transferred PO symbols  :" + purchaseOrder.getId() + " , Application ID :" + murabahApplication.getId() + "Status :" + shareTransferResponse);
+            try {
+                notificationManager.sendNotification(murabahApplication);
+            } catch (Exception e) {  
+                log.error("Error sending notification", e);
+            }
+        } else {
+            lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_FAILED_TO_OMS);
+            log.debug("===========LSF: Collateral & PO Symbol Transfer Failed.");
+        }
+        
     }
 
     private String getCustomerPFSummary(String applicationID) {
@@ -944,12 +956,17 @@ public class LsfCoreProcessor implements MessageProcessor {
     }
     private String updatePurchaseOrdByAdmin(Map<String, Object> map){
         String statusChangedIP = map.get("ipAddress").toString();
-        String applicationID = map.get("id").toString();
-        log.info("updatePurchaseOrdByAdmin : " + applicationID);
+        String poId = map.get("id").toString();
+        log.info("updatePurchaseOrdByAdmin PO Id: " + poId);
         CommonResponse cmr = new CommonResponse();
         try {
-            PurchaseOrder po = lsfRepository.getSinglePurchaseOrder(applicationID);
-            MurabahApplication fromDB = lsfRepository.getMurabahApplication(applicationID);
+            PurchaseOrder po = lsfRepository.getSinglePurchaseOrder(poId);
+            if (po == null) {
+                cmr.setResponseCode(500);
+                cmr.setErrorMessage("PO not found");
+                return gson.toJson(cmr);
+            }
+            MurabahApplication fromDB = lsfRepository.getMurabahApplication(po.getApplicationId());
             po.setSellButNotSettle((int) Double.parseDouble(map.get("sellButNotSettle").toString()));
             po.setIsPhysicalDelivery((int) Double.parseDouble(map.get("isPhysicalDelivery").toString()));
             List<Commodity> commodityList = (List<Commodity>) map.get("commodityList");
@@ -982,7 +999,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             String statusChangedUserName = "Admin";
             
             String responseMessage = lsfRepository.approveApplication(1, fromDB.getId(), statusMessage, statusChangedUserid, statusChangedUserName, statusChangedIP);
-
+            lsfRepository.updateActivity(fromDB.getId(), -1);
             notificationManager.sendNotification(fromDB);/*---Sending Notification---*/
             cmr.setResponseCode(200);
             cmr.setResponseMessage(responseMessage + "|" + "Successfully Updated the Purchase order by admin");
