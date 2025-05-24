@@ -200,8 +200,6 @@ public class SettlementProcessor implements MessageProcessor {
         int responseCode = 200;
         String responseMessage = "";
         String masterCashAccount = null;
-        String collateralTradingAccount = null;
-        String collateralCashAccount = null;
         log.info("===========LSF : (performManualSettlement)-REQUEST  : , ApplicationID:" + applicationID + ",Order ID:" + orderID + ", Amount:" + settlementAmount);
 
         TradingAcc lsfTradingAcc = lsfCoreService.getLsfTypeTradinAccountForUser(userID,applicationID);
@@ -246,7 +244,8 @@ public class SettlementProcessor implements MessageProcessor {
         log.info("===========LSF : (performManualSettlement)-LSF-SERVER RESPONSE  : " + gson.toJson(commonResponse));
         return gson.toJson(commonResponse);
     }
-    public String confirmRolloverByUser(Map<String, Object> map){
+
+    public String confirmRolloverByUser(Map<String, Object> map) {
         CommonResponse cmr = new CommonResponse();
         String appID = map.get("appId").toString();
         String customerId = map.get("customerId").toString();

@@ -1623,10 +1623,10 @@ public class OracleUnifiedRepository implements LSFRepository {
                 po = purchaseOrderList.get(0);
                 MurabahApplication application = getMurabahApplication(po.getApplicationId());
                 po.setInstallments(this.getPurchaseOrderInstallments(po.getId()));
-                if (application.getFinanceMethod().equalsIgnoreCase("1")){
+                if (application.getFinanceMethod().equalsIgnoreCase("2")){
                     po.setCommodityList(this.getPurchaseOrderCommodities(po.getId()));
                 }
-                else if (application.getFinanceMethod().equalsIgnoreCase("2")) {
+                else if (application.getFinanceMethod().equalsIgnoreCase("1")) {
                     po.setSymbolList(this.getPurchaseOrderSymbols(po.getId()));
                 }
             }
