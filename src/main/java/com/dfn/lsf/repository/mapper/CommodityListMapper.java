@@ -28,6 +28,11 @@ public class CommodityListMapper implements RowMapper<Commodity> {
         }catch (Exception e){
 
         }
+        try {
+            commodity.setBoughtAmnt(resultSet.getDouble("l34_bought_amnt"));
+        }catch (Exception e){
+
+        }
         return commodity;
     }
 }

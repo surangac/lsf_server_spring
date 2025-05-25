@@ -125,8 +125,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                         }
 
                         if (murabahApplication.getProductType() != 3) {
-                            orderProfit = lsfRepository.getSummationOfProfitUntilToday(applicationID,
-                                                                                       purchaseOrder.getId());
+                            orderProfit = lsfRepository.getSummationOfProfitUntilToday(applicationID, purchaseOrder.getId());
                             if (orderProfit != null) {
                                 settlementSummary.setCumulativeProfit(orderProfit.getCumulativeProfitAmount());
                                 settlementSummary.setLoanProfit(purchaseOrder.getProfitAmount());
@@ -147,15 +146,14 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                                         + ", Traded Comm :"
                                         + profit.getTradedCommission());
                         }
-                        lsfCore.calculateFTV(collaterals);
 
                     } else {
                         settlementSummary.setLoanAmount(purchaseOrder.getOrderValue());
                         settlementSummary.setAvailableCashBalance(murabahApplication.getAvailableCashBalance());
                         settlementSummary.setCumulativeProfit(purchaseOrder.getProfitAmount());
                         settlementSummary.setTotalSettlementAmount(purchaseOrder.getOrderSettlementAmount());
-                        lsfCore.calcualateFtvForCommodity(collaterals, murabahApplication);
                     }
+                    lsfCore.calculateFTV(collaterals);
 
                     if (purchaseOrder.getCustomerApproveStatus() == 0) {
                         settlementSummary.setIsCustomerApproved(false);

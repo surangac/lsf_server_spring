@@ -82,3 +82,18 @@ This project is a migration of the existing AKKA-based LSF server to Spring Boot
   copy build\libs\lsf-server-spring-1.0.0.jar release\lsf-server.jar
 
   cp build/libs/lsf-server-spring-1.0.0.jar release/lsf-server.jar
+
+
+$body = @{
+    queueName = "TO_LSF_QUEUE"
+    message = '{"customerId":"0","messageType":141,"status":-1,"filledValue":0.0,"pendingId":0,"amount":0.0,"cashAccNo":"C100002560","investorAccount":"437730","tradingAccount":"437730","exchangeAccount":"null","quantity":0,"isLsf":1,"price":0.0,"commission":0.0,"vat":0.0,"contractId":-1}'
+}
+
+Invoke-RestMethod -Uri "localhost:8089/send" -Method Post -Body ($body | ConvertTo-Json) -ContentType "application/json"
+
+  {"customerId":"0","messageType":141,"status":-1,"filledValue":0.0,"pendingId":0,"amount":0.0,"cashAccNo":"C100002560","investorAccount":"437730","tradingAccount":"437730","exchangeAccount":"null","quantity":0,"isLsf":1,"price":0.0,"commission":0.0,"vat":0.0,"contractId":-1}
+
+
+  ALTER TABLE MUBASHER_LSF.L34_PURCHASE_ORDER_COMMODITIES ADD L34_BOUGHT_AMNT NUMBER(18,5) NULL;
+
+  ALTER TABLE MUBASHER_LSF.L34_PURCHASE_ORDER_COMMODITIES MODIFY L34_BOUGHT_AMNT NUMBER(18,5);

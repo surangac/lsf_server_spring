@@ -18,4 +18,5 @@ public class Commodity {
     private int soldAmnt;
     private String arabicName;
     private String englishName;
+    private double boughtAmnt;
 }

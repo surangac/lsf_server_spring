@@ -1736,7 +1736,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pL09_L06_TRADING_ACC_ID", tradingAccountId);
         parameterMap.put("pl09_l01_app_id", applicationId);
-        return oracleRepository.getProcResult(DBConstants.PKG_L09_TRADING_SYMBOLS, DBConstants.PROC_L09_GET_TRADING_SYMBOLS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
+        return oracleRepository.getProcResult(DBConstants.PKG_L09_TRADING_SYMBOLS, DBConstants.PROC_L09_GET_TRADING_SYMBOLS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.EXCHANGE_SYMBOLS));
     }
 
     /*--------------------------Marginability Group Related-----------------------*/
@@ -1790,6 +1790,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl34_l16_purchase_ord_id", orderId);
         parameterMap.put("pl34_percentage", symbol.getPercentage());
         parameterMap.put("pl34_sold_amnt",symbol.getSoldAmnt());
+        parameterMap.put("pl34_bought_amnt",symbol.getBoughtAmnt());
         return oracleRepository.executeProc(DBConstants.L34_PO_COMMODITIES_PKG, DBConstants.L34_ADD_EDIT, parameterMap);
     }
 
@@ -1803,13 +1804,11 @@ public class OracleUnifiedRepository implements LSFRepository {
             parameterMap.put("pl14_sell_but_not_settle",po.getSellButNotSettle());
             key = oracleRepository.executeProc(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.L14_UPDATE_BY_ADMIN, parameterMap);
             for (Commodity commodity : po.getCommodityList()) {
-                if (commodity.getSoldAmnt() > 0) {
-                    key = this.updatePurchaseOrderCommodity(commodity, po.getId());
-                    if (key != null && key.equalsIgnoreCase("999")){
-                        po.setApprovalStatus(0);
-                        po.setApprovedByName("SYSTEM");
-                        this.approveRejectOrder(po);
-                    }
+                this.updatePurchaseOrderCommodity(commodity, po.getId());
+                if (key != null && key.equalsIgnoreCase("999")){
+                    po.setApprovalStatus(0);
+                    po.setApprovedByName("SYSTEM");
+                    this.approveRejectOrder(po);
                 }
             }
         }catch (Exception e){

@@ -41,6 +41,10 @@ public class SymbolMarginabilityPercentageMapper  implements RowMapper<SymbolMar
             sm.setMarginabilityPercentage(rs.getDouble("marginability_percentage"));
         }
 
+        if(isColumnExists(rs, "marginability_perc")) {
+            sm.setMarginabilityPercentage(rs.getDouble("marginability_perc"));
+        }
+
         if(isColumnExists(rs, "marginability_group_id")) {
             sm.setGroupId(rs.getDouble("marginability_group_id"));
         }

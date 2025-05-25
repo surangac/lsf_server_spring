@@ -685,22 +685,8 @@ public class LsfCoreService {
     }
 
     public void calculateFTV(MApplicationCollaterals collaterals) { /*-----Calculate FTV for ABIC-----*/
-        MurabahApplication application = lsfRepository.getMurabahApplication(collaterals.getApplicationId());
-        if (application != null && application.getFinanceMethod().equalsIgnoreCase("2")) {
-            calcualateFtvForCommodity(collaterals, application);
-        } else {
-            if (collaterals.getOutstandingAmount() > 0) {
-                double ftv = (collaterals.getNetTotalColleteral()/collaterals.getOutstandingAmount()) * 100.0;
-                collaterals.setFtv(LSFUtils.ceilTwoDecimals(ftv));
-            }else{
-                collaterals.setFtv(0.0);
-            }
-        }
-    }
-
-    public void calcualateFtvForCommodity(MApplicationCollaterals collaterals, MurabahApplication application) {
         if (collaterals.getOutstandingAmount() > 0) {
-            double ftv = (application.getAvailableCashBalance()/collaterals.getOutstandingAmount()) * 100.0;
+            double ftv = (collaterals.getNetTotalColleteral()/collaterals.getOutstandingAmount()) * 100.0;
             collaterals.setFtv(LSFUtils.ceilTwoDecimals(ftv));
         }else{
             collaterals.setFtv(0.0);

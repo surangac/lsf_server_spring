@@ -195,6 +195,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                     map.put("status", commodity.getStatus());
                     map.put("percentage", commodity.getPercentage());
                     map.put("soldAmnt", commodity.getSoldAmnt());
+                    map.put("boughtAmnt", commodity.getBoughtAmnt());
 
                     responseList.add(map);
                 }
@@ -715,6 +716,7 @@ public class LsfCoreProcessor implements MessageProcessor {
         MurabahApplication murabahApplication = null;
         murabahApplication = lsfRepository.getMurabahApplication(applicationID);
         MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(applicationID);
+        boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
 
         if (murabahApplication.getCurrentLevel() != 18 && (murabahApplication !=null && !(murabahApplication.getAdminFeeCharged() > 0))) { /*---If order is already liquidate---*/
             int responseCode = 200;
@@ -753,10 +755,11 @@ public class LsfCoreProcessor implements MessageProcessor {
                     response = (CommonResponse) lsfCore.releaseCollaterals(collaterals); /*-----Releasing Collaterals----*/
                     log.debug("===========LSF : Released Collateral from OMS :" + purchaseOrder.getId() + " , Application ID :" + applicationID + "Status :" + response.getResponseCode());
 
-                    AdminFeeRequest adminChargeRequest = new AdminFeeRequest(); /*---Sending Admin Fee Request----*/
+                    double adminFee = isCommodityApplication ? GlobalParameters.getInstance().getComodityAdminFee() : GlobalParameters.getInstance().getShareAdminFee();
+                    AdminFeeRequest adminChargeRequest = new AdminFeeRequest();
                     adminChargeRequest.setReqType(LsfConstants.ADMIN_FEE_REQUEST);
                     adminChargeRequest.setFromCashAccountNo(murabahApplication.getCashAccount());
-                    double adminFee = GlobalParameters.getInstance().getSimaCharges() + GlobalParameters.getInstance().getTransferCharges();
+                    adminFee = adminFee + GlobalParameters.getInstance().getTransferCharges();
                     double vatAmount=LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(adminFee));
                     adminChargeRequest.setAmount(adminFee+vatAmount);
                     adminChargeRequest.setBrokerVat(vatAmount);
@@ -983,6 +986,12 @@ public class LsfCoreProcessor implements MessageProcessor {
                 return gson.toJson(cmr);
             }
             MurabahApplication fromDB = lsfRepository.getMurabahApplication(po.getApplicationId());
+            // if (fromDB != null && fromDB.getCurrentLevel() > 14) {
+            //     cmr.setResponseCode(500);
+            //     cmr.setErrorMessage("Purchase order is already Submitted");
+            //     return gson.toJson(cmr);
+            // }
+            
             po.setSellButNotSettle((int) Double.parseDouble(map.get("sellButNotSettle").toString()));
             po.setIsPhysicalDelivery((int) Double.parseDouble(map.get("isPhysicalDelivery").toString()));
             List<Commodity> commodityList = (List<Commodity>) map.get("commodityList");
@@ -1002,6 +1011,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                         commodity.setStatus((int) Double.parseDouble(params.get("status").toString()));
                         commodity.setPercentage(Double.parseDouble(params.get("percentage").toString()));
                         commodity.setSoldAmnt((int) Double.parseDouble(params.get("soldAmnt").toString()));
+                        commodity.setBoughtAmnt(Double.parseDouble(params.get("boughtAmnt").toString()));
                         commodities.add(commodity);
 
                     }
@@ -1016,7 +1026,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             
             String responseMessage = lsfRepository.approveApplication(1, fromDB.getId(), statusMessage, statusChangedUserid, statusChangedUserName, statusChangedIP);
             lsfRepository.updateActivity(fromDB.getId(), -1);
-            notificationManager.sendNotification(fromDB);/*---Sending Notification---*/
+            notificationManager.sendNotification(fromDB);
             cmr.setResponseCode(200);
             cmr.setResponseMessage(responseMessage + "|" + "Successfully Updated the Purchase order by admin");
             log.info("Successfully Updated the Purchase order by admin");
@@ -1161,9 +1171,12 @@ public class LsfCoreProcessor implements MessageProcessor {
     private String updateAuthAbicToSell(Map<String, Object> map){
         CommonResponse cmr = new CommonResponse();
         PurchaseOrder po = new PurchaseOrder();
+
+        int authAbicToSell = Integer.parseInt(map.get("authAbicToSell").toString());
+        
         po.setId(map.get("poid").toString());
-        po.setAuthAbicToSell((int) Double.parseDouble(map.get("authAbicToSell").toString()));
-        if (po.getAuthAbicToSell() == 0){
+        po.setAuthAbicToSell(authAbicToSell);
+        if (authAbicToSell == 0){
             po.setIsPhysicalDelivery(1);
         }else {
             po.setIsPhysicalDelivery(0);
