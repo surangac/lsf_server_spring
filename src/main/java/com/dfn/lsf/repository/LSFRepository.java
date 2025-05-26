@@ -520,6 +520,7 @@ public interface LSFRepository {
     List<Agreement> getActiveAgreementsForProduct(int financeMethod,int productType);
     String addCommodityToMaster(Commodity commodity);
     List<Commodity> getAllActiveCommodities();
+    String deleteCommodity(String pm10id);
     List<Commodity> getPurchaseOrderCommodities(String orderId);
     String addAuthAbicToSellStatus(PurchaseOrder purchaseOrder);
     List<PurchaseOrder> getPOForSetAuthAbicToSell(int gracePrd);

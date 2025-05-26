@@ -2996,6 +2996,13 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
+    public String deleteCommodity(String pm12id) {
+        Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("pm12_id", pm12id);
+        return oracleRepository.executeProc(DBConstants.M12_COMMODITIES_PKG, DBConstants.PROC_M12_DELETE, parameterMap);
+    }
+
+    @Override
     public List<Commodity> getAllActiveCommodities(){
         Map<String, Object> parameterMap = new HashMap<>();
         return oracleRepository.getProcResult(DBConstants.M12_COMMODITIES_PKG, DBConstants.M12_GET_ALL_ACTIVE_COMMODITY, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.COMMODITY_LIST));

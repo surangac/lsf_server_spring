@@ -102,6 +102,7 @@ public class LsfConstants {
     public static final String REQ_GET_AGREEMENT_LIST = "getAgreements";
     public static final String REQ_ADD_COMMODITIES = "addCommodity";
     public static final String REQ_GET_COMMODITIES = "getActiveCommodityList";
+    public static final String DELETE_COMMODITY = "deleteCommodity";
     public static final String UPDATE_SYMBOL_MARGINABILITY = "updateSymbolMarginability";
 
     /*---Authentication Related--*/

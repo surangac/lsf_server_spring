@@ -6,6 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Commodity {
+    private String id;
     private String symbolCode;
     private String symbolName;
     private String shortDescription;

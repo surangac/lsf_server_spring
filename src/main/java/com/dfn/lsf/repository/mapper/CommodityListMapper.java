@@ -10,6 +10,7 @@ public class CommodityListMapper implements RowMapper<Commodity> {
     @Override
     public Commodity mapRow(ResultSet resultSet, int i) throws SQLException {
         Commodity commodity = new Commodity();
+        commodity.setId(resultSet.getString("m12_id"));
         commodity.setSymbolName(resultSet.getString("m12_commodity_name"));
         commodity.setSymbolCode(resultSet.getString("m12_commodity_code"));
         commodity.setShortDescription(resultSet.getString("m12_description"));

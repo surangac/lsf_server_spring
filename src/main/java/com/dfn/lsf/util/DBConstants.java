@@ -346,6 +346,7 @@ public class DBConstants {
     public static final String M12_COMMODITIES_PKG = "m12_commodities_pkg";
     public static final String M12_ADD_UPDATE = "m12_add_update";
     public static final String M12_GET_ALL_ACTIVE_COMMODITY = "m12_get_all_active_commodity";
+    public static final String PROC_M12_DELETE = "m12_delete";
     public static final String L34_PO_COMMODITIES_PKG = "l34_po_commodities_pkg";
     public static final String L34_ADD_EDIT = "l34_add_edit";
     public static final String L34_GET_PO_COMMODITIES = "l34_get_po_commodities";

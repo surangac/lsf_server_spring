@@ -117,6 +117,8 @@ public class ApplicationMasterDataProcessor implements MessageProcessor {
                 return addCommodityToMaster(map);
             case LsfConstants.REQ_GET_COMMODITIES:
                 return getActiveCommodity(map);
+            case LsfConstants.DELETE_COMMODITY:
+                return deleteCommodity(map);
             default:
                 logger.info("Invalid Sub-message type received");
         }
@@ -581,7 +583,7 @@ public class ApplicationMasterDataProcessor implements MessageProcessor {
             Commodity commodity = new Commodity();
             commodity.setSymbolName(paraMap.get("symbolName").toString());
             commodity.setSymbolCode(paraMap.get("symbolCode").toString());
-            commodity.setShortDescription(paraMap.get("description").toString());
+            commodity.setShortDescription(paraMap.get("shortDescription").toString());
             commodity.setUnitOfMeasure(paraMap.get("unitOfMeasure").toString());
             commodity.setPrice(Double.parseDouble(paraMap.get("price").toString()));
             commodity.setBroker(paraMap.get("broker").toString());
@@ -618,6 +620,24 @@ public class ApplicationMasterDataProcessor implements MessageProcessor {
             cmr.setResponseCode(400);
             cmr.setErrorMessage("ERROR while get commodities");
         }
+        return gson.toJson(cmr);
+    }
+
+    private String deleteCommodity(Map<String, Object> map) {
+        CommonResponse cmr = new CommonResponse();
+        try {
+            String id = map.get("id").toString();
+            logger.debug("===========LSF : (deleteCommodity)-REQUEST, ID " + id);
+            String result = lsfRepository.deleteCommodity(id);
+            cmr.setResponseCode(200);
+            cmr.setResponseMessage(result);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            cmr.setResponseCode(500);
+            cmr.setResponseMessage("Error while deleting delete commodity");
+        }
+        logger.debug("===========LSF : (deleteCommodity)-LSF-SERVER RESPONSE  : " + gson.toJson(cmr));
+
         return gson.toJson(cmr);
     }
 }
