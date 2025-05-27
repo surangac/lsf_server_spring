@@ -1568,8 +1568,13 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<PurchaseOrder> getAllPurchaseOrder(String applicationId) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pL14_APP_ID", applicationId);
-        List<PurchaseOrder> purchaseOrderList = oracleRepository.getProcResult(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_GET_ALL_ORDER, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.PURCHASE_ORDER));
         MurabahApplication application = getMurabahApplication(applicationId);
+        if (application == null) {
+            log.error("Application with ID " + applicationId + " not found.");
+            return Collections.emptyList();
+        }
+        List<PurchaseOrder> purchaseOrderList = oracleRepository.getProcResult(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_GET_ALL_ORDER, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.PURCHASE_ORDER));
+
         log.info("getAllPurchaseOrder finance method : "+application.getFinanceMethod()+ " pL14_APP_ID : "+applicationId);
         for (PurchaseOrder purchaseOrder : purchaseOrderList) {
             purchaseOrder.setInstallments(this.getPurchaseOrderInstallments(purchaseOrder.getId()));

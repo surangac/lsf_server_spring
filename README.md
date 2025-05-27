@@ -97,3 +97,8 @@ Invoke-RestMethod -Uri "localhost:8089/send" -Method Post -Body ($body | Convert
   ALTER TABLE MUBASHER_LSF.L34_PURCHASE_ORDER_COMMODITIES ADD L34_BOUGHT_AMNT NUMBER(18,5) NULL;
 
   ALTER TABLE MUBASHER_LSF.L34_PURCHASE_ORDER_COMMODITIES MODIFY L34_BOUGHT_AMNT NUMBER(18,5);
+
+
+  To DO
+  1. getCustomerDetailsOrderContract - seems charges are wrong, need to check
+  2. exact flow with share, commodity with physical delivery, commodity with allow to sell

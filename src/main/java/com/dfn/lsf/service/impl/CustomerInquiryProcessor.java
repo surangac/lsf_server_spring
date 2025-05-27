@@ -660,6 +660,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
         String applicationID = map.get("applicationID").toString();
         MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(applicationID);
         MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(applicationID);
+        boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
         logger.info("===========LSF(getCustomerDetailsOrderContract): REQUEST , appID" + applicationID);
         OrderContractCustomerInfo contractCustomerInfo = lsfRepository.getOrderContractCustomerInfo(applicationID);
         if (contractCustomerInfo != null) {
@@ -696,21 +697,13 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                 contractCustomerInfo.setMurabahaPFNumber(lsfTradingAccount.getAccountId());
             }
 
-            contractCustomerInfo.setCustomerCity(contractCustomerInfo.getBranchCity());// need to change
-            double vatAmountFroAdminFee = 0;
-            if (contractCustomerInfo.getSimaCharges() > 0 || contractCustomerInfo.getTransferCharges() > 0) {
-                contractCustomerInfo.setTransferringFee(contractCustomerInfo.getSimaCharges()
-                                                        + contractCustomerInfo.getTransferCharges());
-                vatAmountFroAdminFee =
-                        LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(contractCustomerInfo.getSimaCharges()
-                                                                                        + contractCustomerInfo.getTransferCharges()));
-            } else {
-                double adminFee = GlobalParameters.getInstance().getTransferCharges() + GlobalParameters.getInstance()
-                                                                                                        .getSimaCharges();
-                vatAmountFroAdminFee = LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(adminFee));
-                contractCustomerInfo.setTransferringFee(adminFee);
-            }
-            contractCustomerInfo.setVatAmountforAdminFee(vatAmountFroAdminFee);
+            contractCustomerInfo.setCustomerCity(contractCustomerInfo.getBranchCity());
+
+            double adminFee = isCommodityApplication ? GlobalParameters.getInstance().getComodityAdminFee() : GlobalParameters.getInstance().getShareAdminFee();
+            adminFee = adminFee + GlobalParameters.getInstance().getTransferCharges();
+            double vatAmount=LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(adminFee));
+            contractCustomerInfo.setTransferringFee(adminFee);
+            contractCustomerInfo.setTransferCharges(vatAmount);
             contractCustomerInfo.setCollaterals(collaterals);
             contractCustomerInfo.setCustomerActivityID(murabahApplication.getCustomerActivityID());
             contractCustomerInfo.setIsExchangeAccountCreated(collaterals.isExchangeAccountCreated());
