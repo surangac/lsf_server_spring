@@ -1,21 +1,23 @@
 package com.dfn.lsf.util;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.dfn.lsf.model.*;
+import com.dfn.lsf.model.requestMsg.CommonInqueryMessage;
+import com.google.gson.reflect.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
-import com.dfn.lsf.model.CommonResponse;
-import com.dfn.lsf.model.LiquidityType;
-import com.dfn.lsf.model.MarginabilityGroup;
-import com.dfn.lsf.model.Symbol;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.integration.IntegrationService;
 import com.google.gson.Gson;
-import com.dfn.lsf.model.QueMsgDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -352,4 +354,66 @@ public class Helper {
             return pendingBasketCancelResponse;
         }
     }
+
+    @Cacheable(value = "commonCacheOneMinute", key = "#customerId + '_' + #applicationId", unless = "#result == null")
+   public List<CashAcc> getLsfTypeCashAccountForApp(String customerId, String applicationId) {
+        List<CashAcc> cashAccounts = new ArrayList<>();
+        try {
+            CommonInqueryMessage request = new CommonInqueryMessage();
+            request.setReqType(LsfConstants.GET_LSF_TYPE_CASH_ACCOUNTS);
+            request.setCustomerId(customerId);
+            request.setContractId(applicationId);
+
+            String result = sendMessageToOms(gson.toJson(request)).toString();
+            Map<String, Object> resultMap = gson.fromJson(result, HashMap.class);
+
+            List<Map<String, Object>> lsfcash = (List<Map<String, Object>>) resultMap.get("responseObject");
+            if (lsfcash != null) {
+                for (Map<String, Object> cash : lsfcash) {
+                    CashAcc cashAcc = CashAcc.builder()
+                            .accountId(cash.get("accountNo").toString())
+                            .cashBalance(Double.parseDouble(cash.get("balance").toString()))
+                            .blockedAmount(Double.parseDouble(cash.get("blockedAmount").toString()))
+                            .pendingSettle(Double.parseDouble(cash.get("pendingSettle").toString()))
+                            .netReceivable(Double.parseDouble(cash.get("netReceivable").toString()))
+                            .isLsfType(true)
+                            .build();
+                    cashAccounts.add(cashAcc);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error getting LSF type cash account for customer id : {}, Application id : {}", customerId, applicationId, e);
+        }
+        return cashAccounts;
+    }
+
+    @Cacheable(value = "commonCacheOneMinute", key = "#customerId", unless = "#result == null")
+    public List<TradingAccOmsResp> getTradingAccountList(String customerId) {
+        CommonInqueryMessage trReq = new CommonInqueryMessage();
+        trReq.setReqType(LsfConstants.GET_TRADING_ACCOUNT_LIST);
+        trReq.setCustomerId(customerId);
+        logger.info("===========LSF(reqTradingAccList): REQUEST , customerID" + trReq.getCustomerId());
+
+        String resMap = portfolioRelatedOMS(gson.toJson(trReq));
+        Type listType = new TypeToken<List<TradingAccOmsResp>>() {}.getType();
+        Map<String, Object> resultMap = gson.fromJson(resMap, HashMap.class);
+        List<TradingAccOmsResp> tradingAccList = gson.fromJson(gson.toJson(resultMap.get("responseObject")), listType);
+        logger.info("===========LSF (reqTradingAccList): LSF-SERVER RESPONSE  :"
+                    + gson.toJson(tradingAccList)
+                    + ", customerID :"
+                    + trReq.getCustomerId());
+        return tradingAccList;
+    }
+
+    public TradingAccOmsResp getTradingAccount(String customerId, String tradingAccId) {
+        List<TradingAccOmsResp> tradingAccList = getTradingAccountList(customerId);
+        if (tradingAccList != null) {
+            return tradingAccList.stream()
+                .filter(tradingAcc -> tradingAcc.getAccountId().equals(tradingAccId))
+                .findFirst()
+                .orElse(null);
+        }
+        return null;
+    }
+
 }

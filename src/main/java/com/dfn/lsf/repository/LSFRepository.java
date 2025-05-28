@@ -87,6 +87,8 @@ public interface LSFRepository {
 
     List<MurabahApplication> getSnapshotCurrentLevel(int requestStatus);
 
+    List<MurabahApplication> getCommoditySnapshotCurrentLevel(int requestStatus);
+
     List<MurabahApplication> getHistoryApplication(int filterCriteria, String filterValue, String fromDate, String toDate, int requestStatus);
 
     List<MurabahApplication> getReversedApplication(int reversedStatus);

@@ -1,5 +1,6 @@
 package com.dfn.lsf.model;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,6 +9,7 @@ import lombok.Setter;
 /**
  * Created by surangac on 5/25/2015.
  */
+@Builder
 public class CashAcc {
     private String accountId;
     private String currencyCode;
@@ -22,4 +24,5 @@ public class CashAcc {
     private String investmentAccountNumber;
     private double pendingSettle;
     private double netReceivable;
+    private double blockedAmount;
 }

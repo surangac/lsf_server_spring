@@ -6,19 +6,32 @@ import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import com.github.benmanes.caffeine.cache.Caffeine;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
 @EnableCaching
 public class CacheConfig {
-
     @Bean
     public CacheManager cacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager("murabahApplications");
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
         cacheManager.setCaffeine(Caffeine.newBuilder()
-                .maximumSize(1000)
-                .expireAfterWrite(1, TimeUnit.MINUTES)
-                .recordStats());
+                                         .maximumSize(1000)
+                                         .recordStats());
         return cacheManager;
     }
-} 
+
+    @Bean
+    public Map<String, Caffeine<Object, Object>> cacheConfigurations() {
+        Map<String, Caffeine<Object, Object>> configurations = new HashMap<>();
+        configurations.put("murabahApplications", Caffeine.newBuilder()
+                                                          .expireAfterWrite(1, TimeUnit.MINUTES)
+                                                          .maximumSize(1000));
+        configurations.put("commonCacheOneMinute", Caffeine.newBuilder()
+                                                           .expireAfterWrite(1, TimeUnit.MINUTES)
+                                                           .maximumSize(500));
+        return configurations;
+    }
+}

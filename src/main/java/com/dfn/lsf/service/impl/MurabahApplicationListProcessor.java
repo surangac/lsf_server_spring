@@ -1,22 +1,14 @@
 package com.dfn.lsf.service.impl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import com.dfn.lsf.util.MessageType;
+import com.dfn.lsf.model.*;
+import com.dfn.lsf.util.*;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import com.dfn.lsf.model.Comment;
-import com.dfn.lsf.model.CommonResponse;
-import com.dfn.lsf.model.MApplicationFlow;
-import com.dfn.lsf.model.MurabahApplication;
-import com.dfn.lsf.model.MurabahApplicationListResponse;
-import com.dfn.lsf.model.Status;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.MessageProcessor;
-import com.dfn.lsf.util.LsfConstants;
 import com.google.gson.Gson;
 
 import lombok.RequiredArgsConstructor;
@@ -38,6 +30,7 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
     private final LSFRepository lsfRepository;
     
     private final Gson gson;
+    private final Helper helper;
     
     @Override
     public String process(String request) {
@@ -65,6 +58,12 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
                     return replyToReversed(requestMap);
                 case LsfConstants.GET_FAILED_DEPOSITS_FOR_PO:/*----------------Get failed deposits for purchase order------------Client*/
                     return getFailedDeposits(requestMap);
+                case LsfConstants.GET_COMMODITY_APPLICATION_SUMMARY:/*-----------Get Commodity Application Summary - Admin-----------*/
+                    return getCommodityApplicationSummery(requestMap);
+                case LsfConstants.GET_MURABAH_APPLICATION_SUMMARY:/*-----------Get Murabah Application Summary - Admin-----------*/
+                    return getApplicationSummery(requestMap);
+                case LsfConstants.GET_MURABAH_APPLICATION_DETAILS:/*-----------Get Murabah Application Summary - Admin-----------*/
+                    return getCompleteApplication(requestMap);
                 default:
                     log.warn("Unknown sub-message type: {}", subMessageType);
                     return createErrorResponse("Unknown sub-message type: " + subMessageType);
@@ -73,6 +72,186 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
             log.error("Error processing application master data request", e);
             return createErrorResponse("Error processing request: " + e.getMessage());
         }
+    }
+
+    private String getCommodityApplicationSummery(Map<String, Object> returnMap) {
+        log.debug("===========LSF : (getMurabahApplicationSummary)-REQUEST , Request Params:" + gson.toJson(returnMap));
+        int reqStatus = 0;
+        if (returnMap.containsKey("requestStatus")) {
+            reqStatus = Integer.parseInt(returnMap.get("requestStatus").toString());
+        }
+        List<MurabahApplication>  murabahApplications = lsfRepository.getCommoditySnapshotCurrentLevel(reqStatus);
+        if(!murabahApplications.isEmpty()) {
+            murabahApplications.stream().forEach(murabahApplication -> {
+                murabahApplication.setInstitutionInvestAccount(GlobalParameters.getInstance()
+                                                                               .getInstitutionInvestAccount());
+                List<PurchaseOrder> purchaseOrderList = lsfRepository.getAllPurchaseOrderforCommodity(murabahApplication.getId());
+                murabahApplication.setPurchaseOrderList(purchaseOrderList);
+            });
+        }
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setResponseCode(200);
+        commonResponse.setResponseObject(murabahApplications);
+        log.info("===========LSF : (getMurabahApplicationSummary)LSF-SERVER RESPONSE  :" + gson.toJson(commonResponse));
+        return gson.toJson(commonResponse);
+    }
+
+    private String getApplicationSummery(Map<String, Object> returnMap) {
+        log.debug("===========LSF : (getMurabahApplicationSummary)-REQUEST , Request Params:" + gson.toJson(returnMap));
+        int reqStatus = 0;
+        if (returnMap.containsKey("requestStatus")) {
+            reqStatus = Integer.parseInt(returnMap.get("requestStatus").toString());
+        }
+        List<MurabahApplication>  murabahApplications = lsfRepository.getSnapshotCurrentLevel(reqStatus);
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setResponseCode(200);
+        commonResponse.setResponseObject(murabahApplications);
+        log.info("===========LSF : (getMurabahApplicationSummary)LSF-SERVER RESPONSE  :" + gson.toJson(commonResponse));
+        return gson.toJson(commonResponse);
+    }
+
+    private String getCompleteApplication(Map<String, Object> returnMap) {
+        log.debug("===========LSF : (getMurabahApplicationList)-REQUEST , Request Params:" + gson.toJson(returnMap));
+        int filterCriteria = 0;
+        String filterValue = "";
+        String fromDate = "";
+        String toDate = "";
+        String corellationID = "";
+
+        int reqStatus = 0;
+        if (returnMap.containsKey("requestStatus")) {
+            reqStatus = Integer.parseInt(returnMap.get("requestStatus").toString());
+        }
+
+        if (returnMap.containsKey("corellationID")) {
+            corellationID = returnMap.get("corellationID").toString();
+        }
+        if (!returnMap.containsKey("applicationId")) {
+            return "Invalid Request: applicationId is required";
+        }
+        String applicationId = returnMap.get("applicationId").toString();
+        if (returnMap.containsKey("isSnapshot")) {
+            if (returnMap.get("isSnapshot").toString().equalsIgnoreCase("1")) { // loading the  snapshot
+                if (returnMap.containsKey("requestStatus")) {
+                    log.debug("===========LSF : Getting the SnapShot for Current Level :" + reqStatus);
+                    List<MurabahApplication> fromDB = getSnapshotCurrentLevel(applicationId, reqStatus);
+                    List<MurabahApplication> reversed = lsfRepository.getReversedApplication(reqStatus);
+                    for (MurabahApplication murabahApplication : reversed) {
+                        fromDB.add(murabahApplication);
+                    }
+                    MurabahApplicationListResponse listResponse = new MurabahApplicationListResponse();
+                    listResponse.setApplicationList(fromDB);
+                    return gson.toJson(listResponse);
+                }
+
+            } else if (returnMap.get("isSnapshot").toString().equalsIgnoreCase("0")) {
+                if (returnMap.containsKey("filterCriteria")) {
+                    filterCriteria = Integer.parseInt(returnMap.get("filterCriteria").toString());
+                }
+                if (returnMap.containsKey("filterValue")) {
+                    filterValue = returnMap.get("filterValue").toString();
+                    if (filterValue.equalsIgnoreCase("*")) {
+                        filterValue = "";
+                    }
+                }
+                if (returnMap.containsKey("fromDate")) {
+                    fromDate = returnMap.get("fromDate").toString();
+                }
+                if (returnMap.containsKey("toDate")) {
+                    toDate = returnMap.get("toDate").toString();
+                }
+                MurabahApplicationListResponse listResponse = new MurabahApplicationListResponse();
+                try {
+                    List<MurabahApplication> fromDB = lsfRepository.getFilteredApplication(filterCriteria, filterValue, fromDate, toDate, reqStatus);
+
+                    if (returnMap.containsKey("requestStatus")) {
+                        List<MurabahApplication> tempApp = lsfRepository.getReversedApplication(reqStatus);
+                        for (MurabahApplication murabahApplication : tempApp) {
+                            fromDB.add(murabahApplication);
+                        }
+                    }
+                    listResponse.setApplicationList(fromDB);
+                } catch (Exception e) {
+                    listResponse.setResponseCode(500);
+                }
+                log.info("===========LSF : (getMurabahApplicationList)LSF-SERVER RESPONSE  :" + gson.toJson(listResponse) + " , CorrelationID:" + corellationID);
+                return gson.toJson(listResponse);
+            }
+        } else {
+            if (returnMap.containsKey("filterCriteria")) {
+                filterCriteria = Integer.parseInt(returnMap.get("filterCriteria").toString());
+            }
+            if (returnMap.containsKey("filterValue")) {
+                filterValue = returnMap.get("filterValue").toString();
+                if (filterValue.equalsIgnoreCase("*")) {
+                    filterValue = "";
+                }
+            }
+            if (returnMap.containsKey("fromDate")) {
+                fromDate = returnMap.get("fromDate").toString();
+            }
+            if (returnMap.containsKey("toDate")) {
+                toDate = returnMap.get("toDate").toString();
+            }
+            MurabahApplicationListResponse listResponse = new MurabahApplicationListResponse();
+            try {
+
+                List<MurabahApplication> fromDB = lsfRepository.getFilteredApplication(filterCriteria, filterValue, fromDate, toDate, reqStatus);
+
+                if (returnMap.containsKey("requestStatus")) {
+                    List<MurabahApplication> tempApp = lsfRepository.getReversedApplication(reqStatus);
+                    for (MurabahApplication murabahApplication : tempApp) {
+                        fromDB.add(murabahApplication);
+                    }
+                }
+                listResponse.setApplicationList(fromDB);
+            } catch (Exception e) {
+                listResponse.setResponseCode(500);
+            }
+            log.info("===========LSF : (getMurabahApplicationList)LSF-SERVER RESPONSE  :" + gson.toJson(listResponse) + " , CorrelationID:" + corellationID);
+            return gson.toJson(listResponse);
+        }
+        return null;
+
+    }
+
+    public List<MurabahApplication> getSnapshotCurrentLevel(String applicationId, int requestStatus) {
+        List<MurabahApplication> murabahApplications = lsfRepository.getMurabahAppicationApplicationID(applicationId);
+        MurabahApplication murabahApplication = murabahApplications.isEmpty() ? null : murabahApplications.getFirst();
+        if (!murabahApplications.isEmpty()) {
+            List<Status> statuses = lsfRepository.getApplicationStatus(murabahApplication.getId());
+            murabahApplication.setAppStatus(statuses);
+            TradingAccOmsResp omsTradingAcc = helper.getTradingAccount(murabahApplication.getCustomerId(), murabahApplication.getTradingAcc());
+            if (murabahApplication.getCashAccount().equals(omsTradingAcc.getRelCashAccNo())) {
+                murabahApplication.setAvailableCashBalance(omsTradingAcc.getAvailableCash());
+            }
+            List<Comment> finalCommentList = new ArrayList<>();
+            if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
+
+                List<Comment> commentList = lsfRepository.getApplicationComment(murabahApplication.getId());
+                for (Comment comment : commentList) {
+                    if (Integer.parseInt(comment.getParentID()) == 0) {
+                        Comment tempComment = comment;
+                        for (Comment reply : commentList) {
+                            if (reply.getParentID().equalsIgnoreCase(tempComment.getCommentID().trim())) {
+                                tempComment.setReply(reply);
+                            }
+                        }
+                        finalCommentList.add(tempComment);
+                    }
+                }
+                murabahApplication.setCommentList(finalCommentList);
+                if (requestStatus == 14) {
+                    murabahApplication.setInstitutionInvestAccount(GlobalParameters.getInstance().getInstitutionInvestAccount());
+                    List<Agreement> agreementList = lsfRepository.getActiveAgreements(Integer.parseInt(murabahApplication.getId()));
+                    murabahApplication.setAgreementList(agreementList);
+
+                    List<PurchaseOrder> purchaseOrderList = lsfRepository.getAllPurchaseOrderforCommodity(murabahApplication.getId());
+                    murabahApplication.setPurchaseOrderList(purchaseOrderList);
+                }
+            }
+        }
+        return murabahApplications;
     }
 
     private String getApplicationList(Map<String, Object> returnMap) {
@@ -91,7 +270,7 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
                 if (returnMap.containsKey("requestStatus")) {
                     reqStatus = returnMap.get("requestStatus").toString();
                     log.debug("===========LSF : Getting the SnapShot for Current Level :" + reqStatus);
-                    List<MurabahApplication> fromDB = lsfRepository.getSnapshotCurrentLevel(Integer.parseInt(reqStatus));
+                    List<MurabahApplication> fromDB = getSnapshotCurrentLevel(Integer.parseInt(reqStatus));
                     List<MurabahApplication> reversed = lsfRepository.getReversedApplication(Integer.parseInt(reqStatus));
                     for (MurabahApplication murabahApplication : reversed) {
                         fromDB.add(murabahApplication);
@@ -183,7 +362,51 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
         return null;
 
     }
-    
+
+    public List<MurabahApplication> getSnapshotCurrentLevel(int requestStatus) {
+        List<Status> statusList = null;
+        List<Comment> commentList = null;
+        List<MurabahApplication> murabahApplications = null;
+        List<Agreement> agreementList = null;
+        List<PurchaseOrder> purchaseOrderList = null;
+
+        Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("pl01_request_status", requestStatus);
+        murabahApplications = lsfRepository.getSnapshotCurrentLevel(requestStatus);
+        if (murabahApplications.size() > 0) {
+            for (MurabahApplication murabahApplication : murabahApplications) {
+                List<Comment> finalCommentList = new ArrayList<>();
+                if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
+                    statusList = lsfRepository.getApplicationStatus(murabahApplication.getId());
+                    murabahApplication.setAppStatus(statusList);
+                    commentList = lsfRepository.getApplicationComment(murabahApplication.getId());
+                    for (Comment comment : commentList) {
+                        if (Integer.parseInt(comment.getParentID()) == 0) {
+                            Comment tempComment = comment;
+                            for (Comment reply : commentList) {
+                                if (reply.getParentID().equalsIgnoreCase(tempComment.getCommentID().trim())) {
+                                    tempComment.setReply(reply);
+                                }
+                            }
+                            finalCommentList.add(tempComment);
+                        }
+                    }
+                    murabahApplication.setCommentList(finalCommentList);
+                    if (requestStatus == 14) {
+                        murabahApplication.setInstitutionInvestAccount(GlobalParameters.getInstance().getInstitutionInvestAccount());
+                        agreementList = lsfRepository.getActiveAgreements(Integer.parseInt(murabahApplication.getId()));
+                        murabahApplication.setAgreementList(agreementList);
+
+                        purchaseOrderList = lsfRepository.getAllPurchaseOrderforCommodity(murabahApplication.getId());
+                        murabahApplication.setPurchaseOrderList(purchaseOrderList);
+                    }
+                }
+
+            }
+        }
+        return murabahApplications;
+    }
+
     private String getApplicationHistory(Map<String, Object> returnMap) {
         log.debug("===========LSF : (applicationHistory)-REQUEST , params:" + gson.toJson(returnMap));
         String reqStatus = "";

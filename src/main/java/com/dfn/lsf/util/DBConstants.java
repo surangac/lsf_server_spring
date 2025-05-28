@@ -68,6 +68,7 @@ public class DBConstants {
     public static final String PROC_L01_GET_NOT_GRANTED = "l01_get_notGranted_app";
     public static final String PROC_L01_GET_FILTERED_APPLICATION = "l01_get_filtered_application";
     public static final String PROC_L01_GET_SNAPSHOT = "l01_get_snapshot";
+    public static final String PROC_L01_GET_COMMODITY_SNAPSHOT = "l01_get_snapshot_commodity";
     public static final String PROC_L01_GET_HISTORY_APPLICATION = "l01_get_histry_application";
     public static final String PROC_L01_GET_REVERSED_APPLICATION = "l01_get_reversed_application";
     public static final String PROC_L01_REVERSE_APPLICATION = "l01_reverse_application";

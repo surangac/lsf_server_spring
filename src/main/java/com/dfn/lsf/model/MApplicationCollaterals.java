@@ -137,7 +137,7 @@ public class MApplicationCollaterals {
                 return  csh;
             }
         }
-        CashAcc cashAcc=new CashAcc();
+        CashAcc cashAcc= CashAcc.builder().build();
         cashAcc.setAccountId(cashAccId);
         this.lsfTypeCashAccounts.add(cashAcc);
         return cashAcc;
@@ -152,7 +152,7 @@ public class MApplicationCollaterals {
                 return  csh;
             }
         }
-        CashAcc cashAcc=new CashAcc();
+        CashAcc cashAcc= CashAcc.builder().build();
         cashAcc.setAccountId(cashAccId);
         this.cashAccForColleterals.add(cashAcc);
         return cashAcc;

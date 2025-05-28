@@ -551,40 +551,28 @@ public class LsfCoreService {
             }
             /*------*/
             lsfRepository.updateRevaluationInfo(tradingAccId, totalPFMarketValue, totalWeightedPFMarketValue);
-            // cash Colletarals
-            inqueryMessage.setReqType(LsfConstants.GET_LSF_TYPE_CASH_ACCOUNTS);
-            /*-----Report-----*/
-            double cashAccountBalance = 0.0;
-            String cashAccountId = "";
-            /*-----Report-----*/
-            inqueryMessage.setCustomerId(application.getCustomerId());
-            inqueryMessage.setContractId(application.getId());
-            result = helper.sendMessageToOms(gson.toJson(inqueryMessage));
-            resultMap = gson.fromJson((String) result, resultMap.getClass());
-            ArrayList<Map<String, Object>> lsfCashAcc = (ArrayList<Map<String, Object>>) resultMap.get("responseObject");
-            for (Map<String, Object> cashAcc : lsfCashAcc) {
-                String cashAccId = cashAcc.get("accountNo").toString();
-                CashAcc cashAcc1 = mApplicationCollaterals.isCashAccLSFTypeExist(cashAccId);
-                cashAcc1.setCashBalance(Double.parseDouble(cashAcc.get("balance").toString()));
-                totalCashCollateral += Double.parseDouble(cashAcc.get("balance").toString());
-                totalCollateral += Double.parseDouble(cashAcc.get("balance").toString());
-                cashAcc1.setAmountTransfered(cashAcc1.getCashBalance());
-                cashAccountBalance = Double.parseDouble(cashAcc.get("balance").toString());
-                cashAccountId = cashAccId;
 
-                if (cashAcc.containsKey("blockedAmount") && considerBlockAmount) {
-                    totalCollateral += Double.parseDouble(cashAcc.get("blockedAmount").toString());
+            var lsfTypeCashAccounts = helper.getLsfTypeCashAccountForApp(application.getCustomerId(), application.getId());
+            if (!lsfTypeCashAccounts.isEmpty()) {
+                CashAcc lsfTypeCashAcc = lsfTypeCashAccounts.getFirst();
+                CashAcc cashAcc1 = mApplicationCollaterals.isCashAccLSFTypeExist(lsfTypeCashAcc.getAccountId());
+                cashAcc1.setCashBalance(lsfTypeCashAcc.getCashBalance());
+                totalCashCollateral += lsfTypeCashAcc.getCashBalance();
+                totalCollateral += lsfTypeCashAcc.getCashBalance();
+                cashAcc1.setAmountTransfered(lsfTypeCashAcc.getCashBalance());
+
+                if (lsfTypeCashAcc.getBlockedAmount() > 0 && considerBlockAmount) {
+                    totalCollateral += lsfTypeCashAcc.getBlockedAmount();
                 }
-                if (cashAcc.containsKey("pendingSettle")) {
-                    cashAcc1.setPendingSettle(Double.parseDouble(cashAcc.get("pendingSettle").toString()));
+                if (lsfTypeCashAcc.getPendingSettle() > 0) {
+                    cashAcc1.setPendingSettle(lsfTypeCashAcc.getPendingSettle());
                 }
-                if (cashAcc.containsKey("netReceivable")) {
-                    cashAcc1.setNetReceivable(Double.parseDouble(cashAcc.get("netReceivable").toString()));
+                if (lsfTypeCashAcc.getNetReceivable() > 0) {
+                    cashAcc1.setNetReceivable(lsfTypeCashAcc.getNetReceivable());
                 }
-                /*-----Report-----*/
-                lsfRepository.updateRevaluationCashAccountRelatedInfo(cashAccountId, cashAcc1);
-                /*-----Report-----*/
+                lsfRepository.updateRevaluationCashAccountRelatedInfo(cashAcc1.getAccountId(), cashAcc1);
             }
+
             mApplicationCollaterals.setTotalCashColleteral(totalCashCollateral);
             mApplicationCollaterals.setTotalPFColleteral(totalPFCollateral);
 // add existing External Collaterals
@@ -989,7 +977,7 @@ public class LsfCoreService {
     /*----------------Settlement Related Common Functions--------------*/
 
     public CashAcc getLsfTypeCashAccountForUser(String userID, String applicationId) {
-        CashAcc cashAcc = new CashAcc();
+        CashAcc cashAcc = CashAcc.builder().build();
         Map<String, Object> resultMap = new HashMap<>();
         CommonInqueryMessage inqueryMessage = new CommonInqueryMessage();
         inqueryMessage.setCustomerId(userID);

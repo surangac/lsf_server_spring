@@ -139,6 +139,9 @@ public class LsfConstants {
     public static final String COMMODITY_PO_EXECUTE = "commodityPOExecute";
     public static final String CONFIRM_AUTH_ABIC_TO_SELL_BY_USER = "confirmAuthAbicToSellbyUser";
     public static final String REVERT_TO_SELL_DELIVER_BY_ADMIN = "revertToSellOrDeliver";
+    public static final String GET_MURABAH_APPLICATION_SUMMARY = "reqGetMurabahApplicationSummary";
+    public static final String GET_MURABAH_APPLICATION_DETAILS = "reqGetMurabahApplicationDetails";
+    public static final String GET_COMMODITY_APPLICATION_SUMMARY = "reqGetCommodityApplicationSummary";
 
     /*---Settlement Related--*/
     public static final String SETTLEMENT_SUMMARY_APPLICATION = "settlementSummaryApplication";

@@ -472,58 +472,18 @@ public class OracleUnifiedRepository implements LSFRepository {
         return murabahApplicationListResponse;
     }
     
-    // @Override
-    // public List<MurabahApplication> getSnapshotCurrentLevel(int requestStatus) {
-    //     Map<String, Object> parameterMap = new HashMap<>();
-    //     parameterMap.put("pl01_request_status", requestStatus);
-    //     return oracleRepository.<MurabahApplication>getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_SNAPSHOT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
-    // }
-    
     @Override
     public List<MurabahApplication> getSnapshotCurrentLevel(int requestStatus) {
-        List<Status> statusList = null;
-        List<Comment> commentList = null;
-        List<MurabahApplication> murabahApplications = null;
-        List<Agreement> agreementList = null;
-        List<PurchaseOrder> purchaseOrderList = null;
-
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_request_status", requestStatus);
-        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_SNAPSHOT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
-            if (murabahApplications.size() > 0) {
-            for (MurabahApplication murabahApplication : murabahApplications) {
-                List<Comment> finalCommentList = new ArrayList<>();
-                if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
-                    statusList = getApplicationStatus(murabahApplication.getId());
-                    murabahApplication.setAppStatus(statusList);
-                    commentList = getApplicationComment(murabahApplication.getId());
-                    for (Comment comment : commentList) {
-                        if (Integer.parseInt(comment.getParentID()) == 0) {
-                            Comment tempComment = comment;
-                            for (Comment reply : commentList) {
-                                if (reply.getParentID().equalsIgnoreCase(tempComment.getCommentID().trim())) {
-                                    tempComment.setReply(reply);
-                                }
-                            }
-                            finalCommentList.add(tempComment);
-                        }
-                    }
-                    murabahApplication.setCommentList(finalCommentList);
-                    if (requestStatus == 14){
-                        murabahApplication.setInstitutionInvestAccount(GlobalParameters.getInstance().getInstitutionInvestAccount());
-                        agreementList = getActiveAgreements(Integer.parseInt(murabahApplication.getId()));
-                        murabahApplication.setAgreementList(agreementList);
-                        agreementList = null;
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_SNAPSHOT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
+    }
 
-                        purchaseOrderList = getAllPurchaseOrderforCommodity(murabahApplication.getId());
-                        murabahApplication.setPurchaseOrderList(purchaseOrderList);
-                        purchaseOrderList = null;
-                    }
-                }
-
-            }
-        }
-        return murabahApplications;
+    @Override
+    public List<MurabahApplication> getCommoditySnapshotCurrentLevel(int requestStatus) {
+        Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("pl01_request_status", requestStatus);
+        return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_COMMODITY_SNAPSHOT, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
 
     @Override
@@ -1594,7 +1554,6 @@ public class OracleUnifiedRepository implements LSFRepository {
         List<PurchaseOrder> purchaseOrderList = oracleRepository.getProcResult(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_GET_ALL_ORDER_FOR_COMMODITY, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.PURCHASE_ORDER));
         for (PurchaseOrder purchaseOrder : purchaseOrderList) {
             purchaseOrder.setInstallments(this.getPurchaseOrderInstallments(purchaseOrder.getId()));
-//            purchaseOrder.setSymbolList(this.getPurchaseOrderSymbols(purchaseOrder.getId()));
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             java.util.Date apprvDate = new java.util.Date();
             try {

@@ -180,7 +180,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                 List<Object> tempcCashAccountList = (List<Object>) cashAccountResponse.getResponseObject();
                 for (int j = 0; j < tempcCashAccountList.size(); j++) {
                     Map<Object, Object> cash = (Map<Object, Object>) tempcCashAccountList.get(j);
-                    CashAcc cashAcc = new CashAcc();
+                    CashAcc cashAcc = CashAcc.builder().build();
                     if (cash.containsKey("accountNo")) {
                         cashAcc.setAccountId(cash.get("accountNo").toString());
                     }
@@ -189,7 +189,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                     }
                     cashAccList.add(cashAcc);
                 }
-                CashAcc cashAc1 = new CashAcc();
+                CashAcc cashAc1 = CashAcc.builder().build();
                 cashAc1.setAccountId("001");
                 cashAc1.setCurrencyCode("SAR");
                 cashAccList.add(cashAc1);
@@ -521,8 +521,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                             }
                             symbols = lsfRepository.getInitialAppPortfolio(applicationID);
                             murabahApplication.setPflist(symbols);
-                            List<Agreement> agreementList = lsfRepository.getActiveAgreements(Integer.parseInt(
-                                    applicationID));
+                            List<Agreement> agreementList = lsfRepository.getActiveAgreements(Integer.parseInt(applicationID));
                             if (agreementList != null) {
                                 murabahApplication.setAgreementList(agreementList);
                             }
