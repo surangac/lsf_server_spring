@@ -25,4 +25,13 @@ public class CashAcc {
     private double pendingSettle;
     private double netReceivable;
     private double blockedAmount;
+
+    public void mapFromOms(CashAcc cashAcc) {
+        this.cashBalance = cashAcc.getCashBalance();
+        this.blockedAmount = cashAcc.getBlockedAmount();
+        this.pendingSettle = cashAcc.getPendingSettle();
+        this.netReceivable = cashAcc.getNetReceivable();
+        this.investmentAccountNumber = cashAcc.getInvestmentAccountNumber();
+        this.isLsfType = cashAcc.isLsfType();
+    }
 }

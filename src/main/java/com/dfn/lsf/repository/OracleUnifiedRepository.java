@@ -497,11 +497,56 @@ public class OracleUnifiedRepository implements LSFRepository {
         return oracleRepository.<MurabahApplication>getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_HISTORY_APPLICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
     }
 
+//    @Override
+//    public List<MurabahApplication> getReversedApplication(int reversedStatus) {
+//        Map<String, Object> parameterMap = new HashMap<>();
+//        parameterMap.put("pl01_request_status", reversedStatus);
+//        return oracleRepository.<MurabahApplication>getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_REVERSED_APPLICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
+//    }
+
     @Override
     public List<MurabahApplication> getReversedApplication(int reversedStatus) {
+        List<MurabahApplication> murabahApplications = null;
+        List<Status> statusList = null;
+        List<Comment> finalCommentList = new ArrayList<>();
+        List<Comment> commentList = null;
+        List<Agreement> agreementList = null;
+        List<PurchaseOrder> purchaseOrderList = null;
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_request_status", reversedStatus);
-        return oracleRepository.<MurabahApplication>getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_REVERSED_APPLICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
+        murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_REVERSED_APPLICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
+        if (murabahApplications.size() > 0) {
+            for (MurabahApplication murabahApplication : murabahApplications) {
+                statusList = getApplicationStatus(murabahApplication.getId());
+                murabahApplication.setAppStatus(statusList);
+                commentList = getApplicationComment(murabahApplication.getId());
+                for (Comment comment : commentList) {
+                    if (Integer.parseInt(comment.getParentID()) == 0) {
+                        Comment tempComment = comment;
+                        for (Comment reply : commentList) {
+                            if (reply.getParentID().equalsIgnoreCase(tempComment.getCommentID().trim())) {
+                                tempComment.setReply(reply);
+                            }
+                        }
+                        finalCommentList.add(tempComment);
+                    }
+                }
+                commentList = null;
+                if (reversedStatus == 14) {
+                    agreementList = getActiveAgreements(Integer.parseInt(murabahApplication.getId()));
+                    murabahApplication.setAgreementList(agreementList);
+                    agreementList = null;
+
+                    purchaseOrderList = getAllPurchaseOrderforCommodity(murabahApplication.getId());
+                    murabahApplication.setPurchaseOrderList(purchaseOrderList);
+                    purchaseOrderList = null;
+                    murabahApplication.setInstitutionInvestAccount(GlobalParameters.getInstance().getInstitutionInvestAccount());
+                }
+                murabahApplication.setCommentList(finalCommentList);
+                finalCommentList = new ArrayList<>();
+            }
+        }
+        return murabahApplications;
     }
     
     @Override
@@ -1087,13 +1132,14 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl08_symbol_code", symbolCode);
         parameterMap.put("pl08_exchange", exchange);
-        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_GET_SYMBOL_LIQUIDITY_TYPE, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
+        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_GET_SYMBOL_LIQUIDITY_TYPE, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.EXCHANGE_SYMBOLS));
     }
 
     @Override
+    @Cacheable(value = "allSymbols", unless = "#result == null")
     public List<Symbol> loadAllSymbols() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_l08_GET_ALL_SYMBOLS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
+        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_l08_GET_ALL_SYMBOLS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.EXCHANGE_SYMBOLS));
 
     }
 
@@ -1109,7 +1155,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<Symbol> loadSymbolsForClassification() {
         Map<String, Object> parameterMap = new HashMap<>();
-        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_l08_GET_ALL_SYMBOLS_CLASSF, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
+        return oracleRepository.getProcResult(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_l08_GET_ALL_SYMBOLS_CLASSF, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.EXCHANGE_SYMBOLS));
 
     }
 
@@ -1276,6 +1322,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
+    @CacheEvict(value = "allSymbols")
     public String updateSymbol(Symbol symbol) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("p08_symbol_code", symbol.getSymbolCode());
@@ -1804,7 +1851,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<Symbol> getPurchaseOrderSymbols(String orderId) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pL22_PURCHASE_ORD_ID", orderId);
-        return oracleRepository.getProcResult(DBConstants.PKG_L16_PO_SYMBOLS, DBConstants.PROC_L16_GET_PO_SYMBOLS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.SYMBOL));
+        return oracleRepository.getProcResult(DBConstants.PKG_L16_PO_SYMBOLS, DBConstants.PROC_L16_GET_PO_SYMBOLS, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.EXCHANGE_SYMBOLS));
     }
 
     @Override

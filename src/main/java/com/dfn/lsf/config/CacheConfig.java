@@ -32,6 +32,10 @@ public class CacheConfig {
         configurations.put("commonCacheOneMinute", Caffeine.newBuilder()
                                                            .expireAfterWrite(1, TimeUnit.MINUTES)
                                                            .maximumSize(500));
+
+        configurations.put("allSymbols", Caffeine.newBuilder()
+                                                           .expireAfterWrite(1, TimeUnit.HOURS)
+                                                           .maximumSize(500));
         return configurations;
     }
 }

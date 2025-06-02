@@ -1,6 +1,7 @@
 package com.dfn.lsf.service.impl;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import com.dfn.lsf.model.*;
 import com.dfn.lsf.util.*;
@@ -379,27 +380,25 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
                 if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
                     statusList = lsfRepository.getApplicationStatus(murabahApplication.getId());
                     murabahApplication.setAppStatus(statusList);
-                    commentList = lsfRepository.getApplicationComment(murabahApplication.getId());
-                    for (Comment comment : commentList) {
-                        if (Integer.parseInt(comment.getParentID()) == 0) {
-                            Comment tempComment = comment;
-                            for (Comment reply : commentList) {
-                                if (reply.getParentID().equalsIgnoreCase(tempComment.getCommentID().trim())) {
-                                    tempComment.setReply(reply);
-                                }
-                            }
-                            finalCommentList.add(tempComment);
-                        }
-                    }
-                    murabahApplication.setCommentList(finalCommentList);
-                    if (requestStatus == 14) {
-                        murabahApplication.setInstitutionInvestAccount(GlobalParameters.getInstance().getInstitutionInvestAccount());
-                        agreementList = lsfRepository.getActiveAgreements(Integer.parseInt(murabahApplication.getId()));
-                        murabahApplication.setAgreementList(agreementList);
+//                    commentList = lsfRepository.getApplicationComment(murabahApplication.getId());
+//                    for (Comment comment : commentList) {
+//                        if (Integer.parseInt(comment.getParentID()) == 0) {
+//                            Comment tempComment = comment;
+//                            for (Comment reply : commentList) {
+//                                if (reply.getParentID().equalsIgnoreCase(tempComment.getCommentID().trim())) {
+//                                    tempComment.setReply(reply);
+//                                }
+//                            }
+//                            finalCommentList.add(tempComment);
+//                        }
+//                    }
+//                    murabahApplication.setCommentList(finalCommentList);
+                    murabahApplication.setInstitutionInvestAccount(GlobalParameters.getInstance().getInstitutionInvestAccount());
+                    agreementList = lsfRepository.getActiveAgreements(Integer.parseInt(murabahApplication.getId()));
+                    murabahApplication.setAgreementList(agreementList);
 
-                        purchaseOrderList = lsfRepository.getAllPurchaseOrderforCommodity(murabahApplication.getId());
-                        murabahApplication.setPurchaseOrderList(purchaseOrderList);
-                    }
+                    purchaseOrderList = lsfRepository.getAllPurchaseOrderforCommodity(murabahApplication.getId());
+                    murabahApplication.setPurchaseOrderList(purchaseOrderList);
                 }
 
             }

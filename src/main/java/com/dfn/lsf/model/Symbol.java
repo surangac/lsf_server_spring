@@ -276,4 +276,19 @@ public class Symbol {
     public void setSecurityType(String securityType) {
         this.securityType = securityType;
     }
+
+    public void mapFromOms(Symbol sourceSymbol) {
+        this.setShortDescription(sourceSymbol.getShortDescription());
+        this.setOpenBuyQty(sourceSymbol.getOpenBuyQty());
+        this.setPreviousClosed(sourceSymbol.getPreviousClosed());
+        this.setLastTradePrice(sourceSymbol.getLastTradePrice());
+        this.setAvailableQty(sourceSymbol.getAvailableQty());
+        this.setMarketValue(this.getAvailableQty() * (this.getLastTradePrice() > 0
+                                                                              ? this.getLastTradePrice()
+                                                                              : this.getPreviousClosed()));
+        this.setLiquidityType(sourceSymbol.getLiquidityType());
+        this.setTransferedQty(sourceSymbol.getTransferedQty());
+        this.setLiquidityType(sourceSymbol.getLiquidityType());
+        this.setMarginabilityPercentage(sourceSymbol.getMarginabilityPercentage());
+    }
 }

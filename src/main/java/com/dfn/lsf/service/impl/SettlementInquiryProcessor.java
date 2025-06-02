@@ -73,7 +73,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                 return getSettlementInstallmentList();
             }
             case LsfConstants.CONTRACT_ROLLOVER_PROCESS: {
-                return (String) createContractRollover(resultMap);
+                return createContractRollover(resultMap);
             }
         }
         return null;
@@ -355,7 +355,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
         return gson.toJson(settlementListResponse);
     }
 
-    public Object createContractRollover(Map<String, Object> map) {
+    public String createContractRollover(Map<String, Object> map) {
         CommonResponse cmr = new CommonResponse();
         String appID = "";
         String userId = "";
@@ -377,9 +377,20 @@ public class SettlementInquiryProcessor implements MessageProcessor {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
             SimpleDateFormat sdf2 = new SimpleDateFormat("ddMMyyyy");
             MApplicationCollaterals response = lsfCore.reValuationProcess(oldApplication, true);
+            var po = purchaseOrders.getFirst();
+
+            if(po.getIsPhysicalDelivery() == 1) {
+                cmr.setResponseCode(500);
+                cmr.setErrorMessage("Rollover is not allowed for Physical Delivery");
+                cmr.setErrorCode(LsfConstants.ERROR_NOT_IN_ROLLOVER_PERIOD);
+                logger.info("===========LSF : Rollover is not allowed for Physical Delivery , Application ID :" + map.get(
+                        "appId"));
+                return gson.toJson(cmr);
+            }
+
             try {
                 crntDate = new Date();
-                settlementDate = sdf2.parse(purchaseOrders.get(0).getSettlementDate());
+                settlementDate = sdf2.parse(po.getSettlementDate());
 
                 remainDays = TimeUnit.MILLISECONDS.toDays(settlementDate.getTime() - crntDate.getTime());
                 logger.info("Remain days for Rollover : " + remainDays);
@@ -394,78 +405,84 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                 cmr.setErrorCode(LsfConstants.ERROR_NOT_IN_ROLLOVER_PERIOD);
                 logger.info("===========LSF : Rollover period validation failed , Application ID :" + map.get("appId"));
                 return gson.toJson(cmr);
-            } else if (response != null
-                       && GlobalParameters.getInstance().getMinRolloverRatio() > response.getFtv()) {
+            }
+
+            if (GlobalParameters.getInstance().getMinRolloverRatio() > response.getFtv()) {
                 cmr.setResponseCode(500);
                 cmr.setErrorMessage("Minimum Rollover Ratio Validation failed");
                 cmr.setErrorCode(LsfConstants.ERROR_NOT_IN_ROLLOVER_RATIO);
                 logger.info("===========LSF : Minimum Rollover Ratio Validation failed, Application ID :" + map.get(
                         "appId"));
                 return gson.toJson(cmr);
+            }
+            java.text.DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+            Date date = new Date();
+            MurabahApplication newApplication = oldApplication;
+            newApplication.setId("-1");
+            // always make sure that RollOverAppId is original application ID
+            if (oldApplication.isRollOverApp()) {
+                newApplication.setRollOverAppId(oldApplication.getRollOverAppId());
             } else {
-                java.text.DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-                Date date = new Date();
-                MurabahApplication newApplication = oldApplication;
-                newApplication.setId("-1");
                 newApplication.setRollOverAppId(oldApplication.getId());
-                Status status = new Status();
-                status.setLevelId(1);
-                status.setStatusId(OverrallApprovalStatus.PENDING.statusCode());
-                status.setStatusDescription(OverrallApprovalStatus.PENDING.statusDescription());
-                status.setStatusChangedDate(dateFormat.format(date));
-                newApplication.setDate(dateFormat.format(date));
-                newApplication.setProposalDate(dateFormat.format(date));
-                newApplication.addNewStatus(status);
-                newApplication.setOverallStatus(Integer.toString(OverrallApprovalStatus.PENDING.statusCode()));
-                newApplication.setCurrentLevel(1);
-                newApplication.setAdminFeeCharged(0.0);
+            }
+            Status status = new Status();
+            status.setLevelId(1);
+            status.setStatusId(OverrallApprovalStatus.PENDING.statusCode());
+            status.setStatusDescription(OverrallApprovalStatus.PENDING.statusDescription());
+            status.setStatusChangedDate(dateFormat.format(date));
+            newApplication.setDate(dateFormat.format(date));
+            newApplication.setProposalDate(dateFormat.format(date));
+            newApplication.addNewStatus(status);
+            newApplication.setOverallStatus(Integer.toString(OverrallApprovalStatus.PENDING.statusCode()));
+            newApplication.setCurrentLevel(1);
+            newApplication.setAdminFeeCharged(0.0);
 
-                SettlementListResponse settlementListResponse = getSettlementSummaryForApplication(appID, userId);
-                double newAmnt = oldApplication.getFinanceRequiredAmt()
-                                 + settlementListResponse.getSettlementSummaryResponseList().get(0).getLoanProfit()
-                                 + GlobalParameters.getInstance().getComodityAdminFee()
-                                 + GlobalParameters.getInstance().getComodityFixedFee();
-                newApplication.setFinanceRequiredAmt(newAmnt);
-                newApplication.setRollOverAppId(appID);
+            SettlementListResponse settlementListResponse = getSettlementSummaryForApplication(appID, userId);
+            double newAmnt = oldApplication.getFinanceRequiredAmt()
+                             + settlementListResponse.getSettlementSummaryResponseList().get(0).getLoanProfit()
+                             + GlobalParameters.getInstance().getComodityAdminFee()
+                             + GlobalParameters.getInstance().getComodityFixedFee();
+            newApplication.setFinanceRequiredAmt(newAmnt);
+            newApplication.setRollOverAppId(appID);
+            newApplication.setRollOverSeqNumber(oldApplication.getRollOverSeqNumber() + 1);
 
-                String id = lsfRepository.updateMurabahApplication(newApplication);
-                logger.info("New application ID : " + id);
-                String l32ID = lsfRepository.initialAgreementStatus(Integer.parseInt(id),
-                                                                    2,
-                                                                    oldApplication.getProductType(),
-                                                                    2);
-                newApplication.setId(id);
-                logger.info("===========LSF : New Murabah Application Created to rollover, Application ID :"
-                            + id
-                            + " , User ID:"
-                            + newApplication.getCustomerId()
-                            + " ,l32ID : "
-                            + l32ID);
-                String RspMsg = id + "|" + 1 + "|" + OverrallApprovalStatus.PENDING.statusCode();
-                List<Symbol> symbols = lsfRepository.getInitialAppPortfolio(oldApplication.getId());
-                List<Symbol> symbolList = new ArrayList<>();
-                newApplication.setPflist(symbols);
-                if (symbols != null) {
-                    if (symbols.size() > 0) {
-                        for (int i = 0; i < symbols.size(); i++) {
-                            Map<String, Object> params = (Map<String, Object>) symbols.get(i);
-                            Symbol symbol = new Symbol();
-                            symbol.setSymbolCode(params.get("symbolCode").toString());
-                            symbol.setExchange(params.get("exchange").toString());
-                            symbol.setPreviousClosed(Double.parseDouble(params.get("previousClosed").toString()));
-                            symbol.setAvailableQty((int) Double.parseDouble(params.get("availableQty").toString()));
-                            symbolList.add(symbol);
-                        }
-                        for (Symbol symbol : symbolList) {
-                            lsfRepository.updateInitailAppPortfolio(symbol, id);
-                        }
+            String id = lsfRepository.updateMurabahApplication(newApplication);
+            logger.info("New application ID : " + id);
+            String l32ID = lsfRepository.initialAgreementStatus(Integer.parseInt(id),
+                                                                2,
+                                                                oldApplication.getProductType(),
+                                                                2);
+            newApplication.setId(id);
+            logger.info("===========LSF : New Murabah Application Created to rollover, Application ID :"
+                        + id
+                        + " , User ID:"
+                        + newApplication.getCustomerId()
+                        + " ,l32ID : "
+                        + l32ID);
+            String RspMsg = id + "|" + 1 + "|" + OverrallApprovalStatus.PENDING.statusCode();
+            List<Symbol> symbols = lsfRepository.getInitialAppPortfolio(oldApplication.getId());
+            List<Symbol> symbolList = new ArrayList<>();
+            newApplication.setPflist(symbols);
+            if (symbols != null) {
+                if (symbols.size() > 0) {
+                    for (int i = 0; i < symbols.size(); i++) {
+                        Map<String, Object> params = (Map<String, Object>) symbols.get(i);
+                        Symbol symbol = new Symbol();
+                        symbol.setSymbolCode(params.get("symbolCode").toString());
+                        symbol.setExchange(params.get("exchange").toString());
+                        symbol.setPreviousClosed(Double.parseDouble(params.get("previousClosed").toString()));
+                        symbol.setAvailableQty((int) Double.parseDouble(params.get("availableQty").toString()));
+                        symbolList.add(symbol);
+                    }
+                    for (Symbol symbol : symbolList) {
+                        lsfRepository.updateInitailAppPortfolio(symbol, id);
                     }
                 }
-                cmr.setResponseCode(200);
-                cmr.setResponseMessage(RspMsg);
-                logger.debug("===========LSF : LSF-SERVER RESPONSE  :" + gson.toJson(cmr));
-                return gson.toJson(cmr);
             }
+            cmr.setResponseCode(200);
+            cmr.setResponseMessage(RspMsg);
+            logger.debug("===========LSF : LSF-SERVER RESPONSE  :" + gson.toJson(cmr));
+            return gson.toJson(cmr);
         } else {
             cmr.setResponseCode(500);
             cmr.setErrorMessage("Rollover is only allowed for Commodity finance Margin");

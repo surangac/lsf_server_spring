@@ -280,7 +280,21 @@ public class MurabahApplicationPersistProcessor implements MessageProcessor {
         if (map.containsKey("id")) {
             try {
 
-                applicationList = lsfRepository.getMurabahAppicationApplicationID(map.get("id").toString());
+                String applicationId = map.get("id").toString();
+                applicationList = lsfRepository.getMurabahAppicationApplicationID(applicationId);
+                var PurchaseOrder = lsfRepository.getAllPurchaseOrder(applicationId);
+                var po = PurchaseOrder.stream()
+                        .findFirst().orElse(null);
+                if (po != null) {
+                    if (map.containsKey("isPhysicalDelivery")) {
+                        po.setIsPhysicalDelivery(Integer.parseInt(map.get("isPhysicalDelivery").toString()));
+                        count ++;
+                    }
+                    if(map.containsKey("sellButNotSettle")) {
+                        po.setSellButNotSettle(Integer.parseInt(map.get("sellButNotSettle").toString()));
+                        count ++;
+                    }
+                }
                 if (applicationList != null) {
                     if (applicationList.size() > 0) {
                         MurabahApplication fromDB = applicationList.get(0);
@@ -334,6 +348,9 @@ public class MurabahApplicationPersistProcessor implements MessageProcessor {
 
                             if (count > 0) {
                                 lsfRepository.updateMurabahApplication(fromDB);
+                                if(po!= null) {
+                                    lsfRepository.updatePurchaseOrderByAdmin(po);
+                                }
                                 cmr.setResponseCode(200);
                                 cmr.setResponseMessage("Application Updated");
                             } else {

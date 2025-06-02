@@ -171,49 +171,49 @@ public class LsfCoreService {
                 if (collaterals.getTradingAccForColleterals() != null) {
                     for (TradingAcc fromAcc : collaterals.getTradingAccForColleterals()) {
                         log.debug("===LSF : Iterating Trading Account");
-                        for (Symbol symbol : fromAcc.getSymbolsForColleteral()) {
-                            ShareTransferRequest shareBlockRequest = new ShareTransferRequest();
-                            shareBlockRequest.setReqType(LsfConstants.SHARE_BLOCK_REQUEST);
-                            shareBlockRequest.setFromTradingAccountId(fromAcc.getAccountId());
-                            shareBlockRequest.setQuantity(symbol.getColleteralQty());
-                            shareBlockRequest.setExchange(symbol.getExchange());
-                            shareBlockRequest.setSymbol(symbol.getSymbolCode());
+                        if (fromAcc.getSymbolsForColleteral() != null) {
+                            for (Symbol symbol : fromAcc.getSymbolsForColleteral()) {
+                                ShareTransferRequest shareBlockRequest = new ShareTransferRequest();
+                                shareBlockRequest.setReqType(LsfConstants.SHARE_BLOCK_REQUEST);
+                                shareBlockRequest.setFromTradingAccountId(fromAcc.getAccountId());
+                                shareBlockRequest.setQuantity(symbol.getColleteralQty());
+                                shareBlockRequest.setExchange(symbol.getExchange());
+                                shareBlockRequest.setSymbol(symbol.getSymbolCode());
 
-                            if (symbol.getColleteralQty() > 0) {
-                                log.debug("===Blocking Symbol:" + gson.toJson(shareBlockRequest));
-                                CommonResponse cmr = performAction(shareBlockRequest);
+                                if (symbol.getColleteralQty() > 0) {
+                                    log.debug("===Blocking Symbol:" + gson.toJson(shareBlockRequest));
+                                    CommonResponse cmr = performAction(shareBlockRequest);
 
-                                if (cmr.getResponseCode() == 1) {
-                                    symbol.setBlockedReference(cmr.getResponseMessage());
-                                    symbol.setTransStatus(LsfConstants.SHARE_BLOCK_STATUS);
-                                    log.debug("===========LSF : Share Block Succeeded , Block Reference:" + symbol.getBlockedReference());
-                                    blockedSymbols.add(symbol);
-                                } else {
-                                    commonResponse.setResponseCode(500);
-                                    commonResponse.setErrorMessage(cmr.getResponseMessage() + " , Symbol :" + shareBlockRequest.getSymbol());
-                                    log.debug("===========LSF : Share Block Failed , Symbol:" + symbol.getSymbolCode() + " , Reason :" + cmr.getErrorMessage());
-                                    if (blockedSymbols.size() > 0) {
-                                        log.debug("===========LSF : Releasing Blocked Symbols");
-                                        for (Symbol releaseBlockSymbol : blockedSymbols) {
-                                            ShareTransferRequest shareReleaseRequest = new ShareTransferRequest();
-                                            shareReleaseRequest.setReqType(LsfConstants.SHARE_RELEASE_REQUEST);
-                                            shareReleaseRequest.setParams(releaseBlockSymbol.getBlockedReference());
-                                            CommonResponse shareReleaseResponse = performAction(shareReleaseRequest);
-                                            if (shareReleaseResponse.getResponseCode() == 1) {
-                                                log.debug("===========LSF : Release Block Success , Symbol :" + releaseBlockSymbol.getSymbolCode());
-                                            } else {
-                                                log.debug("===========LSF : Release Block Failed , Symbol :" + releaseBlockSymbol.getSymbolCode() + " , Failure Reason:" + shareReleaseResponse.getResponseMessage());
+                                    if (cmr.getResponseCode() == 1) {
+                                        symbol.setBlockedReference(cmr.getResponseMessage());
+                                        symbol.setTransStatus(LsfConstants.SHARE_BLOCK_STATUS);
+                                        log.debug("===========LSF : Share Block Succeeded , Block Reference:" + symbol.getBlockedReference());
+                                        blockedSymbols.add(symbol);
+                                    } else {
+                                        commonResponse.setResponseCode(500);
+                                        commonResponse.setErrorMessage(cmr.getResponseMessage() + " , Symbol :" + shareBlockRequest.getSymbol());
+                                        log.debug("===========LSF : Share Block Failed , Symbol:" + symbol.getSymbolCode() + " , Reason :" + cmr.getErrorMessage());
+                                        if (blockedSymbols.size() > 0) {
+                                            log.debug("===========LSF : Releasing Blocked Symbols");
+                                            for (Symbol releaseBlockSymbol : blockedSymbols) {
+                                                ShareTransferRequest shareReleaseRequest = new ShareTransferRequest();
+                                                shareReleaseRequest.setReqType(LsfConstants.SHARE_RELEASE_REQUEST);
+                                                shareReleaseRequest.setParams(releaseBlockSymbol.getBlockedReference());
+                                                CommonResponse shareReleaseResponse = performAction(shareReleaseRequest);
+                                                if (shareReleaseResponse.getResponseCode() == 1) {
+                                                    log.debug("===========LSF : Release Block Success , Symbol :" + releaseBlockSymbol.getSymbolCode());
+                                                } else {
+                                                    log.debug("===========LSF : Release Block Failed , Symbol :" + releaseBlockSymbol.getSymbolCode() + " , Failure Reason:" + shareReleaseResponse.getResponseMessage());
+                                                }
                                             }
                                         }
+                                        return commonResponse;
                                     }
-                                    return commonResponse;
                                 }
                             }
                         }
                     }
                 }
-
-
                 /*---initiating cash block process---*/
                 if (collaterals.getCashAccForColleterals() != null) {
                     for (CashAcc cashAcc : collaterals.getCashAccForColleterals()) {
@@ -222,12 +222,13 @@ public class LsfCoreService {
                         cashBlockRequest.setReqType(LsfConstants.CASH_BLOCK_REQUEST);
                         cashBlockRequest.setFromCashAccountId(cashAcc.getAccountId());
 
-                        if (cashAcc.getAccountId().equalsIgnoreCase(application.getCashAccount())) { // block colletral amount + adminFee from cashAccount
+                        //if (cashAcc.getAccountId().equalsIgnoreCase(application.getCashAccount())) { // block colletral amount + adminFee from cashAccount
                             log.debug("Checking Cash Account :" + cashAcc.getAccountId() + " |" + application.getCashAccount());
-                            double totalCharge = GlobalParameters.getInstance().getTransferCharges() + GlobalParameters.getInstance().getSimaCharges();
-                            totalCharge = LSFUtils.ceilTwoDecimals(totalCharge + calculateVatAmt(totalCharge));
+                            double adminFee = application.getFinanceMethod().equals("1") ? GlobalParameters.getInstance().getShareAdminFee() : GlobalParameters.getInstance().getComodityAdminFee();
+                            double vat = calculateVatAmt(adminFee);
+                            double totalCharge = LSFUtils.ceilTwoDecimals(adminFee + vat);
                             cashBlockRequest.setAmount(cashAcc.getAmountAsColletarals() + totalCharge);
-                        }
+                        //}
                         log.debug("===LSF : Blocking Cash :" + gson.toJson(cashBlockRequest));
 
                         if (cashBlockRequest.getAmount() > 0) {
@@ -274,14 +275,18 @@ public class LsfCoreService {
     }
 
     public Object releaseCollaterals(MApplicationCollaterals collaterals) {
+
+        MurabahApplication application = lsfRepository.getMurabahApplication(collaterals.getApplicationId());
+
         CommonResponse commonResponse = new CommonResponse();
         try {
             //MApplicationCollaterals collaterals=getApplicationCollateral(applicationId);
             if (collaterals != null) {
                 // initiating Share Transfer process
-                if (collaterals.getTradingAccForColleterals() != null) {
+                var tradingAccountList = application.isRollOverApp() ? collaterals.getLsfTypeTradingAccounts() : collaterals.getTradingAccForColleterals();
+                if (tradingAccountList != null) {
                     boolean isModified = false;
-                    for (TradingAcc fromAcc : collaterals.getTradingAccForColleterals()) {
+                    for (TradingAcc fromAcc : tradingAccountList) {
                         for (Symbol symbol : fromAcc.getSymbolsForColleteral()) {
                             ShareTransferRequest shareReleaseRequest = new ShareTransferRequest();
                             shareReleaseRequest.setReqType(LsfConstants.SHARE_RELEASE_REQUEST);
@@ -305,9 +310,10 @@ public class LsfCoreService {
                 }
 
                 // initiating cash Transfer process
-                if (collaterals.getCashAccForColleterals() != null) {
+                var cashAccountList = application.isRollOverApp() ? collaterals.getLsfTypeCashAccounts() : collaterals.getCashAccForColleterals();
+                if (cashAccountList != null) {
                     boolean isModified = false;
-                    for (CashAcc cashAcc : collaterals.getCashAccForColleterals()) {
+                    for (CashAcc cashAcc : cashAccountList) {
                         CashTransferRequest cashReleaseRequest = new CashTransferRequest();
                         cashReleaseRequest.setReqType(LsfConstants.CASH_RELEASE_REQUEST);
                         cashReleaseRequest.setParams(cashAcc.getBlockedReference());
@@ -446,7 +452,6 @@ public class LsfCoreService {
         return gson.toJson(response);
     }
 
-
     public MApplicationCollaterals reValuationProcess(MurabahApplication application,boolean considerBlockAmount) {
         log.debug("===========LSF : (revaluatingApplication) applicationID :" + application.getId());
         CommonResponse response = new CommonResponse();
@@ -460,10 +465,10 @@ public class LsfCoreService {
             return null;
         }
         // get attached Marginability Group
-        MarginabilityGroup marginabilityGroup = helper.getMarginabilityGroup(application.getMarginabilityGroup());
-        List<SymbolMarginabilityPercentage> symbolMarginabilityPercentages = null;
-        if (marginabilityGroup != null)
-            symbolMarginabilityPercentages = marginabilityGroup.getMarginableSymbols();
+//        MarginabilityGroup marginabilityGroup = helper.getMarginabilityGroup(application.getMarginabilityGroup());
+//        List<SymbolMarginabilityPercentage> symbolMarginabilityPercentages = null;
+//        if (marginabilityGroup != null)
+//            symbolMarginabilityPercentages = marginabilityGroup.getMarginableSymbols();
 
         if (mApplicationCollaterals != null) {
             double totalCollateral = 0.0;
@@ -474,76 +479,95 @@ public class LsfCoreService {
             double totalWeightedPFMarketValue = 0.0;
             String tradingAccId = null;
             /*-----Report-----*/
-            // PF colletarals
-            inqueryMessage.setReqType(LsfConstants.GET_LSF_TYPE_TRADING_ACCOUNTS);
-            inqueryMessage.setCustomerId(application.getCustomerId());
-            inqueryMessage.setContractId(application.getId());
-            Object result = helper.sendMessageToOms(gson.toJson(inqueryMessage));
-            resultMap = gson.fromJson((String) result, resultMap.getClass());
-            ArrayList<Map<String, Object>> lsfTrd = (ArrayList<Map<String, Object>>) resultMap.get("responseObject");
-            List<Symbol> symbols = new ArrayList<>();
-            for (Map<String, Object> trd : lsfTrd) {
-                if (trd.containsKey("shariaSymbols")) {
-                    Map<String, Object> mpTRadingAcc = (Map<String, Object>) trd.get("tradingAccount");
-                    tradingAccId = mpTRadingAcc.get("accountId").toString();
-                    TradingAcc t = mApplicationCollaterals.isTradingAccountLSFTypeExist(tradingAccId);
-                    t.setExchange(mpTRadingAcc.get("exchange").toString());
-                    ArrayList<Map<String, Object>> symbolList = (ArrayList<Map<String, Object>>) trd.get("shariaSymbols");
-                    for (Map<String, Object> symbol : symbolList) {
-                        try {
-                            Symbol smb = t.isSymbolExist(symbol.get("symbolCode").toString(), symbol.get("exchange").toString());
-                            if (symbol.containsKey("shortDescription") && symbol.get("shortDescription") != null) {
-                                smb.setShortDescription(symbol.get("shortDescription").toString());
-                            }
-                            if(symbol.containsKey("openBuyQty")){
-                                smb.setOpenBuyQty(Integer.parseInt(symbol.get("openBuyQty").toString().split("\\.")[0]));
-                            }
-                            if(symbol.containsKey("openSellQty")){
-                                smb.setOpenBuyQty(Integer.parseInt(symbol.get("openSellQty").toString().split("\\.")[0]));
-                            }
-                            smb.setAvailableQty(Math.round(Float.parseFloat(symbol.get("availableQty").toString())));
-                            /*--Change for T+2 sell path--*/
-                            smb.setAvailableQty(smb.getAvailableQty() + Math.round(Float.parseFloat(symbol.get("sellPending").toString())));
-                            /*--*/
-                            smb.setPreviousClosed(Double.parseDouble(symbol.get("previousClosed").toString()));
-                            smb.setLastTradePrice(Double.parseDouble(symbol.get("lastTradePrice").toString()));
-                            smb.setTransferedQty(smb.getAvailableQty());
-                            LiquidityType attachedToSymbolLiq = helper.existingSymbolLiqudityType(smb.getSymbolCode(), smb.getExchange());
-                            // set Default liqudity Type
-                            smb.setLiquidityType(attachedToSymbolLiq);
-                            // override if Applicaiton level Marginability group is attached with relevent Liquidity Type
 
-                            if (marginabilityGroup != null)
-                                smb.setMarginabilityPercentage(marginabilityGroup.getGlobalMarginablePercentage());
+            String applicationId = application.isRollOverApp() ? application.getRollOverAppId() : application.getId();
+            var lsfTradingAccList = helper.getLsfTypeTradingAccounts(application.getCustomerId(), applicationId, application.getMarginabilityGroup());
+            if (!lsfTradingAccList.isEmpty()) {
+                var tradingAccFromAoms = lsfTradingAccList.getFirst();
+                TradingAcc tradingAcc =  mApplicationCollaterals.isTradingAccountLSFTypeExist(tradingAccFromAoms.getAccountId());
+                tradingAcc.mapFromOmsResponse(tradingAccFromAoms);
+                for (Symbol omsSymbol: tradingAccFromAoms.getSymbolList()) {
+                    Symbol smb = tradingAcc.isSymbolExist(omsSymbol.getSymbolCode(), omsSymbol.getExchange());
+                    smb.mapFromOms(omsSymbol);
+                    double contribToColletaral = ((smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
+                    smb.setContibutionTocollateral(contribToColletaral);
+                    totalPFCollateral += contribToColletaral;
+                    totalCollateral += contribToColletaral;
 
-                            if(symbolMarginabilityPercentages != null) {
-                                for(SymbolMarginabilityPercentage smp :symbolMarginabilityPercentages) {
-                                    if(smp.getSymbolCode().equals(smb.getSymbolCode()) && smp.getExchange().equals(smb.getExchange())){
-                                        smb.setMarginabilityPercentage(smp.getMarginabilityPercentage());
-                                    }
-                                }
-                            }
-
-                            Double contribToColletaral = ((smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
-                            smb.setContibutionTocollateral(contribToColletaral);
-                            totalPFCollateral += contribToColletaral;
-                            totalCollateral += contribToColletaral;
-                            symbols.add(smb);
-                            /*-----Report-----*/
-                            totalPFMarketValue = totalPFMarketValue + smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
-                            totalWeightedPFMarketValue = totalWeightedPFMarketValue + contribToColletaral;
-                            /*-----Report-----*/
-                        } catch (Exception ex) {
-                            log.info("===========LSF : (revaluatingApplication) PF Calculatoin - error Applicaiton id " + application.getId() + " in revaluation processor " + ex.getMessage() + ", symbol:" + symbol.get("symbolCode").toString(),ex);
-                        }
-                    }
-                } else {
-                    log.info("===========LSF : (revaluatingApplication) - invalid response from OMS shariaSymbols not found");
+                    totalPFMarketValue = totalPFMarketValue + smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
+                    totalWeightedPFMarketValue = totalWeightedPFMarketValue + contribToColletaral;
+                    mApplicationCollaterals.getSecurityList().add(smb);
                 }
             }
+//            // PF colletarals
+//            inqueryMessage.setReqType(LsfConstants.GET_LSF_TYPE_TRADING_ACCOUNTS);
+//            inqueryMessage.setCustomerId(application.getCustomerId());
+//            inqueryMessage.setContractId(application.getId());
+//            Object result = helper.sendMessageToOms(gson.toJson(inqueryMessage));
+//            resultMap = gson.fromJson((String) result, resultMap.getClass());
+//            ArrayList<Map<String, Object>> lsfTrd = (ArrayList<Map<String, Object>>) resultMap.get("responseObject");
+//            List<Symbol> symbols = new ArrayList<>();
+//            for (Map<String, Object> trd : lsfTrd) {
+//                if (trd.containsKey("shariaSymbols")) {
+//                    Map<String, Object> mpTRadingAcc = (Map<String, Object>) trd.get("tradingAccount");
+//                    tradingAccId = mpTRadingAcc.get("accountId").toString();
+//                    TradingAcc t = mApplicationCollaterals.isTradingAccountLSFTypeExist(tradingAccId);
+//                    t.setExchange(mpTRadingAcc.get("exchange").toString());
+//                    ArrayList<Map<String, Object>> symbolList = (ArrayList<Map<String, Object>>) trd.get("shariaSymbols");
+//                    for (Map<String, Object> symbol : symbolList) {
+//                        try {
+//                            Symbol smb = t.isSymbolExist(symbol.get("symbolCode").toString(), symbol.get("exchange").toString());
+//                            if (symbol.containsKey("shortDescription") && symbol.get("shortDescription") != null) {
+//                                smb.setShortDescription(symbol.get("shortDescription").toString());
+//                            }
+//                            if(symbol.containsKey("openBuyQty")){
+//                                smb.setOpenBuyQty(Integer.parseInt(symbol.get("openBuyQty").toString().split("\\.")[0]));
+//                            }
+//                            if(symbol.containsKey("openSellQty")){
+//                                smb.setOpenBuyQty(Integer.parseInt(symbol.get("openSellQty").toString().split("\\.")[0]));
+//                            }
+//                            smb.setAvailableQty(Math.round(Float.parseFloat(symbol.get("availableQty").toString())));
+//                            /*--Change for T+2 sell path--*/
+//                            smb.setAvailableQty(smb.getAvailableQty() + Math.round(Float.parseFloat(symbol.get("sellPending").toString())));
+//                            /*--*/
+//                            smb.setPreviousClosed(Double.parseDouble(symbol.get("previousClosed").toString()));
+//                            smb.setLastTradePrice(Double.parseDouble(symbol.get("lastTradePrice").toString()));
+//                            smb.setTransferedQty(smb.getAvailableQty());
+//                            LiquidityType attachedToSymbolLiq = helper.existingSymbolLiqudityType(smb.getSymbolCode(), smb.getExchange());
+//                            // set Default liqudity Type
+//                            smb.setLiquidityType(attachedToSymbolLiq);
+//                            // override if Applicaiton level Marginability group is attached with relevent Liquidity Type
+//
+//                            if (marginabilityGroup != null)
+//                                smb.setMarginabilityPercentage(marginabilityGroup.getGlobalMarginablePercentage());
+//
+//                            if(symbolMarginabilityPercentages != null) {
+//                                for(SymbolMarginabilityPercentage smp :symbolMarginabilityPercentages) {
+//                                    if(smp.getSymbolCode().equals(smb.getSymbolCode()) && smp.getExchange().equals(smb.getExchange())){
+//                                        smb.setMarginabilityPercentage(smp.getMarginabilityPercentage());
+//                                    }
+//                                }
+//                            }
+//
+//                            Double contribToColletaral = ((smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
+//                            smb.setContibutionTocollateral(contribToColletaral);
+//                            totalPFCollateral += contribToColletaral;
+//                            totalCollateral += contribToColletaral;
+//                            symbols.add(smb);
+//                            /*-----Report-----*/
+//                            totalPFMarketValue = totalPFMarketValue + smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
+//                            totalWeightedPFMarketValue = totalWeightedPFMarketValue + contribToColletaral;
+//                            /*-----Report-----*/
+//                        } catch (Exception ex) {
+//                            log.info("===========LSF : (revaluatingApplication) PF Calculatoin - error Applicaiton id " + application.getId() + " in revaluation processor " + ex.getMessage() + ", symbol:" + symbol.get("symbolCode").toString(),ex);
+//                        }
+//                    }
+//                } else {
+//                    log.info("===========LSF : (revaluatingApplication) - invalid response from OMS shariaSymbols not found");
+//                }
+//            }
             /*---Setting totalPFMarketValue & security list for client Dash board summary----- */
             mApplicationCollaterals.setTotalPFMarketValue(totalPFMarketValue);
-            mApplicationCollaterals.setSecurityList(symbols);
             if (totalPFMarketValue == 0) {
                 mApplicationCollaterals.setTotalWeightedPFValue(0.0);
             } else {
@@ -552,7 +576,7 @@ public class LsfCoreService {
             /*------*/
             lsfRepository.updateRevaluationInfo(tradingAccId, totalPFMarketValue, totalWeightedPFMarketValue);
 
-            var lsfTypeCashAccounts = helper.getLsfTypeCashAccountForApp(application.getCustomerId(), application.getId());
+            var lsfTypeCashAccounts = helper.getLsfTypeCashAccounts(application.getCustomerId(), application.getId());
             if (!lsfTypeCashAccounts.isEmpty()) {
                 CashAcc lsfTypeCashAcc = lsfTypeCashAccounts.getFirst();
                 CashAcc cashAcc1 = mApplicationCollaterals.isCashAccLSFTypeExist(lsfTypeCashAcc.getAccountId());
@@ -575,15 +599,12 @@ public class LsfCoreService {
 
             mApplicationCollaterals.setTotalCashColleteral(totalCashCollateral);
             mApplicationCollaterals.setTotalPFColleteral(totalPFCollateral);
-// add existing External Collaterals
             totalCollateral = totalCollateral + mApplicationCollaterals.getTotalExternalColleteral();
             mApplicationCollaterals.setNetTotalColleteral(totalCollateral);
             calculateOperativeLimit(mApplicationCollaterals);
             calculateRemainingOperativeLimit(mApplicationCollaterals);
             calculateFTV(mApplicationCollaterals);
 
-
-            /* margine Call Notification */
             log.debug("===========LSF : FTV Value :" + mApplicationCollaterals.getFtv());
             if (violateFTVwithThirdMarginLimit(mApplicationCollaterals)) { // if ftv < third margin level send liquidation notification and set to liquidatable state
                 log.debug("===========LSF : Reached to Third  Margin Level ,Last Margin Call Date :" + mApplicationCollaterals.getMargineCallDate() + " , Last Liquidation call date :" + mApplicationCollaterals.getLiquidateCallDate());
@@ -596,7 +617,6 @@ public class LsfCoreService {
 
                     mApplicationCollaterals.setLiquidateCallDate(dateFormat.format(new Date()));
                     sendMargineNotification(3, mApplicationCollaterals, application);
-
 
                 } else {
                     if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
@@ -628,10 +648,6 @@ public class LsfCoreService {
                 mApplicationCollaterals.setLiquidateCallDate("");
                 //  mApplicationCollaterals.setMargineCallAtempts(0);
             }
-            /* end Call Notification */
-
-            //lsfRepository.addEditCollaterals(mApplicationCollaterals);
-            // modified to save with LSF Type Trading Account Symbols
             lsfRepository.updateCollateralWithCompleteTradingAcc(mApplicationCollaterals);
 
             // update Daily FTV Log for report purpose
@@ -1574,5 +1590,33 @@ public class LsfCoreService {
         }
 
         return result;
+    }
+
+    public ProfitResponse calculateProfit(int tenorId, double orderCompletedValue, double profitPercent) {
+        CommonResponse cmr = new CommonResponse();
+        ProfitResponse profitResponse = new ProfitResponse();
+        try {
+
+            if (GlobalParameters.getInstance().getProfitCalculateMethode() == LsfConstants.PROFIT_CALC_TENOR_BASED) {
+                if (tenorId != -1) {
+                    profitResponse = calculateProfitOnTenor(tenorId, orderCompletedValue, profitPercent);
+                }
+            } else {
+                int loanPeriodInDays = 30 * tenorId;// days per month is taken as 30
+                profitResponse = calculateProfitOnStructureSimple(
+                        orderCompletedValue,
+                        loanPeriodInDays,
+                        profitPercent);
+            }
+            cmr.setResponseCode(200);
+            cmr.setResponseObject(profitResponse);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            cmr.setResponseCode(500);
+            cmr.setErrorMessage("Error on calculating Profit");
+            cmr.setErrorCode(LsfConstants.ERROR_ERROR_ON_CALCULATING_PROFIT);
+        }
+        log.info("===========LSF : (calculateProfit)-LSF-SERVER RESPONSE  : {}", gson.toJson(cmr));
+        return profitResponse;
     }
 }

@@ -46,8 +46,7 @@ public class UpdateOrderStatusProcessor {
                 lsfRepository.getSinglePurchaseOrder(Integer.toString(statusResponse.getOrderId()));
         String response = "-1";
 
-        if (/*purchaseOrder.getOrderStatus() != 2 &&*/ statusResponse.getCompletedOrderValue()
-                                                       > 0) { /*---Update Order Completed Details---*/
+        if (statusResponse.getCompletedOrderValue() > 0) { /*---Update Order Completed Details---*/
             MurabahApplication application = lsfRepository.getMurabahApplication(purchaseOrder.getApplicationId());
 
             /*---Updating OutStanding Amount-----*/
@@ -56,7 +55,7 @@ public class UpdateOrderStatusProcessor {
             lsfRepository.addEditCollaterals(collaterals);
             /*--------*/
 
-            ProfitResponse profitResponse = calculateProfit(
+            ProfitResponse profitResponse = lsfCore.calculateProfit(
                     Integer.parseInt(application.getTenor()),
                     statusResponse.getCompletedOrderValue(),
                     application.getProfitPercentage());
@@ -102,33 +101,5 @@ public class UpdateOrderStatusProcessor {
             }
         }
         return response;
-    }
-
-    private ProfitResponse calculateProfit(int tenorId, double orderCompletedValue, double profitPercent) {
-        CommonResponse cmr = new CommonResponse();
-        ProfitResponse profitResponse = new ProfitResponse();
-        try {
-
-            if (GlobalParameters.getInstance().getProfitCalculateMethode() == LsfConstants.PROFIT_CALC_TENOR_BASED) {
-                if (tenorId != -1) {
-                    profitResponse = lsfCore.calculateProfitOnTenor(tenorId, orderCompletedValue, profitPercent);
-                }
-            } else {
-                int loanPeriodInDays = 30 * tenorId;// days per month is taken as 30
-                profitResponse = lsfCore.calculateProfitOnStructureSimple(
-                        orderCompletedValue,
-                        loanPeriodInDays,
-                        profitPercent);
-            }
-            cmr.setResponseCode(200);
-            cmr.setResponseObject(profitResponse);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            cmr.setResponseCode(500);
-            cmr.setErrorMessage("Error on calculating Profit");
-            cmr.setErrorCode(LsfConstants.ERROR_ERROR_ON_CALCULATING_PROFIT);
-        }
-        logger.info("===========LSF : (calculateProfit)-LSF-SERVER RESPONSE  : " + gson.toJson(cmr));
-        return profitResponse;
     }
 }

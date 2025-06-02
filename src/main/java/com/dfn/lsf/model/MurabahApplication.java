@@ -78,8 +78,6 @@ public class MurabahApplication extends MessageHeader {
     private int rollOverSeqNumber;
     private boolean automaticSettlement;
     private String lastProfitDate;
-    private String rolloverAppId;
-    private int rolloverCount;
     private int lsfAccountDeletionState;
 
     public String getMlPortfolioNo() {
@@ -649,19 +647,15 @@ public class MurabahApplication extends MessageHeader {
         this.lastProfitDate = lastProfitDate;
     }
 
-    public void setRolloverAppId(String rolloverAppId) {
-        this.rolloverAppId = rolloverAppId;
-    }
-
-    public void setRolloverCount(int rolloverCount) {
-        this.rolloverCount = rolloverCount;
-    }
-
     public int getLsfAccountDeletionState() {
         return lsfAccountDeletionState;
     }
 
     public void setLsfAccountDeletionState(int lsfAccountDeletionState) {
         this.lsfAccountDeletionState = lsfAccountDeletionState;
+    }
+
+    public boolean isRollOverApp() {
+        return rollOverAppId != null && !rollOverAppId.equals("-1") && rollOverSeqNumber > 0;
     }
 }

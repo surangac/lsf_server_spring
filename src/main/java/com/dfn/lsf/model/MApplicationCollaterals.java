@@ -143,18 +143,19 @@ public class MApplicationCollaterals {
         return cashAcc;
     }
 
-    public CashAcc isCashAccExist(String cashAccId){
+    public CashAcc isCashAccExist(CashAcc csh){
         if(this.cashAccForColleterals==null){
             this.cashAccForColleterals=new ArrayList<>();
         }
-        for(CashAcc csh:this.cashAccForColleterals){
-            if(csh.getAccountId().equals(cashAccId)){
-                return  csh;
-            }
+        CashAcc cashAcc = cashAccForColleterals.stream().filter(
+                c -> c.getAccountId().equals(csh.getAccountId())
+        ).findFirst().orElse(null);
+
+        if(cashAcc == null){
+            cashAcc = CashAcc.builder().build();
+            cashAcc.setAccountId(csh.getAccountId());
+            this.cashAccForColleterals.add(cashAcc);
         }
-        CashAcc cashAcc= CashAcc.builder().build();
-        cashAcc.setAccountId(cashAccId);
-        this.cashAccForColleterals.add(cashAcc);
         return cashAcc;
     }
 

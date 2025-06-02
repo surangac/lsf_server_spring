@@ -3,6 +3,8 @@ package com.dfn.lsf.model;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 public class TradingAccOmsResp {
@@ -24,4 +26,5 @@ public class TradingAccOmsResp {
     private double pendingSettle;
     private double netReceivable;
     private double blockedAmount;
+    private List<Symbol> symbolList;
 }

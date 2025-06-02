@@ -354,9 +354,26 @@ public class Helper {
             return pendingBasketCancelResponse;
         }
     }
+    @Cacheable(value = "commonCacheOneMinute", key = "#customerId", unless = "#result == null")
+    public List<CashAcc> getNonLsfTypeCashAccounts(String customerId) {
+        List<CashAcc> cashAccounts = new ArrayList<>();
+        try {
+            CommonInqueryMessage request = new CommonInqueryMessage();
+            request.setReqType(LsfConstants.GET_NON_LSF_CASH_ACCOUNT_DETAILS);
+            request.setCustomerId(customerId);
+
+            String result = sendMessageToOms(gson.toJson(request)).toString();
+            Map<String, Object> resultMap = gson.fromJson(result, HashMap.class);
+
+            processCashAccountOMSResponse(resultMap, cashAccounts);
+        } catch (Exception e) {
+            logger.error("Error getting LSF type cash account for customer id : {}", customerId, e);
+        }
+        return cashAccounts;
+    }
 
     @Cacheable(value = "commonCacheOneMinute", key = "#customerId + '_' + #applicationId", unless = "#result == null")
-   public List<CashAcc> getLsfTypeCashAccountForApp(String customerId, String applicationId) {
+    public List<CashAcc> getLsfTypeCashAccounts(String customerId, String applicationId) {
         List<CashAcc> cashAccounts = new ArrayList<>();
         try {
             CommonInqueryMessage request = new CommonInqueryMessage();
@@ -367,28 +384,35 @@ public class Helper {
             String result = sendMessageToOms(gson.toJson(request)).toString();
             Map<String, Object> resultMap = gson.fromJson(result, HashMap.class);
 
-            List<Map<String, Object>> lsfcash = (List<Map<String, Object>>) resultMap.get("responseObject");
-            if (lsfcash != null) {
-                for (Map<String, Object> cash : lsfcash) {
-                    CashAcc cashAcc = CashAcc.builder()
-                            .accountId(cash.get("accountNo").toString())
-                            .cashBalance(Double.parseDouble(cash.get("balance").toString()))
-                            .blockedAmount(Double.parseDouble(cash.get("blockedAmount").toString()))
-                            .pendingSettle(Double.parseDouble(cash.get("pendingSettle").toString()))
-                            .netReceivable(Double.parseDouble(cash.get("netReceivable").toString()))
-                            .isLsfType(true)
-                            .build();
-                    cashAccounts.add(cashAcc);
-                }
-            }
+            processCashAccountOMSResponse(resultMap, cashAccounts);
         } catch (Exception e) {
             logger.error("Error getting LSF type cash account for customer id : {}, Application id : {}", customerId, applicationId, e);
         }
         return cashAccounts;
     }
 
+    private static void processCashAccountOMSResponse(final Map<String, Object> resultMap, final List<CashAcc> cashAccounts) {
+        List<Map<String, Object>> lsfcash = (List<Map<String, Object>>) resultMap.get("responseObject");
+        if (lsfcash != null) {
+            for (Map<String, Object> cash : lsfcash) {
+                CashAcc cashAcc = CashAcc.builder()
+                                         .accountId(cash.get("accountNo").toString())
+                                         .cashBalance(Double.parseDouble(cash.get("balance").toString()))
+                                         .blockedAmount(Double.parseDouble(cash.get("blockedAmount").toString()))
+                                         .pendingSettle(Double.parseDouble(cash.get("pendingSettle").toString()))
+                                         .netReceivable(Double.parseDouble(cash.get("netReceivable").toString()))
+                                         .isLsfType(Boolean.parseBoolean(cash.get("isLsf").toString()))
+                                         .build();
+                if(cash.get("investorAccountNo") != null) {
+                    cashAcc.setInvestmentAccountNumber(cash.get("investorAccountNo").toString());
+                }
+                cashAccounts.add(cashAcc);
+            }
+        }
+    }
+
     @Cacheable(value = "commonCacheOneMinute", key = "#customerId", unless = "#result == null")
-    public List<TradingAccOmsResp> getTradingAccountList(String customerId) {
+    public List<TradingAccOmsResp> getNonLsfTypeTradingAccounts(String customerId) {
         CommonInqueryMessage trReq = new CommonInqueryMessage();
         trReq.setReqType(LsfConstants.GET_TRADING_ACCOUNT_LIST);
         trReq.setCustomerId(customerId);
@@ -405,8 +429,136 @@ public class Helper {
         return tradingAccList;
     }
 
+    @Cacheable(value = "commonCacheOneMinute", key = "#customerId + '_' + #applicationId + '_' + #marginalabilityGroupId", unless = "#result == null")
+    public List<TradingAccOmsResp> getLsfTypeTradingAccounts(String customerId, String applicationId, String marginalabilityGroupId) {
+        CommonInqueryMessage inqueryMessage = new CommonInqueryMessage();
+        inqueryMessage.setReqType(LsfConstants.GET_LSF_TYPE_TRADING_ACCOUNTS);
+        inqueryMessage.setCustomerId(customerId);
+        inqueryMessage.setContractId(applicationId);
+        Object result = sendMessageToOms(gson.toJson(inqueryMessage));
+        Map<String, Object> resultMap = gson.fromJson((String) result, HashMap.class);
+
+        List<Map<String, Object>> accList = (List<Map<String, Object>>) resultMap.get("responseObject");
+        List<TradingAccOmsResp> respList = new ArrayList<>();
+        if (accList != null) {
+            for (Map<String, Object> resMap : accList) {
+                TradingAccOmsResp tradingAcc = extractTradingAccount(resMap);
+                if (tradingAcc != null && resMap.containsKey("shariaSymbols")) {
+                    List<Map<String, Object>> symbolsList = (List<Map<String, Object>>) resMap.get("shariaSymbols");
+                    processSymbols(tradingAcc, symbolsList, marginalabilityGroupId, true);
+                }
+                respList.add(tradingAcc);
+            }
+        }
+        return respList;
+    }
+
+    public List<TradingAccOmsResp> getPFDetailsNonLSF(String customerId, String marginalabilityGroupId) {
+        CommonInqueryMessage req = new CommonInqueryMessage();
+        req.setReqType(GlobalParameters.getInstance().getShariaSymbolsAsCollateral()
+                       ? LsfConstants.GET_PF_SYMBOLS_FOR_COLLETRALS
+                       : LsfConstants.GET_NON_SHARIA_PF_SYMBOLS_FOR_COLLETRALS);
+        req.setCustomerId(customerId);
+
+        try {
+            String result = (String) sendMessageToOms(gson.toJson(req));
+            Map<String, Object> resultMap = gson.fromJson(result, HashMap.class);
+            List<Map<String, Object>> accList = (List<Map<String, Object>>) resultMap.get("responseObject");
+            List<TradingAccOmsResp> respList = new ArrayList<>();
+            if (accList != null) {
+                for (Map<String, Object> resMap : accList) {
+                    TradingAccOmsResp tradingAcc = extractTradingAccount(resMap);
+                    if (tradingAcc != null && resMap.containsKey("shariaSymbols")) {
+                        List<Map<String, Object>> symbolsList = (List<Map<String, Object>>) resMap.get("shariaSymbols");
+                        processSymbols(tradingAcc, symbolsList, marginalabilityGroupId, false);
+                    }
+                    respList.add(tradingAcc);
+                }
+            }
+            return respList;
+        } catch (Exception e) {
+            logger.error("Error processing PF details for customerId: {}", customerId, e);
+        }
+        return new ArrayList<>();
+    }
+
+    private TradingAccOmsResp extractTradingAccount(Map<String, Object> resMap) {
+        try {
+            Map<String, Object> tradingAccMap = (Map<String, Object>) resMap.get("tradingAccount");
+            TradingAccOmsResp tradingAcc = new TradingAccOmsResp();
+            tradingAcc.setAccountId(tradingAccMap.get("accountId").toString());
+            tradingAcc.setExchange(tradingAccMap.get("exchange").toString());
+            tradingAcc.setLsf(Boolean.parseBoolean(tradingAccMap.get("isLsf").toString()));
+            tradingAcc.setSymbolList(new ArrayList<>());
+            return tradingAcc;
+        } catch (Exception e) {
+            logger.error("Error extracting trading account", e);
+            return null;
+        }
+    }
+
+    private void processSymbols(TradingAccOmsResp tradingAcc, List<Map<String, Object>> symbolsList, String marginabilityGroupId, boolean isLsfType) {
+        MarginabilityGroup marginabilityGroup = getMarginabilityGroup(marginabilityGroupId);
+        List<LiquidityType> attachedLiqGoupList = null;
+        List<SymbolMarginabilityPercentage> symbolMarginabilityPercentages = null;
+        if (marginabilityGroup != null) {
+            attachedLiqGoupList = marginabilityGroup.getMarginabilityList();
+            symbolMarginabilityPercentages = marginabilityGroup.getMarginableSymbols();
+        }
+
+        if (symbolsList != null) {
+            for (Map<String, Object> symbolObj : symbolsList) {
+                Symbol symbol = new Symbol();
+                symbol.setSymbolCode(symbolObj.get("symbolCode").toString());
+                symbol.setExchange(symbolObj.get("exchange").toString());
+                symbol.setShortDescription((String) symbolObj.getOrDefault("shortDescription", ""));
+                symbol.setPreviousClosed(Double.parseDouble(symbolObj.get("previousClosed").toString()));
+                symbol.setLastTradePrice(Double.parseDouble(symbolObj.get("lastTradePrice").toString()));
+
+                if(symbolObj.containsKey("openBuyQty")){
+                    symbol.setOpenBuyQty(Integer.parseInt(symbolObj.get("openBuyQty").toString().split("\\.")[0]));
+                }
+                if(symbolObj.containsKey("openSellQty")){
+                    symbol.setOpenBuyQty(Integer.parseInt(symbolObj.get("openSellQty").toString().split("\\.")[0]));
+                }
+
+
+                int pendingSettle = Math.round(Float.parseFloat(symbolObj.getOrDefault("pendingSettle", "0").toString()));
+                int sellPending = Math.round(Float.parseFloat(symbolObj.getOrDefault("sellPending", "0").toString()));
+                symbol.setAvailableQty(Math.round(Float.parseFloat(symbolObj.get("availableQty").toString())) - pendingSettle + sellPending);
+                symbol.setMarketValue(symbol.getAvailableQty() * Math.max(symbol.getLastTradePrice(), symbol.getPreviousClosed()));
+
+                LiquidityType attachedToSymbolLiq = existingSymbolLiqudityType(symbol.getSymbolCode(), symbol.getExchange());
+                symbol.setLiquidityType(attachedToSymbolLiq);
+                if (isLsfType) {
+                    symbol.setTransferedQty(symbol.getAvailableQty());
+                }
+
+                if (attachedLiqGoupList != null) {
+                    attachedLiqGoupList.stream().filter(liquidityType -> liquidityType.getLiquidId() == attachedToSymbolLiq.getLiquidId())
+                        .findFirst()
+                        .ifPresent(symbol::setLiquidityType);
+                }
+
+                if (marginabilityGroup != null) {
+                    symbol.setMarginabilityPercentage(marginabilityGroup.getGlobalMarginablePercentage());
+                }
+
+                if(symbolMarginabilityPercentages != null) {
+                    for(SymbolMarginabilityPercentage smp :symbolMarginabilityPercentages) {
+                        if(smp.getSymbolCode().equals(symbol.getSymbolCode()) && smp.getExchange().equals(symbol.getExchange())){
+                            symbol.setMarginabilityPercentage(smp.getMarginabilityPercentage());
+                        }
+                    }
+                }
+
+                tradingAcc.getSymbolList().add(symbol);
+            }
+        }
+    }
+
     public TradingAccOmsResp getTradingAccount(String customerId, String tradingAccId) {
-        List<TradingAccOmsResp> tradingAccList = getTradingAccountList(customerId);
+        List<TradingAccOmsResp> tradingAccList = getNonLsfTypeTradingAccounts(customerId);
         if (tradingAccList != null) {
             return tradingAccList.stream()
                 .filter(tradingAcc -> tradingAcc.getAccountId().equals(tradingAccId))
@@ -416,4 +568,14 @@ public class Helper {
         return null;
     }
 
+    public String getCashTransferFromAccount(MurabahApplication application) {
+        if (application.isRollOverApp()) {
+            // load lsf cash account from Original application
+            var cashAccounts = getLsfTypeCashAccounts(application.getRollOverAppId(), application.getId());
+            if (cashAccounts != null && !cashAccounts.isEmpty()) {
+                return cashAccounts.getFirst().getAccountId();
+            }
+        }
+        return application.getCashAccount();
+    }
 }

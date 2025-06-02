@@ -83,4 +83,11 @@ public class TradingAcc {
     public void setApplicationId(String applicationId) {
         this.applicationId = applicationId;
     }
+
+    public void mapFromOmsResponse(TradingAccOmsResp omsResp) {
+        this.accountId = omsResp.getAccountId();
+        this.exchange = omsResp.getExchange();
+        this.isLsfType = omsResp.isLsf();
+        this.collateralId = omsResp.getRelCashAccNo();
+    }
 }

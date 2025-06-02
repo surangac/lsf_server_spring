@@ -213,8 +213,6 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                 ShareTransferRequest pfRequest = new ShareTransferRequest();
                 pfRequest.setReqType(LsfConstants.GET_PORTFOLIO_VALUE);
                 pfRequest.setFromTradingAccountId(accountNo);
-                // this Exchange should to be taken from DB L06 table
-                //  pfRequest.setExchange("TDWL");
                 if (map.containsKey("tradingAccExchange")) {
                     pfRequest.setExchange(map.get("tradingAccExchange").toString());
                 }

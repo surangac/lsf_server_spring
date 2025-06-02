@@ -166,7 +166,7 @@ public class LsfOmsValidatorAbicProcessor {
         if (application == null) {
             response.setApproved(false);
         }
-        MApplicationCollaterals collaterals =(MApplicationCollaterals)lsfCoreService.reValuationProcess(application,true);
+        MApplicationCollaterals collaterals = lsfCoreService.reValuationProcess(application,true);
         log.debug("===========LSF : Current FTV :" + collaterals.getFtv() + " , Current Outstanding Balance :" + collaterals.getOutstandingAmount());
         collaterals.setNetTotalColleteral(collaterals.getNetTotalColleteral() - Math.abs(request.getAmount()));
         lsfCoreService.calculateFTV(collaterals);
