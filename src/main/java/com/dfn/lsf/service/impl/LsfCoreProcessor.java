@@ -771,7 +771,8 @@ public class LsfCoreProcessor implements MessageProcessor {
                 List<PurchaseOrder> purchaseOrders = lsfRepository.getPurchaseOrderForApplication(applicationID);
                 if (purchaseOrders != null && purchaseOrders.size() > 0) {
                     PurchaseOrder purchaseOrder = purchaseOrders.get(0);
-                    if (murabahApplication.getFinanceMethod().equalsIgnoreCase("1") || (purchaseOrder.getIsPhysicalDelivery() == 1 && !murabahApplication.isRollOverApp())) {
+                    //if (murabahApplication.getFinanceMethod().equalsIgnoreCase("1") || (purchaseOrder.getIsPhysicalDelivery() == 1 && !murabahApplication.isRollOverApp())) {
+                    if (!murabahApplication.isRollOverApp()) {
                         response = (CommonResponse) lsfCore.releaseCollaterals(collaterals); /*-----Releasing Collaterals----*/
                         log.debug("===========LSF : Released Collateral from OMS :" + purchaseOrder.getId() + " , Application ID :" + applicationID + "Status :" + response.getResponseCode());
                     }
@@ -783,9 +784,9 @@ public class LsfCoreProcessor implements MessageProcessor {
                     adminChargeRequest.setFromCashAccountNo(helper.getCashTransferFromAccount(murabahApplication));
 
                     double vatAmount=LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(adminFee));
-                    adminChargeRequest.setAmount(adminFee);
+                    adminChargeRequest.setAmount(adminFee + vatAmount);
                     adminChargeRequest.setBrokerVat(vatAmount);
-                    adminChargeRequest.setExchangeVat(0.0);
+                    adminChargeRequest.setExchangeVat(vatAmount);
 
                     response = helper.processOMSCommonResponseAdminFee(helper.sendMessageToOms(gson.toJson(adminChargeRequest)).toString());
 
@@ -798,7 +799,8 @@ public class LsfCoreProcessor implements MessageProcessor {
                         //update admin fee in PO level,just to keep the record
                         lsfRepository.updateAdminFee(GlobalParameters.getInstance().getSimaCharges(),GlobalParameters.getInstance().getTransferCharges(),vatAmount,purchaseOrder.getId());
                         // at this stage cash collaterals and shares will be transferred only for shares type or physical delivery for commodity type
-                        if (murabahApplication.getFinanceMethod().equalsIgnoreCase("1") || (purchaseOrder.getIsPhysicalDelivery() == 1 && !murabahApplication.isRollOverApp())) {
+                        //if (murabahApplication.getFinanceMethod().equalsIgnoreCase("1") || (purchaseOrder.getIsPhysicalDelivery() == 1 && !murabahApplication.isRollOverApp())) {
+                        if (!murabahApplication.isRollOverApp()) {
                             transferCollateralsToLSFAccount(murabahApplication, purchaseOrder, collaterals);
                             transferPOToLSFAccount(murabahApplication, purchaseOrder);
                         }
@@ -885,7 +887,7 @@ public class LsfCoreProcessor implements MessageProcessor {
 
         double totalSoldAmount = getTotalSoldAmount(purchaseOrder);
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + totalSoldAmount);
-        lsfCore.cashTransferToMasterAccount(masterCashAccount, lsfCashAccount.getAccountId(), totalSoldAmount, murabahApplication.getId());
+        lsfCore.cashTransfer(masterCashAccount, lsfCashAccount.getAccountId(), totalSoldAmount, murabahApplication.getId());
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + totalSoldAmount);
     }
 
@@ -1037,7 +1039,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                         commodity.setPercentage(Double.parseDouble(params.get("percentage").toString()));
                         commodity.setSoldAmnt((int) Double.parseDouble(params.get("soldAmnt").toString()));
                         commodity.setBoughtAmnt(Double.parseDouble(params.get("boughtAmnt").toString()));
-                        totalSoldAmount += commodity.getSoldAmnt();
+                        totalSoldAmount += commodity.getBoughtAmnt();
                         commodities.add(commodity);
 
                     }
@@ -1062,13 +1064,6 @@ public class LsfCoreProcessor implements MessageProcessor {
                          + totalSoldAmount
                          + " , new Profit:"
                          + profitResponse.getProfitAmount());
-            String response = lsfRepository.upadateOrderStatus(
-                    po.getId(),
-                    1,
-                    totalSoldAmount,
-                    profitResponse.getTotalProfit(),
-                    profitResponse.getProfitPercent(),
-                    0); // vat amount is 0 for now
 
             String statusMessage = "Purchase order submited by ADMIN";
             String statusChangedUserid = "Admin";
@@ -1076,6 +1071,14 @@ public class LsfCoreProcessor implements MessageProcessor {
             
             String responseMessage = lsfRepository.approveApplication(1, fromDB.getId(), statusMessage, statusChangedUserid, statusChangedUserName, statusChangedIP);
             //lsfRepository.updateActivity(fromDB.getId(), -1);
+
+            String response = lsfRepository.upadateOrderStatus(
+                    po.getId(),
+                    1,
+                    totalSoldAmount,
+                    profitResponse.getProfitAmount(),
+                    profitResponse.getProfitPercent(),
+                    0); // vat amount is 0 for now
 
             if (response.equalsIgnoreCase("1")) {
                 lsfRepository.updateActivity(
@@ -1154,33 +1157,33 @@ public class LsfCoreProcessor implements MessageProcessor {
             MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(application.getId());
 
             collaterals.setOutstandingAmount(LSFUtils.ceilTwoDecimals(totalSoldAmount));
-            lsfRepository.addEditCollaterals(collaterals);
             lsfRepository.updatePurchaseOrderByAdmin(po);
 
-            ProfitResponse profitResponse = lsfCore.calculateProfit(
-                    Integer.parseInt(application.getTenor()),
-                    totalSoldAmount,
-                    application.getProfitPercentage());
+//            ProfitResponse profitResponse = lsfCore.calculateProfit(
+//                    Integer.parseInt(application.getTenor()),
+//                    totalSoldAmount,
+//                    application.getProfitPercentage());
+//
+//            log.debug("===========LSF : (commodityPOExecution)-REQUEST , orderID :"
+//                      + po.getId()
+//                      + " , order completed value:"
+//                      + totalSoldAmount
+//                      + " , new Profit:"
+//                      + profitResponse.getProfitAmount());
 
-            log.debug("===========LSF : (commodityPOExecution)-REQUEST , orderID :"
-                      + po.getId()
-                      + " , order completed value:"
-                      + totalSoldAmount
-                      + " , new Profit:"
-                      + profitResponse.getProfitAmount());
-
-            lsfRepository.upadateOrderStatus(
-                    po.getId(),
-                    1,
-                    totalSoldAmount,
-                    profitResponse.getTotalProfit(),
-                    profitResponse.getProfitPercent(),
-                    0);
-
+//            lsfRepository.upadateOrderStatus(
+//                    po.getId(),
+//                    1,
+//                    totalSoldAmount,
+//                    profitResponse.getTotalProfit(),
+//                    profitResponse.getProfitPercent(),
+//                    0);
+           // lsfRepository.addEditCollaterals(collaterals);
             lsfCore.releaseCollaterals(collaterals);
-            if (!application.isRollOverApp()) {
-                transferCollateralsToLSFAccount(application, po, collaterals);
-            }
+            // this had already been done in the order acceptance level method
+//            if (!application.isRollOverApp()) {
+//                transferCollateralsToLSFAccount(application, po, collaterals);
+//            }
             transferCommodityValuetoLsfCashAccount(application, po, collaterals);
 
             cmr.setResponseCode(200);

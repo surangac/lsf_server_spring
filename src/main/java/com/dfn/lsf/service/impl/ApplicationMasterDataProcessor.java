@@ -128,8 +128,11 @@ public class ApplicationMasterDataProcessor implements MessageProcessor {
     private String reqMargineGroupList(Map<String, Object> map) {
         logger.debug("===========LSF : (reqMargineGroupList)-REQUEST RECEIVED ");
         try {
-            List<MarginabilityGroup> fromDB = lsfRepository.getMarginabilityGroups();//(List<MarginabilityGroup>)
-            // dataService.findAll(bRequest);
+            String status = "*";
+            if (map.containsKey("status")) {
+                status = map.get("status").toString();
+            }
+            List<MarginabilityGroup> fromDB = lsfRepository.getMarginabilityGroups(status);
             for (MarginabilityGroup marginabilityGroup : fromDB) {
                 marginabilityGroup.setMarginableSymbols(lsfRepository.getMarginabilityPercByGroup(marginabilityGroup.getId()));
             }
@@ -186,7 +189,8 @@ public class ApplicationMasterDataProcessor implements MessageProcessor {
             // save Group first
             String key = lsfRepository.updateMarginabilityGroup(marginabilityGroup);
             marginabilityGroup.setId(key);
-
+            // update removed grouop
+            lsfRepository.deleteFromSymbolMarginabilityGrp(marginabilityGroup);
             // save marginability percentage
             lsfRepository.updateSymbolMarginabilityPercentages(marginabilityGroup);
             cmr.setResponseCode(200);

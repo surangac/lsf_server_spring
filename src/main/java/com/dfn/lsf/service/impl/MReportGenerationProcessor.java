@@ -72,7 +72,6 @@ public class MReportGenerationProcessor implements MessageProcessor {
                         cmr.setResponseCode(500);
                         cmr.setErrorMessage(rptCode + " Report generation Failed");
                     }
-                    break;
             }
         } catch (Exception ex) {
             cmr.setResponseCode(500);

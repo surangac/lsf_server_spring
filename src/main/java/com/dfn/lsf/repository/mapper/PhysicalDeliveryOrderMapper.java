@@ -21,6 +21,10 @@ public class PhysicalDeliveryOrderMapper implements RowMapper<PhysicalDeliverOrd
         }
         obj.setMobileNo(resultSet.getString("L01_MOBILE_NO"));
         obj.setOtherInfo(resultSet.getString("L14_CUSTOMER_COMMENT"));
+        obj.setCertificatePath(resultSet.getString("L14_COM_CERTIFICATE_PATH"));
+        obj.setAdditionalDetails(resultSet.getString("L01_ADITIONAL_DETAILS"));
+        obj.setAdditionalDocName(resultSet.getString("L01_ADDITIONAL_DOC_NAME"));
+        obj.setAdditionalDocPath(resultSet.getString("L01_ADDITIONAL_DOC_PATH"));
         return obj;
     }
 }

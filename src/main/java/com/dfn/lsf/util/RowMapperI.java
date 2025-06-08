@@ -70,4 +70,5 @@ public interface RowMapperI {
     String AGREEMENT_LIST = "AgreementList";
     String COMMODITY_LIST = "CommodityList";
     String PHYSICAL_DELIVERY_LIST = "PhisicalDeliveryList";
+    String SIMAH_REPORT_DATA = "SimahReportData";
 }

@@ -1,6 +1,5 @@
 package com.dfn.lsf.repository.mapper;
 
-import com.dfn.lsf.model.*;
 import com.dfn.lsf.util.RowMapperI;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
@@ -8,10 +7,6 @@ import com.dfn.lsf.repository.mapper.application.*;
 import com.dfn.lsf.repository.mapper.reports.*;
 import com.dfn.lsf.repository.mapper.notification.*;
 import com.dfn.lsf.repository.mapper.symbol.*;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Factory for creating row mappers

@@ -249,8 +249,8 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                     applicationID = returnMap.get("filterValue").toString();
                     murabahApplications = lsfRepository.getMurabahAppicationApplicationID(applicationID);
                     if (murabahApplications != null) {
-                        if (murabahApplications.size() > 0) {
-                            murabahApplication = murabahApplications.get(0);
+                        if (!murabahApplications.isEmpty()) {
+                            murabahApplication = murabahApplications.getFirst();
                             CommonInqueryMessage customerInfoRequest = new CommonInqueryMessage();
                             customerInfoRequest.setReqType(LsfConstants.GET_CUSTOMER_INFO);
                             customerInfoRequest.setCustomerId(murabahApplication.getCustomerId());
@@ -528,10 +528,12 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                             if (poList != null && !poList.isEmpty()) {
                                 try {
                                     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                                    LocalDateTime apprvDate = LocalDateTime.parse(poList.get(0).getApprovedDate(), formatter);
+                                    LocalDateTime apprvDate = LocalDateTime.parse(poList.getFirst().getApprovedDate(), formatter);
                                     murabahApplication.setRemainTimeToSell(LSFUtils.getRemainTimeForGracePrd(
                                             Date.from(apprvDate.atZone(ZoneId.systemDefault()).toInstant()),
                                             GlobalParameters.getInstance().getGracePeriodforCommoditySell()));
+                                    listResponse.setCustomerContractComment(poList.getFirst().getApproveComment());
+
                                 } catch (DateTimeParseException e) {
                                     logger.error("Error parsing approved date for application {}: {}", 
                                             murabahApplication.getId(), e.getMessage());

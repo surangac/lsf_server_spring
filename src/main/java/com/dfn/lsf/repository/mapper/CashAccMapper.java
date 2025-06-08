@@ -21,7 +21,8 @@ public class CashAccMapper implements RowMapper<CashAcc> {
                              .collateralId(rs.getString("L07_L05_COLLATERAL_ID"))
                              .applicationId(rs.getString("L07_L01_APP_ID"))
                              .blockedReference(rs.getString("L07_BLOCK_REFERENCE"))
-                             .transStatus(rs.getInt("L07_STATUS")).build();
+                             .transStatus(rs.getInt("L07_STATUS"))
+                .investmentAccountNumber(rs.getString("L07_INVESTOR_ACCOUNT")).build();
         return obj;
 
     }

@@ -1,5 +1,8 @@
 package com.dfn.lsf.util;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.Collections;
@@ -228,5 +231,27 @@ public class LSFUtils {
         }
 
         return result;
+    }
+
+    public static String convertToSearchDateString(String dateAsString) {
+        return convertDateFormat(dateAsString, "yyyy/MM/dd HH:mm:ss", "dd-MM-yyyy");
+    }
+
+    public static String convertDateFormat(String dateAsString, String inputPattern, String outputPattern) {
+        if (dateAsString == null || dateAsString.trim().isEmpty()) {
+            return null;
+        }
+
+        try {
+            DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern(inputPattern);
+            DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern(outputPattern);
+
+            LocalDateTime dateTime = LocalDateTime.parse(dateAsString, inputFormatter);
+            return dateTime.format(outputFormatter);
+
+        } catch (DateTimeParseException e) {
+            System.err.println("Error parsing date: " + dateAsString + " - " + e.getMessage());
+            return null;
+        }
     }
 }

@@ -79,6 +79,28 @@ public class MurabahApplication extends MessageHeader {
     private boolean automaticSettlement;
     private String lastProfitDate;
     private int lsfAccountDeletionState;
+    private String additionalDetails;
+    private String additionalDocName;
+    private String additionalDocPath;
+
+    public String getAdditionalDetails() {
+        return additionalDetails;
+    }
+    public void setAdditionalDetails(String additionalDetails) {
+        this.additionalDetails = additionalDetails;
+    }
+    public String getAdditionalDocName() {
+        return additionalDocName;
+    }
+    public void setAdditionalDocName(String additionalDocName) {
+        this.additionalDocName = additionalDocName;
+    }
+    public String getAdditionalDocPath() {
+        return additionalDocPath;
+    }
+    public void setAdditionalDocPath(String additionalDocPath) {
+        this.additionalDocPath = additionalDocPath;
+    }
 
     public String getMlPortfolioNo() {
         return mlPortfolioNo;

@@ -7,9 +7,7 @@ import com.dfn.lsf.model.responseMsg.SettlementSummaryResponse;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.MessageProcessor;
-import com.dfn.lsf.util.LsfConstants;
-import com.dfn.lsf.util.MessageType;
-import com.dfn.lsf.util.OverrallApprovalStatus;
+import com.dfn.lsf.util.*;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -43,6 +41,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
     private final LSFRepository lsfRepository;
 
     private final LsfCoreService lsfCore;
+    private final Helper helper;
 
     @Override
     public String process(final String request) {
@@ -358,13 +357,14 @@ public class SettlementInquiryProcessor implements MessageProcessor {
     public String createContractRollover(Map<String, Object> map) {
         CommonResponse cmr = new CommonResponse();
         String appID = "";
-        String userId = "";
+       // String userId = "";
         if (map.containsKey("appId")) {
             appID = map.get("appId").toString();
         }
-        if (map.containsKey("customerId")) {
-            userId = map.get("customerId").toString();
-        }
+        double rollOverFinanceRequiredAmt = Double.parseDouble(map.get("financeRequiredAmt").toString());
+        double rollOverProfit = Double.parseDouble(map.get("profitAmount").toString());
+        String rollOverTenure = map.get("tenor").toString();
+
         MurabahApplication oldApplication = lsfRepository.getMurabahApplication(appID);
         List<PurchaseOrder> purchaseOrders = lsfRepository.getPurchaseOrderForApplication(appID);
         if (oldApplication.getFinanceMethod().equalsIgnoreCase("2")
@@ -436,15 +436,26 @@ public class SettlementInquiryProcessor implements MessageProcessor {
             newApplication.setOverallStatus(Integer.toString(OverrallApprovalStatus.PENDING.statusCode()));
             newApplication.setCurrentLevel(1);
             newApplication.setAdminFeeCharged(0.0);
+            newApplication.setTenor(rollOverTenure);
 
-            SettlementListResponse settlementListResponse = getSettlementSummaryForApplication(appID, userId);
-            double newAmnt = oldApplication.getFinanceRequiredAmt()
-                             + settlementListResponse.getSettlementSummaryResponseList().get(0).getLoanProfit()
-                             + GlobalParameters.getInstance().getComodityAdminFee()
-                             + GlobalParameters.getInstance().getComodityFixedFee();
+  //          SettlementListResponse settlementListResponse = getSettlementSummaryForApplication(appID, oldApplication.getCustomerId());
+//            double newAmnt = oldApplication.getFinanceRequiredAmt()
+//                             + settlementListResponse.getSettlementSummaryResponseList().get(0).getLoanProfit()
+//                             + GlobalParameters.getInstance().getComodityAdminFee()
+//                             + GlobalParameters.getInstance().getComodityFixedFee();
+            double newAmnt = rollOverFinanceRequiredAmt
+                             + rollOverProfit;
             newApplication.setFinanceRequiredAmt(newAmnt);
             newApplication.setRollOverAppId(appID);
             newApplication.setRollOverSeqNumber(oldApplication.getRollOverSeqNumber() + 1);
+
+            // set Original Application LSF type Accounts as rollover account main accounts.
+            CashAcc lsfCashAccount = helper.getLsfTypeCashAccounts(oldApplication.getCustomerId(), appID).getFirst();
+            TradingAccOmsResp lsfTradingAccount = helper.getLsfTypeTradingAccounts(oldApplication.getCustomerId(), appID, null).getFirst();
+            newApplication.setCashAccount(lsfCashAccount.getAccountId());
+            newApplication.setTradingAcc(lsfTradingAccount.getAccountId());
+            newApplication.setDibAcc(lsfCashAccount.getAccountId());
+            newApplication.setAvailableCashBalance(lsfTradingAccount.getAvailableCash());
 
             String id = lsfRepository.updateMurabahApplication(newApplication);
             logger.info("New application ID : " + id);

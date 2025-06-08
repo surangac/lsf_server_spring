@@ -3,42 +3,7 @@ package com.dfn.lsf.repository;
 import java.util.List;
 import java.util.Map;
 
-import com.dfn.lsf.model.ActivityLog;
-import com.dfn.lsf.model.Agreement;
-import com.dfn.lsf.model.ApplicationStatus;
-import com.dfn.lsf.model.CashAcc;
-import com.dfn.lsf.model.Comment;
-import com.dfn.lsf.model.CommissionStructure;
-import com.dfn.lsf.model.Commodity;
-import com.dfn.lsf.model.Documents;
-import com.dfn.lsf.model.ExternalCollaterals;
-import com.dfn.lsf.model.GlobalParameters;
-import com.dfn.lsf.model.Installments;
-import com.dfn.lsf.model.InstumentType;
-import com.dfn.lsf.model.LiquidationLog;
-import com.dfn.lsf.model.LiquidityType;
-import com.dfn.lsf.model.MApplicationCollaterals;
-import com.dfn.lsf.model.MApplicationSymbolWishList;
-import com.dfn.lsf.model.MarginabilityGroup;
-import com.dfn.lsf.model.MurabahApplication;
-import com.dfn.lsf.model.MurabahaProduct;
-import com.dfn.lsf.model.OMSCommission;
-import com.dfn.lsf.model.OrderProfit;
-import com.dfn.lsf.model.PhysicalDeliverOrder;
-import com.dfn.lsf.model.ProfitCalMurabahaApplication;
-import com.dfn.lsf.model.ProfitCalculationMasterEntry;
-import com.dfn.lsf.model.PurchaseOrder;
-import com.dfn.lsf.model.ReportConfigObject;
-import com.dfn.lsf.model.Status;
-import com.dfn.lsf.model.StockConcentrationGroup;
-import com.dfn.lsf.model.Symbol;
-import com.dfn.lsf.model.SymbolClassifyLog;
-import com.dfn.lsf.model.SymbolMarginabilityPercentage;
-import com.dfn.lsf.model.Tenor;
-import com.dfn.lsf.model.TradingAcc;
-import com.dfn.lsf.model.UserAccountDetails;
-import com.dfn.lsf.model.UserAnswer;
-import com.dfn.lsf.model.UserSession;
+import com.dfn.lsf.model.*;
 import com.dfn.lsf.model.application.ApplicationRating;
 import com.dfn.lsf.model.application.QuestionnaireEntry;
 import com.dfn.lsf.model.notification.AdminUser;
@@ -57,6 +22,7 @@ import com.dfn.lsf.model.responseMsg.OrderContractCustomerInfo;
 import com.dfn.lsf.model.responseMsg.PendingActivity;
 import com.dfn.lsf.model.responseMsg.RiskwavierQuestionConfig;
 import com.dfn.lsf.model.responseMsg.SettlementSummaryResponse;
+
 /**
  * Repository interface for LSF operations
  * This replaces the original LSFDaoI interface
@@ -191,7 +157,7 @@ public interface LSFRepository {
     /*------------------------Application Status Flow Related-------------------*/
     List<Status> getApplicationStatusFlow();
 
-    List<MarginabilityGroup> getMarginabilityGroups();
+    List<MarginabilityGroup> getMarginabilityGroups(String filterStatus);
 
     List<MarginabilityGroup> getDefaultMarginGroups();
 
@@ -207,6 +173,8 @@ public interface LSFRepository {
     String updateMarginabilityGroupLiqTypes(MarginabilityGroup marginabilityGroup);
 
     String updateSymbolMarginabilityPercentages(MarginabilityGroup marginabilityGroup);
+
+    String deleteFromSymbolMarginabilityGrp(MarginabilityGroup marginabilityGroup);
 
     String updateCommissionStructure(CommissionStructure commissionStructure);
 
@@ -307,6 +275,8 @@ public interface LSFRepository {
     MApplicationCollaterals getApplicationCollateral(String applicationId);
 
     MApplicationCollaterals getApplicationCompleteCollateral(String applicationId);
+
+    MApplicationCollaterals getApplicationCompleteCollateralForRollOver(String originalAppId, String applicationId, boolean replaceCashAccWithOriginal, boolean replacePfAccWithOriginal);
 
     String addEditCollaterals(MApplicationCollaterals mApplicationCollaterals);
 
@@ -534,4 +504,5 @@ public interface LSFRepository {
     List<MurabahApplication> getApprovedPurchaseOrderApplicationList(Object fromDate, Object toDate);
     List<MurabahApplication> getBlackListedApplications();
     List<Agreement> getAgreements();
+    String updateAdditionalDetails(PhysicalDeliverOrder physicalDeliverOrder);
 }

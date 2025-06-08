@@ -222,13 +222,13 @@ public class LsfCoreService {
                         cashBlockRequest.setReqType(LsfConstants.CASH_BLOCK_REQUEST);
                         cashBlockRequest.setFromCashAccountId(cashAcc.getAccountId());
 
-                        //if (cashAcc.getAccountId().equalsIgnoreCase(application.getCashAccount())) { // block colletral amount + adminFee from cashAccount
+                        if (cashAcc.getAccountId().equalsIgnoreCase(application.getDibAcc())) { // block colletral amount + adminFee from cashAccount
                             log.debug("Checking Cash Account :" + cashAcc.getAccountId() + " |" + application.getCashAccount());
                             double adminFee = application.getFinanceMethod().equals("1") ? GlobalParameters.getInstance().getShareAdminFee() : GlobalParameters.getInstance().getComodityAdminFee();
                             double vat = calculateVatAmt(adminFee);
                             double totalCharge = LSFUtils.ceilTwoDecimals(adminFee + vat);
                             cashBlockRequest.setAmount(cashAcc.getAmountAsColletarals() + totalCharge);
-                        //}
+                        }
                         log.debug("===LSF : Blocking Cash :" + gson.toJson(cashBlockRequest));
 
                         if (cashBlockRequest.getAmount() > 0) {
@@ -576,7 +576,7 @@ public class LsfCoreService {
             /*------*/
             lsfRepository.updateRevaluationInfo(tradingAccId, totalPFMarketValue, totalWeightedPFMarketValue);
 
-            var lsfTypeCashAccounts = helper.getLsfTypeCashAccounts(application.getCustomerId(), application.getId());
+            var lsfTypeCashAccounts = helper.getLsfTypeCashAccounts(application.getCustomerId(), applicationId);
             if (!lsfTypeCashAccounts.isEmpty()) {
                 CashAcc lsfTypeCashAcc = lsfTypeCashAccounts.getFirst();
                 CashAcc cashAcc1 = mApplicationCollaterals.isCashAccLSFTypeExist(lsfTypeCashAcc.getAccountId());
@@ -860,7 +860,9 @@ public class LsfCoreService {
         MApplicationCollaterals mApplicationCollaterals = null;
         MurabahApplication application = lsfRepository.getMurabahApplication(applicationId);
         try {
-            mApplicationCollaterals = lsfRepository.getApplicationCompleteCollateral(application.getId());
+            mApplicationCollaterals = application.isRollOverApp()
+        ? lsfRepository.getApplicationCompleteCollateralForRollOver(application.getRollOverAppId(), applicationId, false, false)
+                                      : lsfRepository.getApplicationCompleteCollateral(application.getId());
         } catch (Exception ex) {
             throw new RuntimeException("Error getting application collateral", ex);
         }
@@ -1078,6 +1080,38 @@ public class LsfCoreService {
         cashTransferRequest.setToCashAccountId(toAccount);
         cashTransferRequest.setParams("1"); // identify the cash transfer to Master Account
         String result = (String) helper.sendSettlementRelatedOMSRequest(gson.toJson(cashTransferRequest), LsfConstants.HTTP_PRODUCER_OMS_CASH_TRANSFER_MASTER_CASH_ACCOUNT);
+        if (result != null && !result.equalsIgnoreCase("")) {
+            Map<String, Object> resMap = new HashMap<>();
+            resMap = gson.fromJson(result, resMap.getClass());
+            String s = resMap.get("responseObject").toString();
+            String delimitter = "\\|\\|";
+            String[] resultArray = s.split(delimitter);
+            if (resultArray[0].equals("1")) {
+                isTransferred = true;
+            } else {
+                isTransferred = false;
+                log.error("===========LSF : Cash Transfer Failure(Transfer Failed) , From Account:" + fromAccount + " ,To Account :" + toAccount + " , Failure Reason :" + resultArray[1]);
+            }
+        } else {
+            isTransferred = false;
+        }
+        return isTransferred;
+    }
+
+    public boolean cashTransfer(String fromAccount, String toAccount, double transferAmount, String applicationID) {
+        boolean isTransferred = false;
+        BigDecimal bigDecimal = BigDecimal.valueOf(transferAmount);
+        // Fix: Set scale with proper rounding mode and store in a variable
+        BigDecimal roundedValue = bigDecimal.setScale(2, RoundingMode.HALF_UP);
+
+        CashTransferRequest cashTransferRequest = new CashTransferRequest();
+        cashTransferRequest.setReqType(LsfConstants.CASH_TRANSFER);
+        cashTransferRequest.setId(Long.toString(System.currentTimeMillis()));
+        cashTransferRequest.setApplicationid(applicationID);
+        cashTransferRequest.setFromCashAccountId(fromAccount);
+        cashTransferRequest.setAmount(roundedValue.doubleValue()); // Use the rounded value
+        cashTransferRequest.setToCashAccountId(toAccount);
+        String result = (String) helper.sendMessageToOms(gson.toJson(cashTransferRequest));
         if (result != null && !result.equalsIgnoreCase("")) {
             Map<String, Object> resMap = new HashMap<>();
             resMap = gson.fromJson(result, resMap.getClass());

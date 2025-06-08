@@ -211,6 +211,7 @@ public class ApplicationDocumentProcessor implements MessageProcessor {
     }
 
     private String updateApplicationAdminDocs(Map<String, Object> map) {
+        CommonResponse cmr = new CommonResponse();
         if (map.containsKey("applicationID")) {
             try {
                 Documents adminDocument = new Documents();
@@ -249,13 +250,19 @@ public class ApplicationDocumentProcessor implements MessageProcessor {
                 }
                 //adminDocument.setId(String.valueOf(System.currentTimeMillis()));
                 lsfRepository.updateApplicationAdminDocs(adminDocument, map.get("applicationID").toString());
+                cmr.setResponseObject(adminDocument);
             } catch (Exception e) {
-                e.printStackTrace();
+                cmr.setResponseCode(500);
+                cmr.setErrorMessage("Error Occured");
             }
         } else {
-            return "Invalid Parameters";
+            cmr.setErrorCode(500);
+            cmr.setErrorMessage("Invalid Parameters");
         }
-        return "Done";
+        cmr.setResponseCode(200);
+        cmr.setResponseMessage("Updated");
+        logger.info("===========LSF : Updated Admin Doc ApplicationID :" + map.get("applicationID").toString() + " , DocumentName :" + map.get("documentName").toString());
+        return gson.toJson(cmr);
     }
 
     private String removeApplicationAdminDocs(Map<String, Object> map) {

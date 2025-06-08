@@ -99,6 +99,8 @@ public class DBConstants {
     public static final String PROC_STKDTL_FOR_CONCENTRAION_RTP_TODAY = "getStkDtl_for_rtp_today";
     public static final String PROC_L01_UPDATE_LAST_PROFIT_DATE = "l01_update_last_profit_date";
     public static final String PROC_L01_GET_PHYSICAL_DELIVER_LIST = "l01_get_physical_deliver_list";
+    public static final String PROC_L01_UPDATE_ADDITIONAL_DETAILS = "l01_update_aditional_details";
+    public static final String PROC_M04_SIMAH_REPORT = "simah_report";
 
 
     /*-----------------------Murabah Application Related Portfolio------------------*/
@@ -202,6 +204,7 @@ public class DBConstants {
     public static final String PROC_L35_GET_SYMBOL_GROUPS = "l35_get_symbol_groups";
     public static final String PROC_L35_UPDATE_SYMBOL_GROUPS = "l35_update_symbol_groups";
     public static final String PROC_L35_SYMBOL_PERC_BY_GROUP = "l35_get_margin_perc_by_group";
+    public static final String PROC_L35_DELETE_FROM_MARGINABILITY_GRP = "l35_remove_frm_margin_grp";
 
     public static final String PROC_ADD_UPDATE_SYMBOL = "l08_add_update";
     public static final String PROC_ADD_UPDATE_LIQUID_TYPE = "l08_update_liquid_type";

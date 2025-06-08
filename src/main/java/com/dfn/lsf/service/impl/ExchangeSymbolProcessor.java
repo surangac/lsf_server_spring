@@ -307,7 +307,7 @@ public class ExchangeSymbolProcessor implements MessageProcessor {
             MarginabilityGroup marginabilityGroup = helper.getMarginabilityGroup(application.getMarginabilityGroup());
             sResponse.setMarginabilityGroup(marginabilityGroup);
         } else {
-            List<MarginabilityGroup> marginabilityGroups = lsfRepository.getMarginabilityGroups();
+            List<MarginabilityGroup> marginabilityGroups = lsfRepository.getMarginabilityGroups(null);
             if (marginabilityGroups != null) {
                 for (MarginabilityGroup marginabilityGroup : marginabilityGroups) {
                     if (marginabilityGroup.getIsDefault() == 1) {

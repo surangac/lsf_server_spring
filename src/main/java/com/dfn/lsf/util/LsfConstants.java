@@ -142,6 +142,7 @@ public class LsfConstants {
     public static final String GET_MURABAH_APPLICATION_SUMMARY = "reqGetMurabahApplicationSummary";
     public static final String GET_MURABAH_APPLICATION_DETAILS = "reqGetMurabahApplicationDetails";
     public static final String GET_COMMODITY_APPLICATION_SUMMARY = "reqGetCommodityApplicationSummary";
+    public static final String UPDATE_APPLICATION_ADDITIONAL_DETAILS = "updateApplicationAdditionalDetails";
 
     /*---Settlement Related--*/
     public static final String SETTLEMENT_SUMMARY_APPLICATION = "settlementSummaryApplication";
@@ -330,6 +331,7 @@ public class LsfConstants {
     public static final String CREDIT_PROPOSAL = "CP";
     public static final String FACILITY_AGREEMENT_LETTER = "FAL";
     public static final String INVESTMENT_OFFER_LETTER = "IOF";
+    public static final String SIMAH_REPORT = "simahReport";
 
     //OMS QUEUE MESSAGE TYPES
     public static final int UPDATE_ORDER_STATUS_PROCESS = 120;

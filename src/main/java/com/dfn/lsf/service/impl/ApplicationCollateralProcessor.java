@@ -36,7 +36,7 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
 
     @Override
     public String process(String request) {
-        String rawMessage = (String) request;
+        String rawMessage = request;
         logger.debug("====LSF : ApplicationCollateralProcessor , Received Message:" + rawMessage);
         Map<String, Object> map = new HashMap<String, Object>();
         CommonResponse cmr = null;
@@ -83,7 +83,11 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
         try {
             MurabahApplication fromDBApp = lsfRepository.getMurabahApplication(id);
             if (fromDBApp != null) {
-                collaterals = lsfRepository.getApplicationCompleteCollateral(id);
+                String customerId = fromDBApp.getCustomerId();
+                collaterals = fromDBApp.isRollOverApp()
+            ?lsfRepository.getApplicationCompleteCollateralForRollOver(fromDBApp.getRollOverAppId(), fromDBApp.getId(), true, true)
+            :lsfRepository.getApplicationCompleteCollateral(id);
+
                 if (collaterals.getId() == null) {
                     collaterals = new MApplicationCollaterals();
                     collaterals.setApplicationId(id);
@@ -99,16 +103,17 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
 //                    attachedLiqGoupList = marginabilityGroup.getMarginabilityList();
 //                }
 
-                String customerId = fromDBApp.getCustomerId();
+
                 var pfForCollateral = fromDBApp.isRollOverApp()
                                       ? helper.getLsfTypeTradingAccounts(customerId, fromDBApp.getRollOverAppId(), fromDBApp.getMarginabilityGroup())
                                       : helper.getPFDetailsNonLSF(customerId, fromDBApp.getMarginabilityGroup());
                 if (!pfForCollateral.isEmpty()) {
-                    var tradingAccFromAoms = pfForCollateral.getFirst();
-                    TradingAcc tradingAcc =  collaterals.isTradingAccountExist(tradingAccFromAoms.getAccountId());
-                    tradingAcc.mapFromOmsResponse(tradingAccFromAoms);
+                    var tradingAccFromOms = pfForCollateral.stream().filter(tradingAccOmsResp -> tradingAccOmsResp.getAccountId().equals(fromDBApp.getTradingAcc()))
+                            .findFirst().orElse(null);
+                    TradingAcc tradingAcc =  collaterals.isTradingAccountExist(tradingAccFromOms.getAccountId());
+                    tradingAcc.mapFromOmsResponse(tradingAccFromOms);
                     tradingAcc.setApplicationId(id);
-                    tradingAccFromAoms.getSymbolList().forEach(symbol -> {
+                    tradingAccFromOms.getSymbolList().forEach(symbol -> {
                         Symbol symbolExt = tradingAcc.isSymbolExist(symbol.getSymbolCode(), symbol.getExchange());
                         symbolExt.mapFromOms(symbol);
                         double marginabilityPerc = helper.getSymbolMarginabilityPerc(symbol.getSymbolCode(), symbol.getExchange(), id);
@@ -204,10 +209,15 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
                                            ? helper.getLsfTypeCashAccounts(customerId, fromDBApp.getRollOverAppId())
                                            : helper.getNonLsfTypeCashAccounts(customerId);
                 if (!cashAccForCollateral.isEmpty()) {
-                    CashAcc accForCollateral = cashAccForCollateral.getFirst();
+                    CashAcc accForCollateral = cashAccForCollateral.stream().filter(cashAcc -> cashAcc.getAccountId().equals(fromDBApp.getDibAcc()))
+                            .findFirst().orElse(null);
                     CashAcc cashAcc = collaterals.isCashAccExist(accForCollateral);
                     cashAcc.setCashBalance(accForCollateral.getCashBalance() - accForCollateral.getNetReceivable());
-                    cashAcc.setInvestmentAccountNumber(accForCollateral.getInvestmentAccountNumber());
+                    if(accForCollateral.getInvestmentAccountNumber().isEmpty()) {
+                        cashAcc.setInvestmentAccountNumber(accForCollateral.getAccountId());
+                    } else {
+                        cashAcc.setInvestmentAccountNumber(accForCollateral.getInvestmentAccountNumber());
+                    }
                     cashAcc.setApplicationId(id);
                     cashAcc.setLsfType(accForCollateral.isLsfType());
                 }
@@ -280,13 +290,17 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
         logger.debug("===========LSF : (reqCollateralsForPO)-REQUEST RECEIVED , Application ID :" + id);
         MApplicationCollaterals fromDBApp = null;
         try {
-            fromDBApp = lsfRepository.getApplicationCompleteCollateral(id);
+            MurabahApplication application = lsfRepository.getMurabahApplication(id);
+            if(application.isRollOverApp()) {
+                fromDBApp = lsfRepository.getApplicationCompleteCollateralForRollOver(application.getRollOverAppId(), application.getId(), false, false);
+            } else {
+                fromDBApp = lsfRepository.getApplicationCompleteCollateral(id);
+            }
 
             if (fromDBApp == null) {
                 fromDBApp = new MApplicationCollaterals();
             }
 
-            MurabahApplication application = lsfRepository.getMurabahApplication(id);
             fromDBApp.setApprovedLimitAmount(application.getProposedLimit());
             fromDBApp.setTenorID(Integer.parseInt(application.getTenor()));
             fromDBApp.setMaximumNumberOfSymbols(GlobalParameters.getInstance().getMaximumNumberOfSymbols());
@@ -341,13 +355,14 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
                             /*-------Updating LSF Cash Account & Trading Account----------*/
 
                             logger.debug("===========LSF : Updating Collaterals");
+                            String appId = application.isRollOverApp() ? application.getRollOverAppId() : application.getId();
                             if (collaterals.getLsfTypeTradingAccounts() != null
                                 && !collaterals.getLsfTypeCashAccounts().isEmpty()) {
                                 logger.debug("===========LSF : Updating Cash Account :");
                                 CashAcc lsfCashAccount = collaterals.getLsfTypeCashAccounts().getFirst();
                                 CashAcc updatedLsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(
                                         application.getCustomerId(),
-                                        application.getId());
+                                        appId);
                                 lsfCashAccount.setAccountId(updatedLsfCashAccount.getAccountId());
                                 logger.debug("===========LSF : Updated Cash Account :"
                                              + updatedLsfCashAccount.getAccountId());
@@ -358,7 +373,7 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
                                 TradingAcc lsfTradingAccount = collaterals.getLsfTypeTradingAccounts().getFirst();
                                 TradingAcc updatedLsfTradingAccount = lsfCore.getLsfTypeTradinAccountForUser(
                                         application.getCustomerId(),
-                                        application.getId());
+                                        appId);
                                 lsfTradingAccount.setAccountId(updatedLsfTradingAccount.getAccountId());
                                 logger.debug("===========LSF : Updated Trading Account :"
                                              + updatedLsfTradingAccount.getAccountId());

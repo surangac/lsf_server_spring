@@ -411,7 +411,7 @@ public class Helper {
         }
     }
 
-    @Cacheable(value = "commonCacheOneMinute", key = "#customerId", unless = "#result == null")
+    //@Cacheable(value = "commonCacheOneMinute", key = "#customerId", unless = "#result == null")
     public List<TradingAccOmsResp> getNonLsfTypeTradingAccounts(String customerId) {
         CommonInqueryMessage trReq = new CommonInqueryMessage();
         trReq.setReqType(LsfConstants.GET_TRADING_ACCOUNT_LIST);
@@ -429,7 +429,7 @@ public class Helper {
         return tradingAccList;
     }
 
-    @Cacheable(value = "commonCacheOneMinute", key = "#customerId + '_' + #applicationId + '_' + #marginalabilityGroupId", unless = "#result == null")
+    //@Cacheable(value = "commonCacheOneMinute", key = "#customerId + '_' + #applicationId + '_' + #marginalabilityGroupId", unless = "#result == null")
     public List<TradingAccOmsResp> getLsfTypeTradingAccounts(String customerId, String applicationId, String marginalabilityGroupId) {
         CommonInqueryMessage inqueryMessage = new CommonInqueryMessage();
         inqueryMessage.setReqType(LsfConstants.GET_LSF_TYPE_TRADING_ACCOUNTS);
@@ -489,6 +489,30 @@ public class Helper {
             tradingAcc.setAccountId(tradingAccMap.get("accountId").toString());
             tradingAcc.setExchange(tradingAccMap.get("exchange").toString());
             tradingAcc.setLsf(Boolean.parseBoolean(tradingAccMap.get("isLsf").toString()));
+            if(tradingAccMap.containsKey("relCashAccNo")) {
+                tradingAcc.setRelCashAccNo(tradingAccMap.get("relCashAccNo").toString());
+            }
+            if(tradingAccMap.containsKey("availableCash")) {
+                tradingAcc.setAvailableCash(Double.parseDouble(tradingAccMap.get("availableCash").toString()));
+            }
+            if(tradingAccMap.containsKey("securityAccountId")) {
+                try{
+
+                    tradingAcc.setSecurityAccountId(Integer.parseInt(tradingAccMap.get("securityAccountId").toString()));
+                } catch (NumberFormatException e) {
+                    logger.error("Invalid u06Id format in trading account map", e);
+                }
+            }
+            if(tradingAccMap.containsKey("pendingSettle")) {
+                tradingAcc.setPendingSettle(Double.parseDouble(tradingAccMap.get("pendingSettle").toString()));
+            }
+            if(tradingAccMap.containsKey("netReceivable")) {
+                tradingAcc.setNetReceivable(Double.parseDouble(tradingAccMap.get("netReceivable").toString()));
+            }
+            if(tradingAccMap.containsKey("blockedAmount")) {
+                tradingAcc.setBlockedAmount(Double.parseDouble(tradingAccMap.get("blockedAmount").toString()));
+            }
+
             tradingAcc.setSymbolList(new ArrayList<>());
             return tradingAcc;
         } catch (Exception e) {
@@ -498,12 +522,16 @@ public class Helper {
     }
 
     private void processSymbols(TradingAccOmsResp tradingAcc, List<Map<String, Object>> symbolsList, String marginabilityGroupId, boolean isLsfType) {
-        MarginabilityGroup marginabilityGroup = getMarginabilityGroup(marginabilityGroupId);
+
         List<LiquidityType> attachedLiqGoupList = null;
+        MarginabilityGroup marginabilityGroup = null;
         List<SymbolMarginabilityPercentage> symbolMarginabilityPercentages = null;
-        if (marginabilityGroup != null) {
-            attachedLiqGoupList = marginabilityGroup.getMarginabilityList();
-            symbolMarginabilityPercentages = marginabilityGroup.getMarginableSymbols();
+        if (marginabilityGroupId != null) {
+            marginabilityGroup = getMarginabilityGroup(marginabilityGroupId);
+            if(marginabilityGroup != null) {
+                attachedLiqGoupList = marginabilityGroup.getMarginabilityList();
+                symbolMarginabilityPercentages = marginabilityGroup.getMarginableSymbols();
+            }
         }
 
         if (symbolsList != null) {
@@ -515,10 +543,10 @@ public class Helper {
                 symbol.setPreviousClosed(Double.parseDouble(symbolObj.get("previousClosed").toString()));
                 symbol.setLastTradePrice(Double.parseDouble(symbolObj.get("lastTradePrice").toString()));
 
-                if(symbolObj.containsKey("openBuyQty")){
+                if(symbolObj.containsKey("openBuyQty")) {
                     symbol.setOpenBuyQty(Integer.parseInt(symbolObj.get("openBuyQty").toString().split("\\.")[0]));
                 }
-                if(symbolObj.containsKey("openSellQty")){
+                if(symbolObj.containsKey("openSellQty")) {
                     symbol.setOpenBuyQty(Integer.parseInt(symbolObj.get("openSellQty").toString().split("\\.")[0]));
                 }
 
@@ -551,14 +579,13 @@ public class Helper {
                         }
                     }
                 }
-
                 tradingAcc.getSymbolList().add(symbol);
             }
         }
     }
 
-    public TradingAccOmsResp getTradingAccount(String customerId, String tradingAccId) {
-        List<TradingAccOmsResp> tradingAccList = getNonLsfTypeTradingAccounts(customerId);
+    public TradingAccOmsResp getTradingAccount(String customerId, String tradingAccId, String originalAppId, String marginabilityGrp, boolean isRollBackAcc) {
+        List<TradingAccOmsResp> tradingAccList = isRollBackAcc? getLsfTypeTradingAccounts(customerId, originalAppId, marginabilityGrp) : getNonLsfTypeTradingAccounts(customerId);
         if (tradingAccList != null) {
             return tradingAccList.stream()
                 .filter(tradingAcc -> tradingAcc.getAccountId().equals(tradingAccId))

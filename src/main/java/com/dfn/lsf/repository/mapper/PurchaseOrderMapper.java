@@ -109,6 +109,7 @@ public class PurchaseOrderMapper implements RowMapper<PurchaseOrder> {
         }catch (Exception e){
 
         }
+        obj.setApproveComment(rs.getString("L14_CUSTOMER_COMMENT"));
         return obj;
     }
 }

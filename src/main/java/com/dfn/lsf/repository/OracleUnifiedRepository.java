@@ -9,13 +9,11 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.text.ParseException;
 
 import javax.sql.DataSource;
 
+import com.dfn.lsf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,42 +24,6 @@ import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.stereotype.Repository;
 import org.springframework.jdbc.core.RowMapper;
 
-import com.dfn.lsf.model.ActivityLog;
-import com.dfn.lsf.model.Agreement;
-import com.dfn.lsf.model.ApplicationStatus;
-import com.dfn.lsf.model.CashAcc;
-import com.dfn.lsf.model.Comment;
-import com.dfn.lsf.model.CommissionStructure;
-import com.dfn.lsf.model.Commodity;
-import com.dfn.lsf.model.Documents;
-import com.dfn.lsf.model.ExternalCollaterals;
-import com.dfn.lsf.model.GlobalParameters;
-import com.dfn.lsf.model.Installments;
-import com.dfn.lsf.model.InstumentType;
-import com.dfn.lsf.model.LiquidationLog;
-import com.dfn.lsf.model.LiquidityType;
-import com.dfn.lsf.model.MApplicationCollaterals;
-import com.dfn.lsf.model.MApplicationSymbolWishList;
-import com.dfn.lsf.model.MarginabilityGroup;
-import com.dfn.lsf.model.MurabahApplication;
-import com.dfn.lsf.model.MurabahaProduct;
-import com.dfn.lsf.model.OMSCommission;
-import com.dfn.lsf.model.OrderProfit;
-import com.dfn.lsf.model.PhysicalDeliverOrder;
-import com.dfn.lsf.model.ProfitCalMurabahaApplication;
-import com.dfn.lsf.model.ProfitCalculationMasterEntry;
-import com.dfn.lsf.model.PurchaseOrder;
-import com.dfn.lsf.model.ReportConfigObject;
-import com.dfn.lsf.model.Status;
-import com.dfn.lsf.model.StockConcentrationGroup;
-import com.dfn.lsf.model.Symbol;
-import com.dfn.lsf.model.SymbolClassifyLog;
-import com.dfn.lsf.model.SymbolMarginabilityPercentage;
-import com.dfn.lsf.model.Tenor;
-import com.dfn.lsf.model.TradingAcc;
-import com.dfn.lsf.model.UserAccountDetails;
-import com.dfn.lsf.model.UserAnswer;
-import com.dfn.lsf.model.UserSession;
 import com.dfn.lsf.model.application.ApplicationRating;
 import com.dfn.lsf.model.application.QuestionnaireEntry;
 import com.dfn.lsf.model.notification.AdminUser;
@@ -275,6 +237,33 @@ public class OracleUnifiedRepository implements LSFRepository {
         }
         return applicationCollaterals;
     }
+
+    @Override
+    public MApplicationCollaterals getApplicationCompleteCollateralForRollOver(String originalAppId, String applicationId, boolean replaceCashAccWithOriginal, boolean replacePfAccWithOriginal) {
+        MApplicationCollaterals applicationCollaterals = this.getApplicationCollateral(applicationId);
+        applicationCollaterals.setApplicationId(applicationId);
+        // add normal Cash accounts to Collateral Object
+        var cashAccountLsfType = replaceCashAccWithOriginal ? this.getCashAccountsInCollateral(originalAppId, applicationCollaterals.getId(), 1)
+                                                            : this.getCashAccountsInCollateral(applicationId, applicationCollaterals.getId(), 1);
+        applicationCollaterals.setCashAccForColleterals(cashAccountLsfType);
+        // add LSF Type Cash Accounts to Collateral Object
+        applicationCollaterals.setLsfTypeCashAccounts(cashAccountLsfType);
+        // LSF type Trading account list
+        List<TradingAcc> tradingAccListLsfType = this.getTradingAccountInCollateral(applicationId, applicationCollaterals.getId(), 1);
+        // LSF type trading accounts corresponding Symbol list
+        for (TradingAcc tradingAcc : tradingAccListLsfType) {
+            tradingAcc.setSymbolsForColleteral(this.getSymbolsInTradingAccount(tradingAcc.getAccountId(), tradingAcc.getApplicationId()));
+        }
+        // add LSF Type to Collateral Object
+        applicationCollaterals.setLsfTypeTradingAccounts(tradingAccListLsfType);
+        applicationCollaterals.setTradingAccForColleterals(tradingAccListLsfType);
+
+        // add External Collaterals
+        if (applicationCollaterals.getId() != null) {
+            applicationCollaterals.setExternalCollaterals(this.getExternalCollaterals(Integer.parseInt(applicationId), Integer.parseInt(applicationCollaterals.getId())));
+        }
+        return applicationCollaterals;
+    }
     
     @Override
     public MApplicationCollaterals getApplicationCollateral(String applicationId) {
@@ -441,8 +430,8 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl01_filter_criteria", filterCriteria);
         parameterMap.put("pl01_filter_value", filterValue);
-        parameterMap.put("pl01_from_date", fromDate);
-        parameterMap.put("pl01_to_date", toDate);
+        parameterMap.put("pl01_from_date", LSFUtils.convertToSearchDateString(fromDate));
+        parameterMap.put("pl01_to_date", LSFUtils.convertToSearchDateString(toDate));
         parameterMap.put("pl01_request_status", requestStatus);
         murabahApplications = oracleRepository.<MurabahApplication>getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_FILTERED_APPLICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
         if (murabahApplications.size() > 0) {
@@ -665,7 +654,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     public List<QuestionnaireEntry> getQuestionnaireEntries() {
         return oracleRepository.getProcResult(DBConstants.PKG_M06_RISK_WAIVER_QUESTIONNAIRE,
                 DBConstants.PROC_M06_RISK_WAIVER_QUESTIONNAIRE_GET,
-                new HashMap<String, Object>(), rowMapperFactory.getRowMapper(RowMapperI.QUESTIONNAIRE_ENTRY));
+                new HashMap<>(), rowMapperFactory.getRowMapper(RowMapperI.QUESTIONNAIRE_ENTRY));
     }
 
     // white List application
@@ -715,7 +704,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<ApplicationStatus> applicationStatusSummary() {
         return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION,
-                DBConstants.PROC_L01_GET_APP_STATUS_SUMMARY, new HashMap<String, Object>(), rowMapperFactory.getRowMapper(RowMapperI.APP_STATUS_SUMMARY));
+                DBConstants.PROC_L01_GET_APP_STATUS_SUMMARY, new HashMap<>(), rowMapperFactory.getRowMapper(RowMapperI.APP_STATUS_SUMMARY));
     }
 
     @Override
@@ -725,6 +714,8 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl01_app_id", applicationId);
         return oracleRepository.executeProc(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_UPDATE_LAST_PROFIT_DATE, parameterMap);
     }
+
+    @Override
     public List<PhysicalDeliverOrder> getPhysicalDeliveryFromDB(){
         return oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_PHYSICAL_DELIVER_LIST, null, rowMapperFactory.getRowMapper(RowMapperI.PHYSICAL_DELIVERY_LIST));
     }
@@ -1030,6 +1021,23 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
+    public String deleteFromSymbolMarginabilityGrp(MarginabilityGroup marginabilityGroup) {
+        Map<String, Object> parameterMap = new HashMap<>();
+
+        for (SymbolMarginabilityPercentage percentage : marginabilityGroup.getDeletedMarginableSymbols()) {
+            parameterMap.clear();
+            parameterMap.put("pl35_marginability_grp_id", marginabilityGroup.getId());
+            parameterMap.put("pl35_symbol_code", percentage.getSymbolCode());
+            parameterMap.put("pl35_exchange", percentage.getExchange());
+
+            oracleRepository.executeProc(DBConstants.PKG_L35_SYMBOL_MARGINABILITY,
+                                         DBConstants.PROC_L35_DELETE_FROM_MARGINABILITY_GRP, parameterMap);
+        }
+
+        return "1";
+    }
+
+    @Override
     public String updateSymbolMarginability(List<Map<String, Object>> marginabilityGroups) {
 
         Map<String, Object> parameterMap = new HashMap<>();
@@ -1049,8 +1057,10 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
     
     @Override
-    public List<MarginabilityGroup> getMarginabilityGroups() {
-        return oracleRepository.<MarginabilityGroup>getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_ALL_GROUPS_L11, null, rowMapperFactory.getRowMapper(RowMapperI.MARGINABILITY_GROUPS));
+    public List<MarginabilityGroup> getMarginabilityGroups(String filterStatus) {
+        Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("pl11_status", filterStatus == null ? "*" : filterStatus);
+        return oracleRepository.<MarginabilityGroup>getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_ALL_GROUPS_L11, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MARGINABILITY_GROUPS));
     }
 
     @Override
@@ -1828,7 +1838,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         }
 
         return key;
-        }
+    }
     @Override
     public String updateCommodityPOExecution(PurchaseOrder po) {
         List<String> responseParams = new ArrayList<>();
@@ -3048,6 +3058,16 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl04_l01_app_id", applicationID);
         return oracleRepository.getProcResult(DBConstants.PKG_L04_APPLICATION_DOC, DBConstants.PROC_L04_GET_USER_DOCS_BY_APPID, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.USER_APPLICATION_DOCUMENTS));
 
+    }
+
+    @Override
+    public String updateAdditionalDetails (PhysicalDeliverOrder physicalDeliverOrder) {
+        Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("pl01_app_id", physicalDeliverOrder.getApplicationId());
+        parameterMap.put("pl01_additional_details", physicalDeliverOrder.getAdditionalDetails());
+        parameterMap.put("pl01_additional_doc_name", physicalDeliverOrder.getAdditionalDocName());
+        parameterMap.put("pl01_additional_doc_path", physicalDeliverOrder.getAdditionalDocPath());
+        return oracleRepository.executeProc(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_UPDATE_ADDITIONAL_DETAILS, parameterMap);
     }
 
     // private final RowMapper<MurabahApplication> murabahApplicationRowMapper = (rs, rowNum) -> {

@@ -58,4 +58,5 @@ public class PurchaseOrder {
     private int sellButNotSettle;
     private RemainTime remainTimeToSell;
     private String certificatePath = null;
+    private String approveComment;
 } 
