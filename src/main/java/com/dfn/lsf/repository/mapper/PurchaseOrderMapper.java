@@ -110,6 +110,11 @@ public class PurchaseOrderMapper implements RowMapper<PurchaseOrder> {
 
         }
         obj.setApproveComment(rs.getString("L14_CUSTOMER_COMMENT"));
+        try {
+            obj.setIsLsfType(rs.getInt("L07_IS_LSF_TYPE"));
+        } catch (Exception e) {
+
+        }
         return obj;
     }
 }

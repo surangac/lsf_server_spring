@@ -59,4 +59,5 @@ public class PurchaseOrder {
     private RemainTime remainTimeToSell;
     private String certificatePath = null;
     private String approveComment;
+    private int isLsfType;
 } 

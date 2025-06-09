@@ -89,6 +89,10 @@ public class LsfCoreProcessor implements MessageProcessor {
                     return updateAuthAbicToSell(requestMap);
                 case LsfConstants.REVERT_TO_SELL_DELIVER_BY_ADMIN:
                     return revertPOToSellorDeliver(requestMap);
+                case LsfConstants.COMMODITY_PO__UPDATE_SOLD_AMOUNT:
+                    return updateSoldAmount(requestMap);
+                case LsfConstants.APPROVE_PO_SOLD_AMOUNT:
+                    return approveCommunityPOSoldAmnt(requestMap);
             }
         } catch (Exception e) {
             log.error("Error processing core operation request", e);
@@ -482,6 +486,42 @@ public class LsfCoreProcessor implements MessageProcessor {
             lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATED_FAILED_TO_SUBMIT_EXCHANGE_ACCOUNT_CREATION);
             return false;
         }
+    }
+
+    protected String approveCommunityPOSoldAmnt(Map<String, Object> map) {
+        CommonResponse cmr = new CommonResponse();
+        String applicationId = "";
+        try {
+            String poId = map.get("id").toString();
+            applicationId = map.get("applicationId").toString();
+            String approvedbyId = map.get("approvedById").toString();
+            String approvedbyName = map.get("approvedByName").toString();
+            int approvalStatus = Integer.parseInt(map.get("approvalStatus").toString());
+            log.info("===========LSF : (approvePurchaseOrder)-REQUEST, poID :" + poId + " , applicationID:" + applicationId + " ,approvedById: " + approvedbyId + ", approvedbyName" + approvedbyName + " ,approvalStatus:" + approvalStatus);
+
+            PurchaseOrder po = lsfRepository.getSinglePurchaseOrder(poId);
+            if(po.getApprovalStatus() < 2) {
+                cmr.setResponseCode(500);
+                cmr.setErrorMessage("Order not eligible for approve");
+                log.debug("===========LSF : (approvePurchaseOrder)-LSF-SERVER RESPONSE  : " + gson.toJson(cmr));
+                return gson.toJson(cmr);
+            }
+            po.setApprovalStatus(approvalStatus);
+            po.setApprovedById(approvedbyId);
+            po.setApprovedByName(approvedbyName);
+
+            if (approvalStatus > 0) {
+                lsfRepository.approveRejectOrder(po);
+                cmr.setResponseCode(200);
+                cmr.setResponseMessage("Order Approved and send to OMS");
+            }
+        } catch (Exception ex) {
+            cmr.setResponseCode(500);
+            cmr.setErrorMessage("Order Approve failed");
+            log.error("Order Approve failed", ex);
+        }
+        log.debug("===========LSF : (approvePurchaseOrder)-LSF-SERVER RESPONSE  : " + gson.toJson(cmr));
+        return gson.toJson(cmr);
     }
 
     protected String approvePurchaseOrder(Map<String, Object> map) {
@@ -999,6 +1039,70 @@ public class LsfCoreProcessor implements MessageProcessor {
 
         return BPSummary;
     }
+
+    private String updateSoldAmount(Map<String, Object> map){
+        String poId = map.get("id").toString();
+        log.info("updatePurchaseOrdByAdmin PO Id: " + poId);
+        CommonResponse cmr = new CommonResponse();
+        try {
+            PurchaseOrder po = lsfRepository.getSinglePurchaseOrder(poId);
+            if (po == null) {
+                cmr.setResponseCode(500);
+                cmr.setErrorMessage("PO not found");
+                return gson.toJson(cmr);
+            }
+            MurabahApplication fromDB = lsfRepository.getMurabahApplication(po.getApplicationId());
+            if (fromDB != null && fromDB.getCurrentLevel() > 15 && po.getApprovalStatus() != 1) {
+                cmr.setResponseCode(500);
+                cmr.setErrorMessage("Purchase order is already Submitted");
+                return gson.toJson(cmr);
+            }
+
+            po.setSellButNotSettle((int) Double.parseDouble(map.get("sellButNotSettle").toString()));
+            po.setIsPhysicalDelivery((int) Double.parseDouble(map.get("isPhysicalDelivery").toString()));
+            List<Commodity> commodityList = (List<Commodity>) map.get("commodityList");
+            List<Commodity> commodities = new ArrayList<>();
+            if (commodityList != null) {
+                if (commodityList.size() > 0) {
+                    for (int i = 0; i < commodityList.size(); i++) {
+                        Map<String, Object> params = (Map<String, Object>) commodityList.get(i);
+                        Commodity commodity = new Commodity();
+                        commodity.setSymbolCode(params.get("symbolCode").toString());
+                        commodity.setSymbolName(params.get("symbolName").toString());
+                        commodity.setShortDescription(params.get("shortDescription").toString());
+                        commodity.setExchange(params.get("exchange").toString());
+                        commodity.setBroker(params.get("broker").toString());
+                        commodity.setPrice(Double.parseDouble(params.get("price").toString()));
+                        commodity.setUnitOfMeasure(params.get("unitOfMeasure").toString());
+                        commodity.setStatus((int) Double.parseDouble(params.get("status").toString()));
+                        commodity.setPercentage(Double.parseDouble(params.get("percentage").toString()));
+                        commodity.setSoldAmnt((int) Double.parseDouble(params.get("soldAmnt").toString()));
+                        commodity.setBoughtAmnt(Double.parseDouble(params.get("boughtAmnt").toString()));
+                        commodities.add(commodity);
+
+                    }
+                }
+            }
+            po.setCommodityList(commodities);
+            po.setApprovalStatus(2);// pending approval by admin
+            String approvedbyId = "SYSTEM";
+            String approvedbyName = "SYSTEM";
+            po.setApprovedById(approvedbyId);
+            po.setApprovedByName(approvedbyName);
+            lsfRepository.approveRejectOrder(po);
+            lsfRepository.updatePurchaseOrderByAdmin(po);
+
+            cmr.setResponseCode(200);
+            cmr.setResponseMessage("Successfully Updated the Purchase order by admin");
+            log.info("Successfully Updated the Sold Amount order by admin,pending Approval");
+        }catch (Exception e){
+            cmr.setErrorCode(500);
+            cmr.setErrorMessage("PO Update Failed");
+            log.error("PO Update Failed", e);
+        }
+        return gson.toJson(cmr);
+    }
+
     private String updatePurchaseOrdByAdmin(Map<String, Object> map){
         String statusChangedIP = map.get("ipAddress").toString();
         String poId = map.get("id").toString();
@@ -1179,11 +1283,12 @@ public class LsfCoreProcessor implements MessageProcessor {
 //                    profitResponse.getProfitPercent(),
 //                    0);
            // lsfRepository.addEditCollaterals(collaterals);
-            lsfCore.releaseCollaterals(collaterals);
+  //          lsfCore.releaseCollaterals(collaterals);
             // this had already been done in the order acceptance level method
 //            if (!application.isRollOverApp()) {
 //                transferCollateralsToLSFAccount(application, po, collaterals);
 //            }
+            lsfRepository.updateActivity(po.getApplicationId(), LsfConstants.STATUS_COMMODITY_PO_EXECUTED);
             transferCommodityValuetoLsfCashAccount(application, po, collaterals);
 
             cmr.setResponseCode(200);

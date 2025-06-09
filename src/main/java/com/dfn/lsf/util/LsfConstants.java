@@ -143,6 +143,8 @@ public class LsfConstants {
     public static final String GET_MURABAH_APPLICATION_DETAILS = "reqGetMurabahApplicationDetails";
     public static final String GET_COMMODITY_APPLICATION_SUMMARY = "reqGetCommodityApplicationSummary";
     public static final String UPDATE_APPLICATION_ADDITIONAL_DETAILS = "updateApplicationAdditionalDetails";
+    public static final String COMMODITY_PO__UPDATE_SOLD_AMOUNT = "commodityPOUpdateSoldAmount";
+    public static final String APPROVE_PO_SOLD_AMOUNT = "approvePOSoldAmount";
 
     /*---Settlement Related--*/
     public static final String SETTLEMENT_SUMMARY_APPLICATION = "settlementSummaryApplication";
@@ -299,6 +301,7 @@ public class LsfConstants {
 
     public static final int STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARGED = 109;
     public static final int STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARG_FAILED = 1109;
+    public static final int STATUS_COMMODITY_PO_EXECUTED = 149;
 
     public static final int STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_SENT = 110;
     public static final int STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_FAILED_TO_OMS = 1110;
