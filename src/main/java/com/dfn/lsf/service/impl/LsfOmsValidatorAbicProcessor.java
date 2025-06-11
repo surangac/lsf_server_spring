@@ -76,7 +76,7 @@ public class LsfOmsValidatorAbicProcessor {
             log.debug("===========LSF : Application not found for contract id :" + request.getContractId());
             return;
         }
-        MApplicationCollaterals collaterals=(MApplicationCollaterals)lsfCoreService.reValuationProcess(application,true);
+        MApplicationCollaterals collaterals = lsfCoreService.reValuationProcess(application,true);
         log.debug("===========LSF : Current FTV :" + collaterals.getFtv() + " , Current Outstanding Balance :" + collaterals.getOutstandingAmount() + " , Order Value :" + request.getAmount());
         log.debug("===========LSF :Order Details  Symbol :" + request.getSymbol() + " , Price :" + request.getPrice() + " , Quantity :" + request.getQuantity());
 
