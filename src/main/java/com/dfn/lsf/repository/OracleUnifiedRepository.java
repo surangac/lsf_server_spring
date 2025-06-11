@@ -244,18 +244,42 @@ public class OracleUnifiedRepository implements LSFRepository {
         applicationCollaterals.setApplicationId(applicationId);
         // add normal Cash accounts to Collateral Object
         var cashAccountLsfType = replaceCashAccWithOriginal ? this.getCashAccountsInCollateral(originalAppId, applicationCollaterals.getId(), 1)
-                                                            : this.getCashAccountsInCollateral(applicationId, applicationCollaterals.getId(), 1);
+                                                            : this.getCashAccountsInCollateral(applicationId, applicationCollaterals.getId(), 0);
+        if(!replaceCashAccWithOriginal && cashAccountLsfType.isEmpty()) {
+            cashAccountLsfType = this.getCashAccountsInCollateral(originalAppId, applicationCollaterals.getId(), 1);
+        }
         applicationCollaterals.setCashAccForColleterals(cashAccountLsfType);
         // add LSF Type Cash Accounts to Collateral Object
         applicationCollaterals.setLsfTypeCashAccounts(cashAccountLsfType);
         // LSF type Trading account list
-        List<TradingAcc> tradingAccListLsfType = this.getTradingAccountInCollateral(applicationId, applicationCollaterals.getId(), 1);
+        List<TradingAcc> tradingAccListLsfType = this.getTradingAccountInCollateral(applicationId, applicationCollaterals.getId(), 0);
+        if(!replacePfAccWithOriginal && tradingAccListLsfType.isEmpty()) {
+            tradingAccListLsfType = this.getTradingAccountInCollateral(originalAppId, applicationCollaterals.getId(), 1);
+        }
         // LSF type trading accounts corresponding Symbol list
         for (TradingAcc tradingAcc : tradingAccListLsfType) {
             tradingAcc.setSymbolsForColleteral(this.getSymbolsInTradingAccount(tradingAcc.getAccountId(), tradingAcc.getApplicationId()));
         }
         // add LSF Type to Collateral Object
         applicationCollaterals.setLsfTypeTradingAccounts(tradingAccListLsfType);
+        applicationCollaterals.setTradingAccForColleterals(tradingAccListLsfType);
+
+        // add External Collaterals
+        if (applicationCollaterals.getId() != null) {
+            applicationCollaterals.setExternalCollaterals(this.getExternalCollaterals(Integer.parseInt(applicationId), Integer.parseInt(applicationCollaterals.getId())));
+        }
+        return applicationCollaterals;
+    }
+
+    public MApplicationCollaterals getCollateralForRollOverCollaterelWindow(String applicationId, MApplicationCollaterals applicationCollaterals) {
+        var cashAccountLsfType = this.getCashAccountsInCollateral(applicationId, applicationCollaterals.getId(), 0);
+        applicationCollaterals.setCashAccForColleterals(cashAccountLsfType);
+
+        List<TradingAcc> tradingAccListLsfType = this.getTradingAccountInCollateral(applicationId, applicationCollaterals.getId(), 0);
+        // LSF type trading accounts corresponding Symbol list
+        for (TradingAcc tradingAcc : tradingAccListLsfType) {
+            tradingAcc.setSymbolsForColleteral(this.getSymbolsInTradingAccount(tradingAcc.getAccountId(), tradingAcc.getApplicationId()));
+        }
         applicationCollaterals.setTradingAccForColleterals(tradingAccListLsfType);
 
         // add External Collaterals
@@ -1823,6 +1847,7 @@ public class OracleUnifiedRepository implements LSFRepository {
             parameterMap.put("pl14_purchase_ord_id", po.getId());
             parameterMap.put("pl14_physical_delivery",po.getIsPhysicalDelivery());
             parameterMap.put("pl14_sell_but_not_settle",po.getSellButNotSettle());
+            parameterMap.put("pl14_com_certificate_path", po.getCertificatePath());
             key = oracleRepository.executeProc(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.L14_UPDATE_BY_ADMIN, parameterMap);
             for (Commodity commodity : po.getCommodityList()) {
                 this.updatePurchaseOrderCommodity(commodity, po.getId());
@@ -2759,7 +2784,6 @@ public class OracleUnifiedRepository implements LSFRepository {
         }
 
     @Override
-    @CacheEvict(value = "murabahApplications", key = "#applicationId")
     public String updateActivity(String applicationId, int activityId) {
         Map<String, Object> paraMap = new HashMap<>();
         paraMap.put("pl01_app_id", applicationId);

@@ -84,12 +84,16 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
             MurabahApplication fromDBApp = lsfRepository.getMurabahApplication(id);
             if (fromDBApp != null) {
                 String customerId = fromDBApp.getCustomerId();
-                collaterals = fromDBApp.isRollOverApp()
-            ?lsfRepository.getApplicationCompleteCollateralForRollOver(fromDBApp.getRollOverAppId(), fromDBApp.getId(), true, true)
-            :lsfRepository.getApplicationCompleteCollateral(id);
+                if(fromDBApp.isRollOverApp()) {
+                    collaterals = lsfRepository.getApplicationCollateral(fromDBApp.getId());
+                    if (collaterals.getId() != null) { // already have collaterals for this Rollover
+                        collaterals = lsfRepository.getCollateralForRollOverCollaterelWindow(fromDBApp.getId(), collaterals);
+                    }
+                } else {
+                    collaterals = lsfRepository.getApplicationCompleteCollateral(id);
+                }
 
                 if (collaterals.getId() == null) {
-                    collaterals = new MApplicationCollaterals();
                     collaterals.setApplicationId(id);
                     collaterals.setId("-1");
                 }
@@ -111,7 +115,9 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
                     var tradingAccFromOms = pfForCollateral.stream().filter(tradingAccOmsResp -> tradingAccOmsResp.getAccountId().equals(fromDBApp.getTradingAcc()))
                             .findFirst().orElse(null);
                     TradingAcc tradingAcc =  collaterals.isTradingAccountExist(tradingAccFromOms.getAccountId());
-                    tradingAcc.mapFromOmsResponse(tradingAccFromOms);
+                    tradingAcc.setAccountId(tradingAccFromOms.getAccountId());
+                    tradingAcc.setExchange(tradingAccFromOms.getExchange());
+                    tradingAcc.setLsfType(false);
                     tradingAcc.setApplicationId(id);
                     tradingAccFromOms.getSymbolList().forEach(symbol -> {
                         Symbol symbolExt = tradingAcc.isSymbolExist(symbol.getSymbolCode(), symbol.getExchange());
@@ -213,13 +219,13 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
                             .findFirst().orElse(null);
                     CashAcc cashAcc = collaterals.isCashAccExist(accForCollateral);
                     cashAcc.setCashBalance(accForCollateral.getCashBalance() - accForCollateral.getNetReceivable());
-                    if(accForCollateral.getInvestmentAccountNumber().isEmpty()) {
+                    if(accForCollateral.getInvestmentAccountNumber() == null) {
                         cashAcc.setInvestmentAccountNumber(accForCollateral.getAccountId());
                     } else {
                         cashAcc.setInvestmentAccountNumber(accForCollateral.getInvestmentAccountNumber());
                     }
                     cashAcc.setApplicationId(id);
-                    cashAcc.setLsfType(accForCollateral.isLsfType());
+                    cashAcc.setLsfType(false);
                 }
 
                 /*---requesting for Cash balance for Colleterals---*/
@@ -267,10 +273,11 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
                     collaterals.setAdminFee(GlobalParameters.getInstance().getShareAdminFee());
                 } else {
                     collaterals.setAdminFee(GlobalParameters.getInstance().getComodityAdminFee());
+                    double vatAmout = LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(collaterals.getAdminFee()));
                     if (fromDBApp.isRollOverApp()) {
                         final MApplicationCollaterals finalCollaterals = collaterals;
                         collaterals.getCashAccForColleterals().forEach(cashAcc -> {
-                            cashAcc.setAmountAsColletarals(cashAcc.getCashBalance() - finalCollaterals.getAdminFee());
+                            cashAcc.setAmountAsColletarals(cashAcc.getCashBalance() - finalCollaterals.getAdminFee() - vatAmout);
                         });
                     }
                 }

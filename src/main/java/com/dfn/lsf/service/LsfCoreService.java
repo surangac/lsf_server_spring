@@ -455,11 +455,13 @@ public class LsfCoreService {
     public MApplicationCollaterals reValuationProcess(MurabahApplication application,boolean considerBlockAmount) {
         log.debug("===========LSF : (revaluatingApplication) applicationID :" + application.getId());
         CommonResponse response = new CommonResponse();
-        CommonInqueryMessage inqueryMessage = new CommonInqueryMessage();
-        Map<String, Object> resultMap = new HashMap<>();
-        MApplicationCollaterals mApplicationCollaterals = null;
+        MApplicationCollaterals mApplicationCollaterals;
         try {
-            mApplicationCollaterals = lsfRepository.getApplicationCollateral(application.getId());
+            //mApplicationCollaterals = lsfRepository.getApplicationCollateral(application.getId());
+            mApplicationCollaterals = application.isRollOverApp()
+                                      ? lsfRepository.getApplicationCompleteCollateralForRollOver(application.getRollOverAppId(), application.getId(), false, false)
+                                      : lsfRepository.getApplicationCompleteCollateral(application.getId());
+
         } catch (Exception ex) {
             log.error("Error getting application collateral: {}", ex.getMessage());
             return null;
@@ -860,9 +862,17 @@ public class LsfCoreService {
         MApplicationCollaterals mApplicationCollaterals = null;
         MurabahApplication application = lsfRepository.getMurabahApplication(applicationId);
         try {
-            mApplicationCollaterals = application.isRollOverApp()
-        ? lsfRepository.getApplicationCompleteCollateralForRollOver(application.getRollOverAppId(), applicationId, false, false)
-                                      : lsfRepository.getApplicationCompleteCollateral(application.getId());
+            if(application.isRollOverApp()) {
+                mApplicationCollaterals = lsfRepository.getApplicationCollateral(application.getId());
+                if (mApplicationCollaterals.getId() != null) { // already have collaterals for this Rollover
+                    mApplicationCollaterals = lsfRepository.getCollateralForRollOverCollaterelWindow(application.getId(), mApplicationCollaterals);
+                }
+            } else {
+                mApplicationCollaterals = lsfRepository.getApplicationCompleteCollateral(application.getId());
+            }
+
+
+
         } catch (Exception ex) {
             throw new RuntimeException("Error getting application collateral", ex);
         }

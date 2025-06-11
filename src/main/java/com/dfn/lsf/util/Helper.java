@@ -354,7 +354,6 @@ public class Helper {
             return pendingBasketCancelResponse;
         }
     }
-    @Cacheable(value = "commonCacheOneMinute", key = "#customerId", unless = "#result == null")
     public List<CashAcc> getNonLsfTypeCashAccounts(String customerId) {
         List<CashAcc> cashAccounts = new ArrayList<>();
         try {
@@ -372,7 +371,6 @@ public class Helper {
         return cashAccounts;
     }
 
-    @Cacheable(value = "commonCacheOneMinute", key = "#customerId + '_' + #applicationId", unless = "#result == null")
     public List<CashAcc> getLsfTypeCashAccounts(String customerId, String applicationId) {
         List<CashAcc> cashAccounts = new ArrayList<>();
         try {
@@ -498,7 +496,8 @@ public class Helper {
             if(tradingAccMap.containsKey("securityAccountId")) {
                 try{
 
-                    tradingAcc.setSecurityAccountId(Integer.parseInt(tradingAccMap.get("securityAccountId").toString()));
+                    double secAccId = Double.parseDouble(tradingAccMap.get("securityAccountId").toString());
+                    tradingAcc.setSecurityAccountId((int) secAccId);
                 } catch (NumberFormatException e) {
                     logger.error("Invalid u06Id format in trading account map", e);
                 }

@@ -88,6 +88,5 @@ public class TradingAcc {
         this.accountId = omsResp.getAccountId();
         this.exchange = omsResp.getExchange();
         this.isLsfType = omsResp.isLsf();
-        this.collateralId = omsResp.getRelCashAccNo();
     }
 }

@@ -145,6 +145,8 @@ public class LsfConstants {
     public static final String UPDATE_APPLICATION_ADDITIONAL_DETAILS = "updateApplicationAdditionalDetails";
     public static final String COMMODITY_PO__UPDATE_SOLD_AMOUNT = "commodityPOUpdateSoldAmount";
     public static final String APPROVE_PO_SOLD_AMOUNT = "approvePOSoldAmount";
+    public static final String APPROVE_COMMODITY_PO_BY_ADMIN_L1 = "approveCommodityPOByAdminL1";
+    public static final String APPROVE_COMMODITY_PO_BY_ADMIN_L2 = "approveCommodityPOByAdminL2";
 
     /*---Settlement Related--*/
     public static final String SETTLEMENT_SUMMARY_APPLICATION = "settlementSummaryApplication";
@@ -302,6 +304,7 @@ public class LsfConstants {
     public static final int STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARGED = 109;
     public static final int STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARG_FAILED = 1109;
     public static final int STATUS_COMMODITY_PO_EXECUTED = 149;
+    public static final int STATUS_COMMODITY_PO_SOLD_AMT_UPDATED = 148;
 
     public static final int STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_SENT = 110;
     public static final int STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_FAILED_TO_OMS = 1110;
@@ -435,5 +438,10 @@ public class LsfConstants {
     //Manual Profit Calculation
     public static final int ERROR_NOT_ALLOW_TO_RUN_MANUAL_PROFIT_CYCLE_FOR_FUTURE_DATE = 9031;
     public static final int ERROR_PROFIT_CYCLE_ALREADY_RUN_FOR_THE_APPLICATION = 9032;
+
+    // PO Approval Status
+    public static final int PO_APPROVAL_L1_BOUGHT_AMT = 2;
+    public static final int PO_APPROVAL_L1_SOLD_AMT = 3;
+    public static final int PO_APPROVAL_L2_SOLD_AMT = 2;
 
 }

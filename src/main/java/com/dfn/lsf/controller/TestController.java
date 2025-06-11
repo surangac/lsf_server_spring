@@ -1,10 +1,12 @@
 package com.dfn.lsf.controller;
 
 import com.dfn.lsf.model.CashAcc;
+import com.dfn.lsf.service.impl.InvestorAccountCreationProcessor;
 import com.dfn.lsf.util.Helper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -15,6 +17,9 @@ public class TestController {
     @Autowired
     private Helper helper;
 
+    @Autowired
+    private InvestorAccountCreationProcessor investorAccountCreationProcessor;
+
     // This is a placeholder for the TestController class.
     // You can add methods here to handle specific requests or perform tests.
 
@@ -24,5 +29,11 @@ public class TestController {
     public ResponseEntity<List<CashAcc>> testEndpoint() {
         List<CashAcc> cashAccounts = helper.getLsfTypeCashAccounts("11140210", "16840");
         return ResponseEntity.ok(cashAccounts);
+    }
+
+    @GetMapping("/createExchangeAccount")
+    public ResponseEntity<String> createExcahngeAccountManually(@RequestParam String appId) {
+        String response = investorAccountCreationProcessor.manualCreationExchangeAccount(appId);
+        return ResponseEntity.ok(response);
     }
 }

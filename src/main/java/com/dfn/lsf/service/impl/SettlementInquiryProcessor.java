@@ -409,7 +409,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
 
             if (GlobalParameters.getInstance().getMinRolloverRatio() > response.getFtv()) {
                 cmr.setResponseCode(500);
-                cmr.setErrorMessage("Minimum Rollover Ratio Validation failed");
+                cmr.setErrorMessage("Minimum Rollover Ratio Validation failed, FTV {} " + response.getFtv());
                 cmr.setErrorCode(LsfConstants.ERROR_NOT_IN_ROLLOVER_RATIO);
                 logger.info("===========LSF : Minimum Rollover Ratio Validation failed, Application ID :" + map.get(
                         "appId"));
