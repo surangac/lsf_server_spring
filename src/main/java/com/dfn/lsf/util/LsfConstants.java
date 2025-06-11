@@ -144,7 +144,7 @@ public class LsfConstants {
     public static final String GET_COMMODITY_APPLICATION_SUMMARY = "reqGetCommodityApplicationSummary";
     public static final String UPDATE_APPLICATION_ADDITIONAL_DETAILS = "updateApplicationAdditionalDetails";
     public static final String COMMODITY_PO__UPDATE_SOLD_AMOUNT = "commodityPOUpdateSoldAmount";
-    public static final String APPROVE_PO_SOLD_AMOUNT = "approvePOSoldAmount";
+    public static final String APPROVE_PO_SOLD_AMOUNT_L1 = "approvePOSoldAmountL1";
     public static final String APPROVE_COMMODITY_PO_BY_ADMIN_L1 = "approveCommodityPOByAdminL1";
     public static final String APPROVE_COMMODITY_PO_BY_ADMIN_L2 = "approveCommodityPOByAdminL2";
 

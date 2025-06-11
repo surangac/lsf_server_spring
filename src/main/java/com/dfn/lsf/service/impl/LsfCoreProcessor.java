@@ -55,7 +55,6 @@ public class LsfCoreProcessor implements MessageProcessor {
             
             log.info("Processing core operation request with subMessageType: {}", subMessageType);
             
-            // Handle different sub-message types
             switch (subMessageType) {
                 case LsfConstants.RUN_REVALUE_PROCESS:
                     if (requestMap.containsKey("id")) {
@@ -87,16 +86,16 @@ public class LsfCoreProcessor implements MessageProcessor {
                     return approveL1CommodityPOBoughtAmnt(requestMap);
                 case LsfConstants.APPROVE_COMMODITY_PO_BY_ADMIN_L2:
                     return finalApproveCommodityPoBoughtAmt(requestMap);
-                case LsfConstants.COMMODITY_PO_EXECUTE:
-                    return commodityPOExecution(requestMap);
                 case LsfConstants.CONFIRM_AUTH_ABIC_TO_SELL_BY_USER:
                     return updateAuthAbicToSell(requestMap);
                 case LsfConstants.REVERT_TO_SELL_DELIVER_BY_ADMIN:
                     return revertPOToSellorDeliver(requestMap);
                 case LsfConstants.COMMODITY_PO__UPDATE_SOLD_AMOUNT:
                     return updateSoldAmount(requestMap);
-                case LsfConstants.APPROVE_PO_SOLD_AMOUNT:
+                case LsfConstants.APPROVE_PO_SOLD_AMOUNT_L1:
                     return approveCommunityPOSoldAmnt(requestMap);
+                case LsfConstants.COMMODITY_PO_EXECUTE:
+                    return commodityPOExecution(requestMap);
             }
         } catch (Exception e) {
             log.error("Error processing core operation request", e);
@@ -498,24 +497,24 @@ public class LsfCoreProcessor implements MessageProcessor {
             applicationId = map.get("applicationId").toString();
             String approvedbyId = map.get("approvedById").toString();
             String approvedbyName = map.get("approvedByName").toString();
-            int approvalStatus = Integer.parseInt(map.get("approvalStatus").toString());
-            log.info("===========LSF : (approvePurchaseOrder)-REQUEST, poID :" + poId + " , applicationID:" + applicationId + " ,approvedById: " + approvedbyId + ", approvedbyName" + approvedbyName + " ,approvalStatus:" + approvalStatus);
+            log.info("===========LSF : (approvePurchaseOrder)-REQUEST, poID :" + poId + " , applicationID:" + applicationId + " ,approvedById: " + approvedbyId + ", approvedbyName" + approvedbyName );
 
             PurchaseOrder po = lsfRepository.getSinglePurchaseOrder(poId);
-//            if(po.getApprovalStatus() < 2) {
-//                cmr.setResponseCode(500);
-//                cmr.setErrorMessage("Order not eligible for approve");
-//                log.debug("===========LSF : (approvePurchaseOrder)-LSF-SERVER RESPONSE  : " + gson.toJson(cmr));
-//                return gson.toJson(cmr);
-//            }
-            po.setApprovalStatus(approvalStatus);
+            if(po.getApprovalStatus() != 1) {
+                cmr.setResponseCode(500);
+                cmr.setErrorMessage("Order not eligible for approve");
+                return gson.toJson(cmr);
+            }
+            po.setApprovalStatus(LsfConstants.PO_APPROVAL_L1_SOLD_AMT);
             po.setApprovedById(approvedbyId);
             po.setApprovedByName(approvedbyName);
-
-            if (approvalStatus >= 2) {
-                lsfRepository.approveRejectPOCommodity(po);
+            String response = lsfRepository.approveRejectPOCommodity(po);
+            if(response.equals("1")) {
                 cmr.setResponseCode(200);
                 cmr.setResponseMessage("Commodity Order Approved");
+            } else {
+                cmr.setResponseCode(500);
+                cmr.setErrorMessage("Commodity Order Approval Failed");
             }
         } catch (Exception ex) {
             cmr.setResponseCode(500);
