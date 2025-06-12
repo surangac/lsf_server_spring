@@ -500,7 +500,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             log.info("===========LSF : (approvePurchaseOrder)-REQUEST, poID :" + poId + " , applicationID:" + applicationId + " ,approvedById: " + approvedbyId + ", approvedbyName" + approvedbyName );
 
             PurchaseOrder po = lsfRepository.getSinglePurchaseOrder(poId);
-            if(po.getApprovalStatus() != 1) {
+            if(po.getApprovalStatus() != 2) {
                 cmr.setResponseCode(500);
                 cmr.setErrorMessage("Order not eligible for approve");
                 return gson.toJson(cmr);

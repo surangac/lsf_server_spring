@@ -305,7 +305,7 @@ public class LsfConstants {
     public static final int STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARG_FAILED = 1109;
     public static final int STATUS_COMMODITY_PO_UPDATED_BY_ADMIN= 140;
     public static final int STATUS_COMMODITY_PO_UPDATED_BY_ADMIN_L1_APPROVED = 141;
-    public static final int STATUS_COMMODITY_PO_SOLD_AMT_L1_APPROVED = 141;
+    public static final int STATUS_COMMODITY_PO_SOLD_AMT_L1_APPROVED = 142;
     public static final int STATUS_COMMODITY_PO_EXECUTED = 149;
     public static final int STATUS_COMMODITY_PO_SOLD_AMT_UPDATED = 148;
 
