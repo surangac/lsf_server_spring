@@ -1199,6 +1199,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             }
         }
         po.setCommodityList(commodities);
+        po.setOrderCompletedValue(totalSoldAmount);
 
         MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(po.getApplicationId());
 
@@ -1292,7 +1293,7 @@ public class LsfCoreProcessor implements MessageProcessor {
 
         String response = lsfRepository.upadateOrderStatus(
                 po.getId(),
-                1,
+                2, // 2 filled and ready for acceptance
                 totalBoutAmount,
                 profitResponse.getProfitAmount(),
                 profitResponse.getProfitPercent(),

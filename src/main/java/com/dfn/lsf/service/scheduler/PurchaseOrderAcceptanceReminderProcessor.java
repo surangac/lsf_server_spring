@@ -35,43 +35,48 @@ public class PurchaseOrderAcceptanceReminderProcessor {
     public void PurchaseOrderAcceptanceReminder() {
         log.info("==========Sending PO Reminders...........!!!!");
         List<PurchaseOrder> purchaseOrderList  = lsfRepository.getPOForReminding();
-           if(purchaseOrderList != null && purchaseOrderList.size() > 0){
+           if(purchaseOrderList != null && !purchaseOrderList.isEmpty()){
                for(PurchaseOrder purchaseOrder: purchaseOrderList){
-                   if(checkTimeGap(purchaseOrder)){
-                       if(purchaseOrder.getNoOfCallingAttempts() < GlobalParameters.getInstance().getNoOfCallingAttemptsPerDay()){ // if current notification count < maximum notification count , send next notification
-                           List<MurabahApplication> murabahApplications = lsfRepository.getMurabahAppicationApplicationID(purchaseOrder.getApplicationId());
-                           if(murabahApplications != null && murabahApplications.size() > 0){
-                               log.debug("===========LSF : Sending PO Acceptance Reminder , Application  :" + purchaseOrder.getId() + ", Attempt Count :" + purchaseOrder.getNoOfCallingAttempts() + 1);
-                             //   NotificationManager.sendPOAcceptanceReminders(murabahApplications.get(0), purchaseOrder,(purchaseOrder.getNoOfCallingAttempts() + 1), false);
-                              if(notificationManager.sendPOAcceptanceReminders(murabahApplications.get(0), purchaseOrder,(purchaseOrder.getNoOfCallingAttempts() + 1), false)){
-                                   lsfRepository.updatePurchaseOrderAcceptanceReminder(purchaseOrder.getId(), (purchaseOrder.getNoOfCallingAttempts() + 1), purchaseOrder.getCustomerApproveStatus(), LSFUtils.getCurrentMiliSecondAsString());
-                               }
-   
-                           }
-                       }else if (purchaseOrder.getNoOfCallingAttempts() == GlobalParameters.getInstance().getNoOfCallingAttemptsPerDay()){//if maximum notification count exceeded liquidate & release block
-                           CommonResponse liquidateResponse = (CommonResponse) lsfCore.liquidate(purchaseOrder.getId());
-                           log.debug("===========LSF : Sending Liquidation Due to PO not Acceptance , Application  :" + purchaseOrder.getApplicationId() + ", Liquidation Status :" + gson.toJson(liquidateResponse));
-   
-                           if(liquidateResponse.getResponseCode() == 1){
-                               lsfRepository.updatePOLiquidateState(purchaseOrder.getId());
-                               MApplicationCollaterals mApplicationCollaterals = lsfRepository.getApplicationCompleteCollateral(purchaseOrder.getApplicationId());
-                               CommonResponse blockReleaseResponse = (CommonResponse) lsfCore.releaseCollaterals(mApplicationCollaterals);
-                               log.debug("===========LSF : Sending Collaterals Release Due to PO not Acceptance , Application  :" + purchaseOrder.getApplicationId() + ", Collatral Release Status :" + blockReleaseResponse.getResponseCode());
-   
-                               if(blockReleaseResponse.getResponseCode() == 200){
-                                   lsfRepository.updatePurchaseOrderAcceptanceReminder(purchaseOrder.getId(), GlobalParameters.getInstance().getNoOfCallingAttemptsPerDay(), -2, LSFUtils.getCurrentMiliSecondAsString());
-                                   //lsfRepository.moveToCloseDeuToPONotAcceptance(purchaseOrder.getApplicationId());
-                                   lsfCore.moveToCashTransferredClosedState(purchaseOrder.getApplicationId(), "Liquidated & Closed due to PO not acceptance", purchaseOrder.getId());
-                                   lsfRepository.moveToCloseDeuToPONotAcceptance(purchaseOrder.getApplicationId());
-                                   MurabahApplication application = lsfRepository.getMurabahApplication(mApplicationCollaterals.getApplicationId());
-                                   notificationManager.sendPOAcceptanceReminders(application, purchaseOrder, (purchaseOrder.getNoOfCallingAttempts() + 1), true);
-   
-                               }
-                           }
-                       }
+                   List<MurabahApplication> murabahApplications = lsfRepository.getMurabahAppicationApplicationID(purchaseOrder.getApplicationId());
+                   var application = murabahApplications != null && !murabahApplications.isEmpty() ? murabahApplications.getFirst() : null;
+                   if (application != null && !application.isRollOverApp()) {
+                       log.debug("===========LSF : Sending PO Acceptance Reminder , Application  :" + purchaseOrder.getId() + ", Attempt Count :" + purchaseOrder.getNoOfCallingAttempts());
+                       poAcceptanceReminder(purchaseOrder, application);
+                   } else {
+                       // TODO : If the application is a roll over application, we can skip the PO acceptance reminder, need to implement a logic to handle this case
                    }
                }
            }
+    }
+
+    private void poAcceptanceReminder(PurchaseOrder purchaseOrder, MurabahApplication application) {
+        if(!checkTimeGap(purchaseOrder)){
+            return;
+        }
+        if(purchaseOrder.getNoOfCallingAttempts() < GlobalParameters.getInstance().getNoOfCallingAttemptsPerDay()) { // if current notification count < maximum notification count , send next notification
+            log.info("===========LSF : Sending PO Acceptance Reminder , AppId : {},Attempt Count : {}", purchaseOrder.getId(), purchaseOrder.getNoOfCallingAttempts() + 1);
+            if(notificationManager.sendPOAcceptanceReminders(application, purchaseOrder,(purchaseOrder.getNoOfCallingAttempts() + 1), false)){
+                lsfRepository.updatePurchaseOrderAcceptanceReminder(purchaseOrder.getId(), (purchaseOrder.getNoOfCallingAttempts() + 1), purchaseOrder.getCustomerApproveStatus(), LSFUtils.getCurrentMiliSecondAsString());
+            }
+        } else if (purchaseOrder.getNoOfCallingAttempts() == GlobalParameters.getInstance().getNoOfCallingAttemptsPerDay() && application.getFinanceMethod().equals("1")) {
+            //if maximum notification count exceeded liquidate & release block, liquidate only if share finance method
+            CommonResponse liquidateResponse = (CommonResponse) lsfCore.liquidate(purchaseOrder.getId());
+            log.debug("===========LSF : Sending Liquidation Due to PO not Acceptance , Application  :" + purchaseOrder.getApplicationId() + ", Liquidation Status :" + gson.toJson(liquidateResponse));
+
+            if(liquidateResponse.getResponseCode() == 1){
+                lsfRepository.updatePOLiquidateState(purchaseOrder.getId());
+                MApplicationCollaterals mApplicationCollaterals = lsfRepository.getApplicationCompleteCollateral(purchaseOrder.getApplicationId());
+                CommonResponse blockReleaseResponse = (CommonResponse) lsfCore.releaseCollaterals(mApplicationCollaterals);
+                log.debug("===========LSF : Sending Collaterals Release Due to PO not Acceptance , Application  :" + purchaseOrder.getApplicationId() + ", Collatral Release Status :" + blockReleaseResponse.getResponseCode());
+
+                if(blockReleaseResponse.getResponseCode() == 200){
+                    lsfRepository.updatePurchaseOrderAcceptanceReminder(purchaseOrder.getId(), GlobalParameters.getInstance().getNoOfCallingAttemptsPerDay(), -2, LSFUtils.getCurrentMiliSecondAsString());
+                    lsfCore.moveToCashTransferredClosedState(purchaseOrder.getApplicationId(), "Liquidated & Closed due to PO not acceptance", purchaseOrder.getId());
+                    lsfRepository.moveToCloseDeuToPONotAcceptance(purchaseOrder.getApplicationId());
+                    notificationManager.sendPOAcceptanceReminders(application, purchaseOrder, (purchaseOrder.getNoOfCallingAttempts() + 1), true);
+                }
+            }
+        }
     }
 
     private boolean checkTimeGap(PurchaseOrder purchaseOrder){

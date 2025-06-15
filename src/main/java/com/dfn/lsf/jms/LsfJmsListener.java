@@ -1,14 +1,13 @@
 package com.dfn.lsf.jms;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
 import com.dfn.lsf.model.requestMsg.OMSQueueRequest;
 import com.dfn.lsf.service.impl.ExchangeAccountProcessor;
 import com.dfn.lsf.service.impl.DepositResponseHandlingProcessor;
 import com.dfn.lsf.service.impl.LsfOmsValidatorAbicProcessor;
-import com.dfn.lsf.service.impl.SettlementCalculationProcessor;
+import com.dfn.lsf.service.scheduler.SettlementCalculationProcessor;
 import com.dfn.lsf.service.impl.UpdateOrderStatusProcessor;
 import com.dfn.lsf.util.LsfConstants;
 import com.google.gson.Gson;

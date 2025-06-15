@@ -37,39 +37,33 @@ public class ProfitCalculationUtils {
             TradingAcc lsfTradingAccount = null;
             PurchaseOrder purchaseOrder = null;
             List<PurchaseOrder> orderList = lsfRepository.getPurchaseOrderForApplication(murabahApplication.getId());
-            // get
-            // the purchase order for application
 
             logger.debug("===========LSF : Received Order List for ApplicationID :"
                          + murabahApplication.getId()
                          + " , Order Count :"
                          + orderList.size()
                          + " , Order ID :"
-                         + orderList.get(0).getId());
-            if (orderList != null && orderList.size() > 0) {
+                         + orderList.getFirst().getId());
+            if (!orderList.isEmpty()) {
                 OrderProfit newOrderProfit = null;
-                purchaseOrder = orderList.get(0);
+                purchaseOrder = orderList.getFirst();
                 settlementDate = String.valueOf(purchaseOrder.getSettlementDate());
+
                 lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(),
-                                                                      murabahApplication.getId());//get lsf type cash
-                // account details for user
-                lsfTradingAccount = lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(),
-                                                                           murabahApplication.getId());
+                                                                      murabahApplication.getId());
 
                 if (murabahApplication.getProductType() != 3) {
 
-                    purchaseOrderValue = purchaseOrder.getOrderCompletedValue();//get PO value for the order
+                    purchaseOrderValue = getPoValue(purchaseOrder, murabahApplication.getFinanceMethod());
                     orderID = purchaseOrder.getId();
                     //lsfTypeCashAccountBalance = lsfCashAccount.getCashBalance();
                     // remove pending settle for T+2
                     lsfTypeCashAccountBalance = lsfCashAccount.getCashBalance();
                     utilization = purchaseOrderValue;
-                    if (murabahApplication.getProductType()
-                        == 1) { //calculate utilization based on discounted (Discounted Profit)
+                    if (murabahApplication.getProductType() == 1) { //calculate utilization based on discounted (Discounted Profit)
                         utilization = purchaseOrderValue - lsfTypeCashAccountBalance;
                     }
-                    if (utilization > 0 && (LSFUtils.getDaysToSettlement(settlementDate)
-                                            >= 0)) { // calculate profit if the utilization is > 0 & number of days
+                    if (utilization > 0 && (LSFUtils.getDaysToSettlement(settlementDate) >= 0)) { // calculate profit if the utilization is > 0 & number of days
                         // to settlement is > =0
                         //profit = LSFUtils.ceilTwoDecimals(ProfitCalculationUtils.calculateProfit(utilization,
                         // purchaseOrder.getProfitPercentage(), lsfCore)); // profit calculation
@@ -90,8 +84,7 @@ public class ProfitCalculationUtils {
                                                                     lsfRepository); //retrieving last profit entry for
                     // application
                     newOrderProfit = new OrderProfit();
-                    MApplicationCollaterals applicationCollaterals = lsfRepository.getApplicationCollateral(
-                            applicationID);
+                    MApplicationCollaterals applicationCollaterals = lsfRepository.getApplicationCollateral(applicationID);
                     if (lastEntry == null) { // if first entry
                         newOrderProfit.setApplicationID(applicationID);
                         newOrderProfit.setOrderID(orderID);
@@ -145,15 +138,15 @@ public class ProfitCalculationUtils {
                                                                         murabahApplication.getDiscountOnProfit());
                 }
 
+                lsfTradingAccount = lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(),
+                                                                           murabahApplication.getId());
                 decideSettlementAction(settlementDate,
                                        murabahApplication,
-                                       orderList.get(0),
+                                       purchaseOrder,
                                        newOrderProfit,
                                        lsfCashAccount,
                                        lsfTradingAccount,
-                                       masterCashAccount,
-                                       lsfCore,
-                                       lsfRepository);// analyze information and perform actions
+                                       masterCashAccount);// analyze information and perform actions
             } else {
                 logger.info("===========LSF : Order Found for Application :" + applicationID);
             }
@@ -165,6 +158,15 @@ public class ProfitCalculationUtils {
                          + " error: "
                          + ex.getMessage());
         }
+    }
+
+    private double getPoValue(PurchaseOrder purchaseOrder, String financeType) {
+        if (financeType.equals("1")) {
+            return purchaseOrder.getOrderCompletedValue();
+        } else if (financeType.equals("2")) {
+            return purchaseOrder.getCommodityList().stream().mapToDouble(Commodity::getBoughtAmnt).sum();
+        }
+        return 0.0;
     }
 
     public static double calculateProfit(double utilization, double profitPercentage, LsfCoreService lsfCore) {
@@ -194,9 +196,7 @@ public class ProfitCalculationUtils {
                                        OrderProfit orderProfit,
                                        CashAcc lsfTypeCashAccount,
                                        TradingAcc lsfTradinAccount,
-                                       String masterCashAccount,
-                                       LsfCoreService lsfCore,
-                                       LSFRepository lsfDaoI) {
+                                       String masterCashAccount) {
         int dateDifference = 0;
         int notificationPeriod = GlobalParameters.getInstance().getNoOfDaysPriorRemindingThePayment();
         dateDifference = LSFUtils.getDaysToSettlement(settlementDate); // calculate remaining days to settlement from
@@ -212,8 +212,7 @@ public class ProfitCalculationUtils {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else if ((notificationPeriod > dateDifference) && (dateDifference
-                                                             > 0)) {//in between settlement notification start &
+        } else if ((notificationPeriod > dateDifference) && (dateDifference> 0)) {//in between settlement notification start &
             // settlement date
             murabahApplication.setCurrentLevel(LsfConstants.SETTLEMENT_NOTIFICATION_MARGIN_LEVEL);
             murabahApplication.setOverallStatus(LsfConstants.SETTLEMENT_NOTIFICATION_MARGIN_STATUS);
@@ -225,12 +224,10 @@ public class ProfitCalculationUtils {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        } else if ((dateDifference <= 0)
-                   && murabahApplication.getAutomaticSettlementAllow()
-                      == 1) {// in the settlement date or after and automatic settlement is allowed
+        } else if ((dateDifference <= 0) && murabahApplication.getAutomaticSettlementAllow() == 1) {// in the settlement date or after and automatic settlement is allowed
             double amountToBeSettled = 0;
 
-            amountToBeSettled = purchaseOrder.getOrderCompletedValue() + orderProfit.getCumulativeProfitAmount();
+            amountToBeSettled = getPoValue(purchaseOrder, murabahApplication.getFinanceMethod()) + orderProfit.getCumulativeProfitAmount();
 
          /*   if(murabahApplication.getProductType() != 3){
             }else{
@@ -254,10 +251,11 @@ public class ProfitCalculationUtils {
                         TradingAcc lsfTradingAcc =
                                 lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(),
                                                                                           murabahApplication.getId());
-                        if (lsfCore.cashTransferToMasterAccount(lsfTypeCashAccount.getAccountId(),
-                                                                masterCashAccount,
-                                                                amountToBeSettled,
-                                                                murabahApplication.getId())) { // if cash transfer is
+                        boolean cashTransferredToMasterAcc = lsfCore.cashTransferToMasterAccount(lsfTypeCashAccount.getAccountId(),
+                                                                                                 masterCashAccount,
+                                                                                                 amountToBeSettled,
+                                                                                                 murabahApplication.getId());
+                        if (cashTransferredToMasterAcc) { // if cash transfer is
                             // succeed.
                             logger.info("===========LSF : Cash Transfer Success ,From Account :"
                                         + lsfTypeCashAccount
@@ -269,7 +267,9 @@ public class ProfitCalculationUtils {
                                         + " ,ApplicationID : "
                                         + murabahApplication.getId());
                             logger.info("Updating PO " + purchaseOrder.getId() + " to settled state");
-                            lsfDaoI.updatePOToSettledState(Integer.parseInt(purchaseOrder.getId()));
+                            lsfRepository.updatePOToSettledState(Integer.parseInt(purchaseOrder.getId()));
+                            // TODO: need to check whether Rollover applications are available for this application
+                            // if not proceed with account deletion request
                             AccountDeletionRequestState accountDeletionRequestState = lsfCore.closeLSFAccount(
                                     murabahApplication.getId(),
                                     lsfTradingAcc.getAccountId(),

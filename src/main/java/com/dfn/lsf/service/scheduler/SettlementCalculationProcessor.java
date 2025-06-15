@@ -1,4 +1,4 @@
-package com.dfn.lsf.service.impl;
+package com.dfn.lsf.service.scheduler;
 
 import com.dfn.lsf.model.*;
 import com.dfn.lsf.model.requestMsg.LiquidatePortfolioRequest;
@@ -12,7 +12,6 @@ import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -68,14 +67,14 @@ public class SettlementCalculationProcessor implements MessageProcessor {
     public void runSettlementCalculation() {
         String masterCashAccount = null;
         logger.info("===========LSF : Settlement Calculation Request Received  :");
-        List<MurabahApplication> murabahApplicationList = lsfRepository.getOrderContractSingedApplications();//
+        List<MurabahApplication> murabahApplicationList = lsfRepository.getOrderContractSingedApplications();
         // getting the
         // application eligible for profit calculation
         logger.debug("===========LSF : Profit Calculation Eligible Application Count  :"
                      + murabahApplicationList.size());
 
-        masterCashAccount = lsfCore.getMasterCashAccount();//getting master cash account
-        if (murabahApplicationList != null && murabahApplicationList.size() > 0) {
+        masterCashAccount = lsfCore.getMasterCashAccount();
+        if (!murabahApplicationList.isEmpty()) {
             /*--ALBILADSUP-389--*/
             // add new entry once the job is started by the scheduler
             lsfRepository.insertProfitCalculationMasterEntry(murabahApplicationList.size());
