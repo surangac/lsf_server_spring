@@ -115,6 +115,11 @@ public class PurchaseOrderMapper implements RowMapper<PurchaseOrder> {
         } catch (Exception e) {
 
         }
+        try {
+            obj.setCertificateNumber(rs.getString("l14_certificate_number"));
+        } catch (Exception e) {
+            // Handle exception if necessary
+        }
         return obj;
     }
 }

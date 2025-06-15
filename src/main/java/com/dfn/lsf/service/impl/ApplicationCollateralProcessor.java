@@ -294,16 +294,11 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
     private String getColleteralsForPO(Map<String, Object> map) {
 
         String id = map.get("id").toString();
-        logger.debug("===========LSF : (reqCollateralsForPO)-REQUEST RECEIVED , Application ID :" + id);
+        logger.info("===========LSF : (reqCollateralsForPO)-REQUEST RECEIVED , Application ID : {}", id);
         MApplicationCollaterals fromDBApp = null;
         try {
             MurabahApplication application = lsfRepository.getMurabahApplication(id);
-            if(application.isRollOverApp()) {
-                fromDBApp = lsfRepository.getApplicationCompleteCollateralForRollOver(application.getRollOverAppId(), application.getId(), false, false);
-            } else {
-                fromDBApp = lsfRepository.getApplicationCompleteCollateral(id);
-            }
-
+            fromDBApp = lsfRepository.getApplicationCompleteCollateral(id);
             if (fromDBApp == null) {
                 fromDBApp = new MApplicationCollaterals();
             }

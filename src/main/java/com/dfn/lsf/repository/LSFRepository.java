@@ -276,7 +276,7 @@ public interface LSFRepository {
 
     MApplicationCollaterals getApplicationCompleteCollateral(String applicationId);
 
-    MApplicationCollaterals getApplicationCompleteCollateralForRollOver(String originalAppId, String applicationId, boolean replaceCashAccWithOriginal, boolean replacePfAccWithOriginal);
+    MApplicationCollaterals getApplicationCompleteCollateralForRollOver(String originalAppId);
 
     MApplicationCollaterals getCollateralForRollOverCollaterelWindow(String applicationId, MApplicationCollaterals applicationCollaterals);
     String addEditCollaterals(MApplicationCollaterals mApplicationCollaterals);

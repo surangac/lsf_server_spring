@@ -143,7 +143,6 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
     
     @Override
-    @Cacheable(value = "murabahApplications", key = "#applicationId", unless = "#result == null")
     public MurabahApplication getMurabahApplication(String applicationId) {
         try {
             List<MurabahApplication> applications = getMurabahAppicationApplicationID(applicationId);
@@ -239,23 +238,16 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
-    public MApplicationCollaterals getApplicationCompleteCollateralForRollOver(String originalAppId, String applicationId, boolean replaceCashAccWithOriginal, boolean replacePfAccWithOriginal) {
+    public MApplicationCollaterals getApplicationCompleteCollateralForRollOver(String applicationId) {
         MApplicationCollaterals applicationCollaterals = this.getApplicationCollateral(applicationId);
         applicationCollaterals.setApplicationId(applicationId);
         // add normal Cash accounts to Collateral Object
-        var cashAccountLsfType = replaceCashAccWithOriginal ? this.getCashAccountsInCollateral(originalAppId, applicationCollaterals.getId(), 1)
-                                                            : this.getCashAccountsInCollateral(applicationId, applicationCollaterals.getId(), 0);
-        if(!replaceCashAccWithOriginal && cashAccountLsfType.isEmpty()) {
-            cashAccountLsfType = this.getCashAccountsInCollateral(originalAppId, applicationCollaterals.getId(), 1);
-        }
+        var cashAccountLsfType = this.getCashAccountsInCollateral(applicationId, applicationCollaterals.getId(), 1);
         applicationCollaterals.setCashAccForColleterals(cashAccountLsfType);
         // add LSF Type Cash Accounts to Collateral Object
         applicationCollaterals.setLsfTypeCashAccounts(cashAccountLsfType);
         // LSF type Trading account list
-        List<TradingAcc> tradingAccListLsfType = this.getTradingAccountInCollateral(applicationId, applicationCollaterals.getId(), 0);
-        if(!replacePfAccWithOriginal && tradingAccListLsfType.isEmpty()) {
-            tradingAccListLsfType = this.getTradingAccountInCollateral(originalAppId, applicationCollaterals.getId(), 1);
-        }
+        List<TradingAcc> tradingAccListLsfType = this.getTradingAccountInCollateral(applicationId, applicationCollaterals.getId(), 1);
         // LSF type trading accounts corresponding Symbol list
         for (TradingAcc tradingAcc : tradingAccListLsfType) {
             tradingAcc.setSymbolsForColleteral(this.getSymbolsInTradingAccount(tradingAcc.getAccountId(), tradingAcc.getApplicationId()));
@@ -264,10 +256,6 @@ public class OracleUnifiedRepository implements LSFRepository {
         applicationCollaterals.setLsfTypeTradingAccounts(tradingAccListLsfType);
         applicationCollaterals.setTradingAccForColleterals(tradingAccListLsfType);
 
-        // add External Collaterals
-        if (applicationCollaterals.getId() != null) {
-            applicationCollaterals.setExternalCollaterals(this.getExternalCollaterals(Integer.parseInt(applicationId), Integer.parseInt(applicationCollaterals.getId())));
-        }
         return applicationCollaterals;
     }
 
@@ -379,6 +367,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl01_automatic_settlement", murabahApplication.getAutomaticSettlementAllow());
         parameterMap.put("pl01_product_type", murabahApplication.getProductType());
         parameterMap.put("pl01_rollover_app_id",murabahApplication.getRollOverAppId());
+        parameterMap.put("pl01_finance_method", (int)(Double.parseDouble(murabahApplication.getFinanceMethod())));
         return oracleRepository.executeProc(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_ADD_UPDATE_APPLICATION, parameterMap);
     }
     
@@ -1840,31 +1829,6 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
-    public String updatePurchaseOrderByAdmin(PurchaseOrder po) {
-        String key = "";
-        Map<String, Object> parameterMap = new HashMap<>();
-        try {
-            parameterMap.put("pl14_purchase_ord_id", po.getId());
-            parameterMap.put("pl14_physical_delivery",po.getIsPhysicalDelivery());
-            parameterMap.put("pl14_sell_but_not_settle",po.getSellButNotSettle());
-            parameterMap.put("pl14_com_certificate_path", po.getCertificatePath());
-            key = oracleRepository.executeProc(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.L14_UPDATE_BY_ADMIN, parameterMap);
-            for (Commodity commodity : po.getCommodityList()) {
-                this.updatePurchaseOrderCommodity(commodity, po.getId());
-                if (key != null && key.equalsIgnoreCase("999")){
-                    po.setApprovalStatus(0);
-                    po.setApprovedByName("SYSTEM");
-                    this.approveRejectOrder(po);
-                }
-            }
-        }catch (Exception e){
-            key = "0";
-            log.error("updatePurchaseOrderByAdmin failed : " + po.getId());
-        }
-
-        return key;
-    }
-    @Override
     public String updateCommodityPOExecution(PurchaseOrder po) {
         List<String> responseParams = new ArrayList<>();
 
@@ -1882,6 +1846,34 @@ public class OracleUnifiedRepository implements LSFRepository {
             return "0";
         }
     }
+
+    @Override
+    public String updatePurchaseOrderByAdmin(PurchaseOrder po) {
+        String key = "";
+        Map<String, Object> parameterMap = new HashMap<>();
+        try {
+            parameterMap.put("pl14_purchase_ord_id", po.getId());
+            parameterMap.put("pl14_physical_delivery",po.getIsPhysicalDelivery());
+            parameterMap.put("pl14_sell_but_not_settle",po.getSellButNotSettle());
+            parameterMap.put("pl14_com_certificate_path", po.getCertificatePath());
+            parameterMap.put("pl14_certificate_number", po.getCertificateNumber());
+            key = oracleRepository.executeProc(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.L14_UPDATE_BY_ADMIN, parameterMap);
+            for (Commodity commodity : po.getCommodityList()) {
+                this.updatePurchaseOrderCommodity(commodity, po.getId());
+                if (key != null && key.equalsIgnoreCase("999")){
+                    po.setApprovalStatus(0);
+                    po.setApprovedByName("SYSTEM");
+                    this.approveRejectOrder(po);
+                }
+            }
+        }catch (Exception e){
+            key = "0";
+            log.error("updatePurchaseOrderByAdmin failed : " + po.getId());
+        }
+
+        return key;
+    }
+
     @Override
     public List<Symbol> getPurchaseOrderSymbols(String orderId) {
         Map<String, Object> parameterMap = new HashMap<>();

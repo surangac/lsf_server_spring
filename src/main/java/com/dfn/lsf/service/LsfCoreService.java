@@ -417,11 +417,11 @@ public class LsfCoreService {
             int currentHour = calendar.get(Calendar.HOUR_OF_DAY);
             if ((10 <= currentHour) && (currentHour <= 15)) {
                 List<MurabahApplication> appList = lsfRepository.getOrderContractSingedApplications();
-                if (appList != null && appList.size() > 0) {
-                    for (MurabahApplication application : appList) {
-                        reValuationProcess(application,true);
-                    }
-                }
+                var mainApplications = appList.stream().filter(application -> !application.isRollOverApp()).toList();
+                var rollOverApplications = appList.stream().filter(MurabahApplication::isRollOverApp).toList();
+                log.debug("===========LSF : (reValuationProcess) - mainApplications size: {}, rollOverApplications size: {}", mainApplications.size(), rollOverApplications.size());
+                mainApplications.forEach(application -> reValuationProcess(application, false));
+                rollOverApplications.forEach(application -> reValuationProcess_RollOverApp(application, true));
             }
             response.setResponseCode(200);
             response.setResponseMessage("recalculation process completed");
@@ -452,217 +452,226 @@ public class LsfCoreService {
         return gson.toJson(response);
     }
 
-    public MApplicationCollaterals reValuationProcess(MurabahApplication application,boolean considerBlockAmount) {
-        log.debug("===========LSF : (revaluatingApplication) applicationID :" + application.getId());
-        CommonResponse response = new CommonResponse();
-        MApplicationCollaterals mApplicationCollaterals;
-        try {
-            //mApplicationCollaterals = lsfRepository.getApplicationCollateral(application.getId());
-            mApplicationCollaterals = application.isRollOverApp()
-                                      ? lsfRepository.getApplicationCompleteCollateralForRollOver(application.getRollOverAppId(), application.getId(), false, false)
-                                      : lsfRepository.getApplicationCompleteCollateral(application.getId());
-
-        } catch (Exception ex) {
-            log.error("Error getting application collateral: {}", ex.getMessage());
+    public MApplicationCollaterals reValuationProcess_RollOverApp(MurabahApplication application,boolean considerBlockAmount) {
+        log.info("===========LSF : (reValuationProcess_RollOverApp) appId : {}", application.getId());
+        if(!application.isRollOverApp() && !application.getFinanceMethod().equals("2")) {
+            log.info("===========LSF : (reValuationProcess_RollOverApp) RollOver AppId : {} , not allowed this method" , application.getRollOverAppId());
             return null;
         }
-        // get attached Marginability Group
-//        MarginabilityGroup marginabilityGroup = helper.getMarginabilityGroup(application.getMarginabilityGroup());
-//        List<SymbolMarginabilityPercentage> symbolMarginabilityPercentages = null;
-//        if (marginabilityGroup != null)
-//            symbolMarginabilityPercentages = marginabilityGroup.getMarginableSymbols();
+        double totalPFCollateral = 0.0;
+        double totalCollateral = 0.0;
+        double totalPFMarketValue = 0.0;
+        double totalWeightedPFMarketValue = 0.0;
+        double totalCashCollateral = 0.0;
+        MApplicationCollaterals mApplicationCollaterals = lsfRepository.getApplicationCompleteCollateralForRollOver(application.getId());
+        if( mApplicationCollaterals == null) {
+            log.info("===========LSF : (reValuationProcess_RollOverApp) No Collaterals Found for AppId : {}", application.getId());
+            return null;
+        }
+        var lsfTradingAccList = helper.getLsfTypeTradingAccounts(application.getCustomerId(),
+                                                                 application.getRollOverAppId(), application.getMarginabilityGroup());
+        if (!lsfTradingAccList.isEmpty()) {
+            var tradingAccFromAoms = lsfTradingAccList.getFirst();
+            TradingAcc tradingAcc =  mApplicationCollaterals.isTradingAccountLSFTypeExist(tradingAccFromAoms.getAccountId());
+            tradingAcc.mapFromOmsResponse(tradingAccFromAoms);
+            for (Symbol omsSymbol: tradingAccFromAoms.getSymbolList()) {
+                Symbol smb = tradingAcc.isSymbolExist(omsSymbol.getSymbolCode(), omsSymbol.getExchange());
+                smb.mapFromOms(omsSymbol);
+                double contribToColletaral = ((smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
+                smb.setContibutionTocollateral(contribToColletaral);
+                totalPFCollateral += contribToColletaral;
+                totalCollateral += contribToColletaral;
 
-        if (mApplicationCollaterals != null) {
-            double totalCollateral = 0.0;
-            double totalCashCollateral = 0.0;
-            double totalPFCollateral = 0.0;
-            /*-----Report-----*/
-            double totalPFMarketValue = 0.0;
-            double totalWeightedPFMarketValue = 0.0;
-            String tradingAccId = null;
-            /*-----Report-----*/
-
-            String applicationId = application.isRollOverApp() ? application.getRollOverAppId() : application.getId();
-            var lsfTradingAccList = helper.getLsfTypeTradingAccounts(application.getCustomerId(), applicationId, application.getMarginabilityGroup());
-            if (!lsfTradingAccList.isEmpty()) {
-                var tradingAccFromAoms = lsfTradingAccList.getFirst();
-                TradingAcc tradingAcc =  mApplicationCollaterals.isTradingAccountLSFTypeExist(tradingAccFromAoms.getAccountId());
-                tradingAcc.mapFromOmsResponse(tradingAccFromAoms);
-                for (Symbol omsSymbol: tradingAccFromAoms.getSymbolList()) {
-                    Symbol smb = tradingAcc.isSymbolExist(omsSymbol.getSymbolCode(), omsSymbol.getExchange());
-                    smb.mapFromOms(omsSymbol);
-                    double contribToColletaral = ((smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
-                    smb.setContibutionTocollateral(contribToColletaral);
-                    totalPFCollateral += contribToColletaral;
-                    totalCollateral += contribToColletaral;
-
-                    totalPFMarketValue = totalPFMarketValue + smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
-                    totalWeightedPFMarketValue = totalWeightedPFMarketValue + contribToColletaral;
-                    mApplicationCollaterals.getSecurityList().add(smb);
-                }
+                totalPFMarketValue = totalPFMarketValue + smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
+                totalWeightedPFMarketValue = totalWeightedPFMarketValue + contribToColletaral;
+                mApplicationCollaterals.getSecurityList().add(smb);
             }
-//            // PF colletarals
-//            inqueryMessage.setReqType(LsfConstants.GET_LSF_TYPE_TRADING_ACCOUNTS);
-//            inqueryMessage.setCustomerId(application.getCustomerId());
-//            inqueryMessage.setContractId(application.getId());
-//            Object result = helper.sendMessageToOms(gson.toJson(inqueryMessage));
-//            resultMap = gson.fromJson((String) result, resultMap.getClass());
-//            ArrayList<Map<String, Object>> lsfTrd = (ArrayList<Map<String, Object>>) resultMap.get("responseObject");
-//            List<Symbol> symbols = new ArrayList<>();
-//            for (Map<String, Object> trd : lsfTrd) {
-//                if (trd.containsKey("shariaSymbols")) {
-//                    Map<String, Object> mpTRadingAcc = (Map<String, Object>) trd.get("tradingAccount");
-//                    tradingAccId = mpTRadingAcc.get("accountId").toString();
-//                    TradingAcc t = mApplicationCollaterals.isTradingAccountLSFTypeExist(tradingAccId);
-//                    t.setExchange(mpTRadingAcc.get("exchange").toString());
-//                    ArrayList<Map<String, Object>> symbolList = (ArrayList<Map<String, Object>>) trd.get("shariaSymbols");
-//                    for (Map<String, Object> symbol : symbolList) {
-//                        try {
-//                            Symbol smb = t.isSymbolExist(symbol.get("symbolCode").toString(), symbol.get("exchange").toString());
-//                            if (symbol.containsKey("shortDescription") && symbol.get("shortDescription") != null) {
-//                                smb.setShortDescription(symbol.get("shortDescription").toString());
-//                            }
-//                            if(symbol.containsKey("openBuyQty")){
-//                                smb.setOpenBuyQty(Integer.parseInt(symbol.get("openBuyQty").toString().split("\\.")[0]));
-//                            }
-//                            if(symbol.containsKey("openSellQty")){
-//                                smb.setOpenBuyQty(Integer.parseInt(symbol.get("openSellQty").toString().split("\\.")[0]));
-//                            }
-//                            smb.setAvailableQty(Math.round(Float.parseFloat(symbol.get("availableQty").toString())));
-//                            /*--Change for T+2 sell path--*/
-//                            smb.setAvailableQty(smb.getAvailableQty() + Math.round(Float.parseFloat(symbol.get("sellPending").toString())));
-//                            /*--*/
-//                            smb.setPreviousClosed(Double.parseDouble(symbol.get("previousClosed").toString()));
-//                            smb.setLastTradePrice(Double.parseDouble(symbol.get("lastTradePrice").toString()));
-//                            smb.setTransferedQty(smb.getAvailableQty());
-//                            LiquidityType attachedToSymbolLiq = helper.existingSymbolLiqudityType(smb.getSymbolCode(), smb.getExchange());
-//                            // set Default liqudity Type
-//                            smb.setLiquidityType(attachedToSymbolLiq);
-//                            // override if Applicaiton level Marginability group is attached with relevent Liquidity Type
-//
-//                            if (marginabilityGroup != null)
-//                                smb.setMarginabilityPercentage(marginabilityGroup.getGlobalMarginablePercentage());
-//
-//                            if(symbolMarginabilityPercentages != null) {
-//                                for(SymbolMarginabilityPercentage smp :symbolMarginabilityPercentages) {
-//                                    if(smp.getSymbolCode().equals(smb.getSymbolCode()) && smp.getExchange().equals(smb.getExchange())){
-//                                        smb.setMarginabilityPercentage(smp.getMarginabilityPercentage());
-//                                    }
-//                                }
-//                            }
-//
-//                            Double contribToColletaral = ((smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
-//                            smb.setContibutionTocollateral(contribToColletaral);
-//                            totalPFCollateral += contribToColletaral;
-//                            totalCollateral += contribToColletaral;
-//                            symbols.add(smb);
-//                            /*-----Report-----*/
-//                            totalPFMarketValue = totalPFMarketValue + smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
-//                            totalWeightedPFMarketValue = totalWeightedPFMarketValue + contribToColletaral;
-//                            /*-----Report-----*/
-//                        } catch (Exception ex) {
-//                            log.info("===========LSF : (revaluatingApplication) PF Calculatoin - error Applicaiton id " + application.getId() + " in revaluation processor " + ex.getMessage() + ", symbol:" + symbol.get("symbolCode").toString(),ex);
-//                        }
-//                    }
-//                } else {
-//                    log.info("===========LSF : (revaluatingApplication) - invalid response from OMS shariaSymbols not found");
-//                }
-//            }
-            /*---Setting totalPFMarketValue & security list for client Dash board summary----- */
-            mApplicationCollaterals.setTotalPFMarketValue(totalPFMarketValue);
-            if (totalPFMarketValue == 0) {
-                mApplicationCollaterals.setTotalWeightedPFValue(0.0);
-            } else {
-                mApplicationCollaterals.setTotalWeightedPFValue(totalPFCollateral);
+            lsfRepository.updateRevaluationInfo(tradingAcc.getAccountId(), totalPFMarketValue, totalWeightedPFMarketValue);
+        }
+        mApplicationCollaterals.setTotalPFMarketValue(totalPFMarketValue);
+        mApplicationCollaterals.setTotalWeightedPFValue(totalPFCollateral);
+        mApplicationCollaterals.setTotalPFColleteral(totalPFCollateral);
+
+        var lsfTypeCashAccounts = helper.getLsfTypeCashAccounts(application.getCustomerId(), application.getRollOverAppId());
+        if (!lsfTypeCashAccounts.isEmpty()) {
+            CashAcc lsfTypeCashAcc = lsfTypeCashAccounts.getFirst();
+            CashAcc cashAcc1 = mApplicationCollaterals.isCashAccLSFTypeExist(lsfTypeCashAcc.getAccountId());
+            cashAcc1.setCashBalance(lsfTypeCashAcc.getCashBalance());
+            totalCashCollateral += lsfTypeCashAcc.getCashBalance();
+            totalCollateral += lsfTypeCashAcc.getCashBalance();
+            cashAcc1.setAmountTransfered(lsfTypeCashAcc.getCashBalance());
+
+            if (lsfTypeCashAcc.getBlockedAmount() > 0 && considerBlockAmount) {
+                totalCollateral += lsfTypeCashAcc.getBlockedAmount();
             }
-            /*------*/
-            lsfRepository.updateRevaluationInfo(tradingAccId, totalPFMarketValue, totalWeightedPFMarketValue);
-
-            var lsfTypeCashAccounts = helper.getLsfTypeCashAccounts(application.getCustomerId(), applicationId);
-            if (!lsfTypeCashAccounts.isEmpty()) {
-                CashAcc lsfTypeCashAcc = lsfTypeCashAccounts.getFirst();
-                CashAcc cashAcc1 = mApplicationCollaterals.isCashAccLSFTypeExist(lsfTypeCashAcc.getAccountId());
-                cashAcc1.setCashBalance(lsfTypeCashAcc.getCashBalance());
-                totalCashCollateral += lsfTypeCashAcc.getCashBalance();
-                totalCollateral += lsfTypeCashAcc.getCashBalance();
-                cashAcc1.setAmountTransfered(lsfTypeCashAcc.getCashBalance());
-
-                if (lsfTypeCashAcc.getBlockedAmount() > 0 && considerBlockAmount) {
-                    totalCollateral += lsfTypeCashAcc.getBlockedAmount();
-                }
-                if (lsfTypeCashAcc.getPendingSettle() > 0) {
-                    cashAcc1.setPendingSettle(lsfTypeCashAcc.getPendingSettle());
-                }
-                if (lsfTypeCashAcc.getNetReceivable() > 0) {
-                    cashAcc1.setNetReceivable(lsfTypeCashAcc.getNetReceivable());
-                }
-                lsfRepository.updateRevaluationCashAccountRelatedInfo(cashAcc1.getAccountId(), cashAcc1);
+            if (lsfTypeCashAcc.getPendingSettle() > 0) {
+                cashAcc1.setPendingSettle(lsfTypeCashAcc.getPendingSettle());
             }
+            if (lsfTypeCashAcc.getNetReceivable() > 0) {
+                cashAcc1.setNetReceivable(lsfTypeCashAcc.getNetReceivable());
+            }
+            lsfRepository.updateRevaluationCashAccountRelatedInfo(cashAcc1.getAccountId(), cashAcc1);
+        }
 
-            mApplicationCollaterals.setTotalCashColleteral(totalCashCollateral);
-            mApplicationCollaterals.setTotalPFColleteral(totalPFCollateral);
-            totalCollateral = totalCollateral + mApplicationCollaterals.getTotalExternalColleteral();
-            mApplicationCollaterals.setNetTotalColleteral(totalCollateral);
-            calculateOperativeLimit(mApplicationCollaterals);
-            calculateRemainingOperativeLimit(mApplicationCollaterals);
-            calculateFTV(mApplicationCollaterals);
+        mApplicationCollaterals.setTotalCashColleteral(totalCashCollateral);
+        mApplicationCollaterals.setNetTotalColleteral(totalCollateral);
+        calculateOperativeLimit(mApplicationCollaterals);
+        calculateRemainingOperativeLimit(mApplicationCollaterals);
+        calculateFTV(mApplicationCollaterals);
+        log.debug("=========== reValuationProcess_RollOverApp, AppId {} : FTV Value : {}", application.getId(), mApplicationCollaterals.getFtv());
 
-            log.debug("===========LSF : FTV Value :" + mApplicationCollaterals.getFtv());
-            if (violateFTVwithThirdMarginLimit(mApplicationCollaterals)) { // if ftv < third margin level send liquidation notification and set to liquidatable state
-                log.debug("===========LSF : Reached to Third  Margin Level ,Last Margin Call Date :" + mApplicationCollaterals.getMargineCallDate() + " , Last Liquidation call date :" + mApplicationCollaterals.getLiquidateCallDate());
-                if (mApplicationCollaterals.getLiquidateCallDate() == null || mApplicationCollaterals.getLiquidateCallDate().isEmpty()) {
-                    if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
-                        mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
-                        sendMargineNotification(1, mApplicationCollaterals, application);
-                        lsfRepository.addMarginCallLog(mApplicationCollaterals, 1);
-                    }
-
-                    mApplicationCollaterals.setLiquidateCallDate(dateFormat.format(new Date()));
-                    sendMargineNotification(3, mApplicationCollaterals, application);
-
-                } else {
-                    if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
-                        sendMargineNotification(1, mApplicationCollaterals, application);
-                        mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
-                    }
-                    if (isEligibleForMarginNotification(mApplicationCollaterals.getLiquidateCallDate())) {
-                        sendMargineNotification(3, mApplicationCollaterals, application);
-                        mApplicationCollaterals.setLiquidateCallDate(dateFormat.format(new Date()));
-                    }
-
-                }
-                //  mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
-                mApplicationCollaterals.setLiqudationCall(true);
-                lsfRepository.addMarginCallLog(mApplicationCollaterals, 3);
-
-            } 
-            else if (violateFTVwithFirstMarginLimit(mApplicationCollaterals)) {
-                log.debug("===========LSF : Reached to First  Margin Level. Last Margin Call Date :" + mApplicationCollaterals.getMargineCallDate());
-                mApplicationCollaterals.setLiquidateCallDate("");
+        if (violateFTVwithThirdMarginLimit(mApplicationCollaterals)) {
+            log.debug("=========== reValuationProcess_RollOverApp : Reached to Third  Margin Level, AppId {}, Last Margin Call Date : {}, Last Margine Call Date {}", application.getId(), mApplicationCollaterals.getMargineCallDate(), mApplicationCollaterals.getLiquidateCallDate());
+            if (mApplicationCollaterals.getLiquidateCallDate() == null || mApplicationCollaterals.getLiquidateCallDate().isEmpty()) {
                 if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
                     mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
                     sendMargineNotification(1, mApplicationCollaterals, application);
                     lsfRepository.addMarginCallLog(mApplicationCollaterals, 1);
                 }
 
+                mApplicationCollaterals.setLiquidateCallDate(dateFormat.format(new Date()));
+                sendMargineNotification(3, mApplicationCollaterals, application);
+
             } else {
-                mApplicationCollaterals.setMargineCallDate("");
-                mApplicationCollaterals.setLiquidateCallDate("");
-                //  mApplicationCollaterals.setMargineCallAtempts(0);
+                if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
+                    sendMargineNotification(1, mApplicationCollaterals, application);
+                    mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
+                }
+                if (isEligibleForMarginNotification(mApplicationCollaterals.getLiquidateCallDate())) {
+                    sendMargineNotification(3, mApplicationCollaterals, application);
+                    mApplicationCollaterals.setLiquidateCallDate(dateFormat.format(new Date()));
+                }
+
             }
-            lsfRepository.updateCollateralWithCompleteTradingAcc(mApplicationCollaterals);
+            mApplicationCollaterals.setLiqudationCall(true);
+            lsfRepository.addMarginCallLog(mApplicationCollaterals, 3);
+        } else if (violateFTVwithFirstMarginLimit(mApplicationCollaterals)) {
+            log.debug("=========== reValuationProcess_RollOverApp : Reached to First  Margin Level. AppId {}, Last Margin Call Date : {} ", application.getId(), mApplicationCollaterals.getMargineCallDate());
+            mApplicationCollaterals.setLiquidateCallDate("");
+            if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
+                mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
+                sendMargineNotification(1, mApplicationCollaterals, application);
+                lsfRepository.addMarginCallLog(mApplicationCollaterals, 1);
+            }
 
-            // update Daily FTV Log for report purpose
-            lsfRepository.addFTVLog(mApplicationCollaterals);
-            response.setResponseCode(200);
-            response.setResponseMessage("recalculation process completed");
-            return mApplicationCollaterals;
         } else {
-            response.setResponseCode(200);
-            response.setResponseMessage("No Records Found");
-            return null;
-
+            mApplicationCollaterals.setMargineCallDate("");
+            mApplicationCollaterals.setLiquidateCallDate("");
         }
+        lsfRepository.updateCollateralWithCompleteTradingAcc(mApplicationCollaterals);
+        lsfRepository.addFTVLog(mApplicationCollaterals);
+        return mApplicationCollaterals;
+    }
+
+    public MApplicationCollaterals reValuationProcess(MurabahApplication application,boolean considerBlockAmount) {
+        log.info("===========LSF : (reValuationProcess) appId : {}", application.getId());
+        if(application.isRollOverApp()) {
+            log.info("===========LSF : (reValuationProcess) RollOver AppId : {} , not allowed this method" , application.getRollOverAppId());
+            return null;
+        }
+        double totalPFCollateral = 0.0;
+        double totalCollateral = 0.0;
+        double totalPFMarketValue = 0.0;
+        double totalWeightedPFMarketValue = 0.0;
+        double totalCashCollateral = 0.0;
+        MApplicationCollaterals mApplicationCollaterals = lsfRepository.getApplicationCompleteCollateral(application.getId());
+        if( mApplicationCollaterals == null) {
+            log.info("===========LSF : (reValuationProcess) No Collaterals Found for AppId : {}", application.getId());
+            return null;
+        }
+        var lsfTradingAccList = helper.getLsfTypeTradingAccounts(application.getCustomerId(),
+                                                                 application.getId(), application.getMarginabilityGroup());
+        if (!lsfTradingAccList.isEmpty()) {
+            var tradingAccFromAoms = lsfTradingAccList.getFirst();
+            TradingAcc tradingAcc =  mApplicationCollaterals.isTradingAccountLSFTypeExist(tradingAccFromAoms.getAccountId());
+            tradingAcc.mapFromOmsResponse(tradingAccFromAoms);
+            for (Symbol omsSymbol: tradingAccFromAoms.getSymbolList()) {
+                Symbol smb = tradingAcc.isSymbolExist(omsSymbol.getSymbolCode(), omsSymbol.getExchange());
+                smb.mapFromOms(omsSymbol);
+                double contribToColletaral = ((smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
+                smb.setContibutionTocollateral(contribToColletaral);
+                totalPFCollateral += contribToColletaral;
+                totalCollateral += contribToColletaral;
+
+                totalPFMarketValue = totalPFMarketValue + smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
+                totalWeightedPFMarketValue = totalWeightedPFMarketValue + contribToColletaral;
+                mApplicationCollaterals.getSecurityList().add(smb);
+            }
+            lsfRepository.updateRevaluationInfo(tradingAcc.getAccountId(), totalPFMarketValue, totalWeightedPFMarketValue);
+        }
+        mApplicationCollaterals.setTotalPFMarketValue(totalPFMarketValue);
+        mApplicationCollaterals.setTotalWeightedPFValue(totalPFCollateral);
+        mApplicationCollaterals.setTotalPFColleteral(totalPFCollateral);
+
+        var lsfTypeCashAccounts = helper.getLsfTypeCashAccounts(application.getCustomerId(), application.getId());
+        if (!lsfTypeCashAccounts.isEmpty()) {
+            CashAcc lsfTypeCashAcc = lsfTypeCashAccounts.getFirst();
+            CashAcc cashAcc1 = mApplicationCollaterals.isCashAccLSFTypeExist(lsfTypeCashAcc.getAccountId());
+            cashAcc1.setCashBalance(lsfTypeCashAcc.getCashBalance());
+            totalCashCollateral += lsfTypeCashAcc.getCashBalance();
+            totalCollateral += lsfTypeCashAcc.getCashBalance();
+            cashAcc1.setAmountTransfered(lsfTypeCashAcc.getCashBalance());
+
+            if (lsfTypeCashAcc.getBlockedAmount() > 0 && considerBlockAmount) {
+                totalCollateral += lsfTypeCashAcc.getBlockedAmount();
+            }
+            if (lsfTypeCashAcc.getPendingSettle() > 0) {
+                cashAcc1.setPendingSettle(lsfTypeCashAcc.getPendingSettle());
+            }
+            if (lsfTypeCashAcc.getNetReceivable() > 0) {
+                cashAcc1.setNetReceivable(lsfTypeCashAcc.getNetReceivable());
+            }
+            lsfRepository.updateRevaluationCashAccountRelatedInfo(cashAcc1.getAccountId(), cashAcc1);
+        }
+
+        mApplicationCollaterals.setTotalCashColleteral(totalCashCollateral);
+        mApplicationCollaterals.setNetTotalColleteral(totalCollateral);
+        calculateOperativeLimit(mApplicationCollaterals);
+        calculateRemainingOperativeLimit(mApplicationCollaterals);
+        calculateFTV(mApplicationCollaterals);
+        log.debug("=========== reValuationProcess, AppId {} : FTV Value : {}", application.getId(), mApplicationCollaterals.getFtv());
+
+        if (violateFTVwithThirdMarginLimit(mApplicationCollaterals)) {
+            log.debug("=========== reValuationProcess : Reached to Third  Margin Level, AppId {}, Last Margin Call Date : {}, Last Margine Call Date {}", application.getId(), mApplicationCollaterals.getMargineCallDate(), mApplicationCollaterals.getLiquidateCallDate());
+            if (mApplicationCollaterals.getLiquidateCallDate() == null || mApplicationCollaterals.getLiquidateCallDate().isEmpty()) {
+                if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
+                    mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
+                    sendMargineNotification(1, mApplicationCollaterals, application);
+                    lsfRepository.addMarginCallLog(mApplicationCollaterals, 1);
+                }
+
+                mApplicationCollaterals.setLiquidateCallDate(dateFormat.format(new Date()));
+                sendMargineNotification(3, mApplicationCollaterals, application);
+
+            } else {
+                if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
+                    sendMargineNotification(1, mApplicationCollaterals, application);
+                    mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
+                }
+                if (isEligibleForMarginNotification(mApplicationCollaterals.getLiquidateCallDate())) {
+                    sendMargineNotification(3, mApplicationCollaterals, application);
+                    mApplicationCollaterals.setLiquidateCallDate(dateFormat.format(new Date()));
+                }
+
+            }
+            mApplicationCollaterals.setLiqudationCall(true);
+            lsfRepository.addMarginCallLog(mApplicationCollaterals, 3);
+        } else if (violateFTVwithFirstMarginLimit(mApplicationCollaterals)) {
+            log.debug("=========== reValuationProcess : Reached to First  Margin Level. AppId {}, Last Margin Call Date : {} ", application.getId(), mApplicationCollaterals.getMargineCallDate());
+            mApplicationCollaterals.setLiquidateCallDate("");
+            if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
+                mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
+                sendMargineNotification(1, mApplicationCollaterals, application);
+                lsfRepository.addMarginCallLog(mApplicationCollaterals, 1);
+            }
+
+        } else {
+            mApplicationCollaterals.setMargineCallDate("");
+            mApplicationCollaterals.setLiquidateCallDate("");
+        }
+        lsfRepository.updateCollateralWithCompleteTradingAcc(mApplicationCollaterals);
+        lsfRepository.addFTVLog(mApplicationCollaterals);
+        return mApplicationCollaterals;
     }
 
     protected void calculateOperativeLimit(MApplicationCollaterals applicationCollateral) { // TODO need to change

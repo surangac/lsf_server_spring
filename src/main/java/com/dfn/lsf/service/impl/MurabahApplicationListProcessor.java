@@ -231,7 +231,6 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
             return gson.toJson(listResponse);
         }
         return null;
-
     }
 
     public List<MurabahApplication> getSnapshotCurrentLevel(String applicationId, int requestStatus) {

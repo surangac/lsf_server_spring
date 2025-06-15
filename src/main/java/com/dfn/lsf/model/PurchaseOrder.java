@@ -60,4 +60,5 @@ public class PurchaseOrder {
     private String certificatePath = null;
     private String approveComment;
     private int isLsfType;
+    private String certificateNumber;
 } 

@@ -98,7 +98,7 @@ public class MurabahApplicationMapper implements RowMapper<MurabahApplication> {
         try{
             obj.setFinanceMethod(rs.getString("m11_finance_method"));
         }catch (Exception e){
-            obj.setFinanceMethod(null);
+            obj.setFinanceMethod(rs.getString("l01_finance_method"));
         }
         try {
             obj.setRollOverAppId(rs.getString("l01_rollover_app_id"));

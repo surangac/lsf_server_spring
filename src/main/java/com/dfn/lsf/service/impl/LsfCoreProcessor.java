@@ -243,7 +243,7 @@ public class LsfCoreProcessor implements MessageProcessor {
 
         if (LSFUtils.isPurchaseOrderCreationAllowed(bypassUmessage)) { /*----PO Submission should be allowed until 1h 15min before market close time---*/
             MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(po.getApplicationId());
-            MApplicationCollaterals collaterals = murabahApplication.isRollOverApp() ? lsfRepository.getApplicationCompleteCollateralForRollOver(murabahApplication.getRollOverAppId(), murabahApplication.getId(), false, false) : lsfRepository.getApplicationCompleteCollateral(po.getApplicationId());
+            MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(po.getApplicationId());
             if (Integer.parseInt(murabahApplication.getOverallStatus()) < 0 || murabahApplication.getCurrentLevel() == GlobalParameters.getInstance().getGetAppCloseLevel()) {
                 commonResponse.setResponseCode(500);
                 commonResponse.setErrorMessage("Invalid Details");
@@ -505,9 +505,16 @@ public class LsfCoreProcessor implements MessageProcessor {
                 cmr.setErrorMessage("Order not eligible for approve");
                 return gson.toJson(cmr);
             }
+            List<Map<String, Object>> commodityListMap = (List<Map<String, Object>>) map.get("commodityList");
+            List<Commodity> commodities = getCommodityList(commodityListMap);
+
+            updatePoCommodityList(po, commodities);
+
             po.setApprovalStatus(LsfConstants.PO_APPROVAL_L1_SOLD_AMT);
             po.setApprovedById(approvedbyId);
             po.setApprovedByName(approvedbyName);
+
+            lsfRepository.updatePurchaseOrderByAdmin(po);
             String response = lsfRepository.approveRejectPOCommodity(po);
             if(response.equals("1")) {
                 lsfRepository.updateActivity(po.getApplicationId(), LsfConstants.STATUS_COMMODITY_PO_SOLD_AMT_L1_APPROVED);
@@ -768,7 +775,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             applicationID = map.get("id").toString();
         }
         MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(applicationID);
-        MApplicationCollaterals collaterals = murabahApplication.isRollOverApp() ? lsfRepository.getApplicationCompleteCollateralForRollOver(murabahApplication.getRollOverAppId(), murabahApplication.getId(), false, false): lsfRepository.getApplicationCompleteCollateral(applicationID);
+        MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(applicationID);
         boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
         if(isCommodityApplication && murabahApplication.getCurrentLevel() > 15) {
             response.setResponseCode(500);
@@ -915,20 +922,18 @@ public class LsfCoreProcessor implements MessageProcessor {
         }
     }
 
-    private void transferCommodityValuetoLsfCashAccount(MurabahApplication murabahApplication, PurchaseOrder purchaseOrder, MApplicationCollaterals collaterals) {
+    private void transferCommodityValuetoLsfCashAccount(MurabahApplication murabahApplication, String poId, double soldAmount) {
         if (!murabahApplication.getFinanceMethod().equalsIgnoreCase("2")) {
             log.debug("===========LSF : Transfer Commodity Value to LSF Cash Account is not allowed for this application.");
             return;
         }
         String appId = murabahApplication.isRollOverApp() ? murabahApplication.getRollOverAppId() : murabahApplication.getId();
-        log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount)-REQUEST  : , ApplicationID:" + appId + ",Order ID:" + purchaseOrder.getId() + ", Amount:" + collaterals.getOutstandingAmount());
+        log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount)-REQUEST  : , ApplicationID:" + appId + ",Order ID:" + poId + ", Amount:" + soldAmount);
         CashAcc lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(), appId);
         String masterCashAccount = lsfCore.getMasterCashAccount();
-
-        double totalSoldAmount = getTotalSoldAmount(purchaseOrder);
-        log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + totalSoldAmount);
-        lsfCore.cashTransfer(masterCashAccount, lsfCashAccount.getAccountId(), totalSoldAmount, murabahApplication.getId());
-        log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + totalSoldAmount);
+        log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + soldAmount);
+        lsfCore.cashTransfer(masterCashAccount, lsfCashAccount.getAccountId(), soldAmount, murabahApplication.getId());
+        log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + soldAmount);
     }
 
     private void transferCollateralsToLSFAccount(MurabahApplication murabahApplication, PurchaseOrder purchaseOrder, MApplicationCollaterals collaterals) {
@@ -1063,7 +1068,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             List<Commodity> commodities = getCommodityList(commodityListMap);
 
             updatePoCommodityList(po, commodities);
-            lsfRepository.updateCommodityPOExecution(po);
+      //      lsfRepository.updateCommodityPOExecution(po);
             lsfRepository.updatePurchaseOrderByAdmin(po);
             lsfRepository.updateActivity(fromDB.getId(), LsfConstants.STATUS_COMMODITY_PO_SOLD_AMT_UPDATED);
 //            po.setApprovalStatus(2);// pending approval by admin
@@ -1102,42 +1107,8 @@ public class LsfCoreProcessor implements MessageProcessor {
                  cmr.setErrorMessage("Purchase order is already Submitted");
                  return gson.toJson(cmr);
              }
-            
-            po.setSellButNotSettle((int) Double.parseDouble(map.get("sellButNotSettle").toString()));
-            po.setIsPhysicalDelivery((int) Double.parseDouble(map.get("isPhysicalDelivery").toString()));
-            po.setCertificatePath(map.get("certificatePath").toString());
-            List<Commodity> commodityList = (List<Commodity>) map.get("commodityList");
-            List<Commodity> commodities = new ArrayList<>();
-            double totalSoldAmount = 0.0;
-            if (commodityList != null) {
-                if (commodityList.size() > 0) {
-                    for (int i = 0; i < commodityList.size(); i++) {
-                        Map<String, Object> params = (Map<String, Object>) commodityList.get(i);
-                        Commodity commodity = new Commodity();
-                        commodity.setSymbolCode(params.get("symbolCode").toString());
-                        commodity.setSymbolName(params.get("symbolName").toString());
-                        commodity.setShortDescription(params.get("shortDescription").toString());
-                        commodity.setExchange(params.get("exchange").toString());
-                        commodity.setBroker(params.get("broker").toString());
-                        commodity.setPrice(Double.parseDouble(params.get("price").toString()));
-                        commodity.setUnitOfMeasure(params.get("unitOfMeasure").toString());
-                        commodity.setStatus((int) Double.parseDouble(params.get("status").toString()));
-                        commodity.setPercentage(Double.parseDouble(params.get("percentage").toString()));
-                        commodity.setSoldAmnt((int) Double.parseDouble(params.get("soldAmnt").toString()));
-                        commodity.setBoughtAmnt(Double.parseDouble(params.get("boughtAmnt").toString()));
-                        totalSoldAmount += commodity.getBoughtAmnt();
-                        commodities.add(commodity);
+            updateCommodityPODetails(po, map);
 
-                    }
-                }
-            }
-            po.setCommodityList(commodities);
-
-            MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(po.getApplicationId());
-
-            collaterals.setOutstandingAmount(LSFUtils.ceilTwoDecimals(totalSoldAmount));
-            lsfRepository.addEditCollaterals(collaterals);
-            lsfRepository.updatePurchaseOrderByAdmin(po);
 // down below moved to PO update final method
 //            ProfitResponse profitResponse = lsfCore.calculateProfit(
 //                    Integer.parseInt(fromDB.getTenor()),
@@ -1189,6 +1160,53 @@ public class LsfCoreProcessor implements MessageProcessor {
         return gson.toJson(cmr);
     }
 
+    private void updateCommodityPODetails(PurchaseOrder po, Map<String, Object> map) {
+        if(map.containsKey("sellButNotSettle")) {
+            po.setSellButNotSettle((int) Double.parseDouble(map.get("sellButNotSettle").toString()));
+        }
+        if(map.containsKey("isPhysicalDelivery")) {
+            po.setIsPhysicalDelivery((int) Double.parseDouble(map.get("isPhysicalDelivery").toString()));
+        }
+        if(map.containsKey("certificatePath")) {
+            po.setCertificatePath(map.get("certificatePath").toString());
+        }
+        if(map.containsKey("certificateNumber")) {
+            po.setCertificateNumber(map.get("certificateNumber").toString());
+        }
+        List<Commodity> commodityList = (List<Commodity>) map.get("commodityList");
+        List<Commodity> commodities = new ArrayList<>();
+        double totalSoldAmount = 0.0;
+        if (commodityList != null) {
+            if (commodityList.size() > 0) {
+                for (int i = 0; i < commodityList.size(); i++) {
+                    Map<String, Object> params = (Map<String, Object>) commodityList.get(i);
+                    Commodity commodity = new Commodity();
+                    commodity.setSymbolCode(params.get("symbolCode").toString());
+                    commodity.setSymbolName(params.get("symbolName").toString());
+                    commodity.setShortDescription(params.get("shortDescription").toString());
+                    commodity.setExchange(params.get("exchange").toString());
+                    commodity.setBroker(params.get("broker").toString());
+                    commodity.setPrice(Double.parseDouble(params.get("price").toString()));
+                    commodity.setUnitOfMeasure(params.get("unitOfMeasure").toString());
+                    commodity.setStatus((int) Double.parseDouble(params.get("status").toString()));
+                    commodity.setPercentage(Double.parseDouble(params.get("percentage").toString()));
+                    commodity.setSoldAmnt((int) Double.parseDouble(params.get("soldAmnt").toString()));
+                    commodity.setBoughtAmnt(Double.parseDouble(params.get("boughtAmnt").toString()));
+                    totalSoldAmount += commodity.getBoughtAmnt();
+                    commodities.add(commodity);
+
+                }
+            }
+        }
+        po.setCommodityList(commodities);
+
+        MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(po.getApplicationId());
+
+        collaterals.setOutstandingAmount(LSFUtils.ceilTwoDecimals(totalSoldAmount));
+        lsfRepository.addEditCollaterals(collaterals);
+        lsfRepository.updatePurchaseOrderByAdmin(po);
+    }
+
     protected String approveL1CommodityPOBoughtAmnt(Map<String, Object> map) {
         CommonResponse cmr = new CommonResponse();
         String applicationId = "";
@@ -1205,6 +1223,7 @@ public class LsfCoreProcessor implements MessageProcessor {
 //                cmr.setErrorMessage("Purchase order is already Approved for L1");
 //                return gson.toJson(cmr);
 //            }
+            updateCommodityPODetails(po, map);
             po.setApprovalStatus(LsfConstants.PO_APPROVAL_L1_BOUGHT_AMT);
             po.setApprovedById(approvedbyId);
             po.setApprovedByName(approvedbyName);
@@ -1249,6 +1268,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             return gson.toJson(cmr);
         }
 
+        updateCommodityPODetails(po, map);
         double totalBoutAmount = po.getCommodityList().stream()
                 .mapToDouble(Commodity::getBoughtAmnt)
                 .sum();
@@ -1346,9 +1366,11 @@ public class LsfCoreProcessor implements MessageProcessor {
             double totalSoldAmount = getTotalSoldAmount(po);
 
             //lsfRepository.updateCommodityPOExecution(po);
-            MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(application.getId());
+//            MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(application.getId());
+//
+//            collaterals.setOutstandingAmount(LSFUtils.ceilTwoDecimals(totalSoldAmount));
 
-            collaterals.setOutstandingAmount(LSFUtils.ceilTwoDecimals(totalSoldAmount));
+            updatePoCommodityList(po, commodities);
  //           lsfRepository.updatePurchaseOrderByAdmin(po);
 
 //            ProfitResponse profitResponse = lsfCore.calculateProfit(
@@ -1377,7 +1399,7 @@ public class LsfCoreProcessor implements MessageProcessor {
 //                transferCollateralsToLSFAccount(application, po, collaterals);
 //            }
             lsfRepository.updateActivity(po.getApplicationId(), LsfConstants.STATUS_COMMODITY_PO_EXECUTED);
-            transferCommodityValuetoLsfCashAccount(application, po, collaterals);
+            transferCommodityValuetoLsfCashAccount(application, po.getId(), totalSoldAmount);
 
             cmr.setResponseCode(200);
             cmr.setResponseMessage("Successfully Updated the Purchase order by admin");
