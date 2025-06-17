@@ -274,17 +274,8 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                     && settlementSummaryResponse.getSettlementSummaryResponseList().size() > 0) {
                     settlementSummaryResponseList.add(settlementSummaryResponse);
                 }
-
-              /* if(murabahApplication.getCurrentLevel() >= 17){
-                   settlementSummaryResponse.setSettelmentStatus(1);
-               }else{
-                   settlementSummaryResponse.setSettelmentStatus(0);
-               }*/
             }
         }
-/*
-        settlementListResponse.setSettlementSummaryResponseList(settlementSummaryResponseList);
-*/
         return gson.toJson(settlementSummaryResponseList);
     }
 
@@ -314,8 +305,6 @@ public class SettlementInquiryProcessor implements MessageProcessor {
         if (purchaseOrders != null && purchaseOrders.size() > 0) {
             for (PurchaseOrder purchaseOrder : purchaseOrders) {
                 SettlementSummaryResponse settlementSummary = new SettlementSummaryResponse();
-                //   MurabahApplication application = lsfRepository.getMurabahApplication(purchaseOrder
-                //   .getApplicationId());
                 settlementSummary.setApplicationID(purchaseOrder.getApplicationId());
                 settlementSummary.setCustomerName(purchaseOrder.getCustomerName());
                 settlementSummary.setTradingAccNumber(purchaseOrder.getTradingAccNum());
@@ -339,10 +328,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                 if (orderProfit != null) {
                     settlementSummary.setCumulativeProfit(orderProfit.getCumulativeProfitAmount());
                     settlementSummary.setLoanProfit(purchaseOrder.getProfitAmount());
-                    // settlementSummary.setTotalSettlementAmount(settlementSummary.getLoanAmount() +
-                    // settlementSummary.getCumulativeProfit());
                 } else {
-                    // settlementSummary.setTotalSettlementAmount(settlementSummary.getLoanAmount());
                     settlementSummary.setLoanProfit(purchaseOrder.getProfitAmount()); //change for DIB
                 }
                 settlementSummaryResponseList.add(settlementSummary);
@@ -357,7 +343,6 @@ public class SettlementInquiryProcessor implements MessageProcessor {
     public String createContractRollover(Map<String, Object> map) {
         CommonResponse cmr = new CommonResponse();
         String appID = "";
-       // String userId = "";
         if (map.containsKey("appId")) {
             appID = map.get("appId").toString();
         }
@@ -369,7 +354,6 @@ public class SettlementInquiryProcessor implements MessageProcessor {
         List<PurchaseOrder> purchaseOrders = lsfRepository.getPurchaseOrderForApplication(appID);
         if (oldApplication.getFinanceMethod().equalsIgnoreCase("2")
             || oldApplication.getAgreementList().get(0).getFinanceMethod() == 2) {
-            Date startDate;
             Date crntDate;
             long remainDays = 0;
             Date settlementDate;
@@ -438,11 +422,6 @@ public class SettlementInquiryProcessor implements MessageProcessor {
             newApplication.setAdminFeeCharged(0.0);
             newApplication.setTenor(rollOverTenure);
 
-  //          SettlementListResponse settlementListResponse = getSettlementSummaryForApplication(appID, oldApplication.getCustomerId());
-//            double newAmnt = oldApplication.getFinanceRequiredAmt()
-//                             + settlementListResponse.getSettlementSummaryResponseList().get(0).getLoanProfit()
-//                             + GlobalParameters.getInstance().getComodityAdminFee()
-//                             + GlobalParameters.getInstance().getComodityFixedFee();
             double newAmnt = rollOverFinanceRequiredAmt
                              + rollOverProfit;
             newApplication.setFinanceRequiredAmt(newAmnt);

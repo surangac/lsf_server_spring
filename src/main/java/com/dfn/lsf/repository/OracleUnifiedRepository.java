@@ -1367,9 +1367,10 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("p08_symbol_code", symbol.getSymbolCode());
         parameterMap.put("p08_exchange", symbol.getExchange());
-        parameterMap.put("p08_l10_liquid_id", symbol.getLiquidityType().getLiquidId());
+        //parameterMap.put("p08_l10_liquid_id", symbol.getLiquidityType().getLiquidId());
         parameterMap.put("pl08_allowed_for_collateral", symbol.getAllowedForCollateral());
-        parameterMap.put("pl08_concentration_type", symbol.getConcentrationType().getLiquidId());
+        //parameterMap.put("pl08_concentration_type", symbol.getConcentrationType().getLiquidId());
+        parameterMap.put("pl08_allowed_for_po", symbol.getAllowedForPo());
         return oracleRepository.executeProc(DBConstants.PKG_L08_SYMBOL, DBConstants.PROC_ADD_UPDATE_LIQUID_TYPE, parameterMap);
     }
 
@@ -1440,16 +1441,17 @@ public class OracleUnifiedRepository implements LSFRepository {
         if (collateralId != null) {
             mApplicationCollaterals.setId(collateralId);
             // saving Cash accounts in Collaterals
-            for (CashAcc cashAcc : mApplicationCollaterals.getCashAccForColleterals()) {
+            if (mApplicationCollaterals.getCashAccForColleterals() != null) {
+                for (CashAcc cashAcc : mApplicationCollaterals.getCashAccForColleterals()) {
                 /*if(cashAcc.getAmountAsColletarals()>0){
                     cashAcc.setCollateralId(collateralId);
                     this.updateCashAccount(cashAcc);
                 }*/
-                cashAcc.setCollateralId(collateralId);
-                this.updateCashAccount(cashAcc);
+                    cashAcc.setCollateralId(collateralId);
+                    this.updateCashAccount(cashAcc);
 
+                }
             }
-            // saving LSF Type Cash Accounts
             if (mApplicationCollaterals.getLsfTypeCashAccounts() != null) {
                 for (CashAcc cashAcc : mApplicationCollaterals.getLsfTypeCashAccounts()) {
                     cashAcc.setCollateralId(collateralId);
@@ -1540,7 +1542,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl09_l01_app_id", applicationID);
         parameterMap.put("pl09_l08_symbol_code", symbolCode);
         parameterMap.put("pl09_status", state);
-        return oracleRepository.executeProc(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L09_UPDATE_SYMBOL_STATE, parameterMap);
+        return oracleRepository.executeProc(DBConstants.PKG_L09_TRADING_SYMBOLS, DBConstants.PROC_L09_UPDATE_SYMBOL_STATE, parameterMap);
 
     }
 
@@ -3028,6 +3030,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pm12_unit_of_measure",commodity.getUnitOfMeasure());
         parameterMap.put("pm12_price",commodity.getPrice());
         parameterMap.put("pm12_status",commodity.getStatus());
+        parameterMap.put("pm12_allowd_for_po", commodity.getAllowedForPo());
 
         return oracleRepository.executeProc(DBConstants.M12_COMMODITIES_PKG,DBConstants.M12_ADD_UPDATE, parameterMap);
     }

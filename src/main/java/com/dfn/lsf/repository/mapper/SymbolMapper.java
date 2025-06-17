@@ -134,6 +134,7 @@ public class SymbolMapper implements RowMapper<Symbol> {
         } catch (Exception ex) {
          //   ex.printStackTrace();
         }
+        obj.setAllowedForPo(rs.getInt("l08_allowed_for_po"));
 
         return obj;
     }

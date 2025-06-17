@@ -39,6 +39,7 @@ public class LsfConstants {
     public static final int MESSAGE_TYPE_PENDING_ACTIVITY_ADMIN = 25;
     public static final int MESSAGE_TYPE_ADMIN_COMMON_REJECT = 26;
     public static final int MESSAGE_TYPE_PROFIT_CALCULATION_INQUIRY = 27;
+    public static final int MESSAGE_TYPE_ML_ROLLOVER_PROCESS = 28;
 
     /*---Application List Related--*/
     public static final String GET_MURABAH_APPLICATION_LIST = "getMurabahApplicationList";

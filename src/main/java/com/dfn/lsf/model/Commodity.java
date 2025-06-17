@@ -20,4 +20,5 @@ public class Commodity {
     private String arabicName;
     private String englishName;
     private double boughtAmnt;
+    private int allowedForPo;
 }

@@ -20,6 +20,7 @@ public class LoadSymbolMapper implements RowMapper<Symbol> {
         symbol.setAvailableQty(rs.getInt("l08_available_qty"));
         symbol.setMarketValue(Double.parseDouble(rs.getString("l08_market_value")));
         symbol.setAllowedForCollateral(Integer.parseInt(rs.getString("l08_allowed_for_collateral")));
+        symbol.setAllowedForPo(rs.getInt("l08_allowed_for_po"));
         return symbol;
     }
 }

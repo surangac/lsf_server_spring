@@ -32,8 +32,8 @@ public class TestController {
     }
 
     @GetMapping("/createExchangeAccount")
-    public ResponseEntity<String> createExcahngeAccountManually(@RequestParam String appId) {
-        String response = investorAccountCreationProcessor.manualCreationExchangeAccount(appId);
+    public ResponseEntity<String> createExcahngeAccountManually(@RequestParam String appId, @RequestParam String tradingAccId) {
+        String response = investorAccountCreationProcessor.manualCreationExchangeAccount(appId, tradingAccId);
         return ResponseEntity.ok(response);
     }
 }

@@ -38,6 +38,14 @@ public class Symbol {
     private double marginabilityPercentage;
     private int instrumentType = -1;
     private String securityType;
+    private int allowedForPo;
+
+    public int getAllowedForPo() {
+        return allowedForPo;
+    }
+    public void setAllowedForPo(int allowedForPo) {
+        this.allowedForPo = allowedForPo;
+    }
 
     public int getOpenBuyQty() {
         return openBuyQty;

@@ -592,6 +592,7 @@ public class ApplicationMasterDataProcessor implements MessageProcessor {
             commodity.setPrice(Double.parseDouble(paraMap.get("price").toString()));
             commodity.setBroker(paraMap.get("broker").toString());
             commodity.setExchange(paraMap.get("exchange").toString());
+            commodity.setAllowedForPo(Integer.parseInt(paraMap.get("allowedForPo").toString()));
             commodity.setStatus(1);
 
             lsfRepository.addCommodityToMaster(commodity);

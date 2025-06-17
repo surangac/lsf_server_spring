@@ -274,6 +274,58 @@ public class LsfCoreService {
         return commonResponse;
     }
 
+    public boolean blockCollaterals_RollOverAcc(MApplicationCollaterals collaterals, MurabahApplication application) {
+        log.info("===LSF : Blocking Collaterals RollOver AccI : {}", application.getId());
+        try {
+            if (collaterals.getLsfTypeTradingAccounts() != null) {
+                collaterals.getLsfTypeTradingAccounts().forEach(fromAcc -> {
+                    if (fromAcc != null && fromAcc.getSymbolsForColleteral() != null) {
+                        fromAcc.getSymbolsForColleteral().forEach(symbol -> {
+                            if (symbol != null) {
+                                log.debug("===LSF : Blocking Symbol for RollOver Acc: {}", symbol.getSymbolCode());
+                                ShareTransferRequest shareBlockRequest = new ShareTransferRequest();
+                                shareBlockRequest.setReqType(LsfConstants.SHARE_BLOCK_REQUEST);
+                                shareBlockRequest.setFromTradingAccountId(fromAcc.getAccountId());
+                                shareBlockRequest.setQuantity(symbol.getColleteralQty());
+                                shareBlockRequest.setExchange(symbol.getExchange());
+                                shareBlockRequest.setSymbol(symbol.getSymbolCode());
+                                CommonResponse cmr = performAction(shareBlockRequest);
+                                if (cmr.getResponseCode() == 1) {
+                                    symbol.setBlockedReference(cmr.getResponseMessage());
+                                    symbol.setTransStatus(LsfConstants.SHARE_BLOCK_STATUS);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
+            if (collaterals.getLsfTypeCashAccounts() != null) {
+                collaterals.getLsfTypeCashAccounts().forEach(cashAcc -> {
+                    log.debug("===LSF : Blocking Cash for RollOver Acc: {}", cashAcc.getAccountId());
+                    CashTransferRequest cashBlockRequest = new CashTransferRequest();
+                    cashBlockRequest.setReqType(LsfConstants.CASH_BLOCK_REQUEST);
+                    cashBlockRequest.setFromCashAccountId(cashAcc.getAccountId());
+                    double adminFee = GlobalParameters.getInstance().getComodityAdminFee();
+                    double vat = calculateVatAmt(adminFee);
+                    double totalCharge = LSFUtils.ceilTwoDecimals(adminFee + vat);
+                    cashBlockRequest.setAmount(cashAcc.getAmountAsColletarals() + totalCharge);
+
+                    if (cashBlockRequest.getAmount() > 0) {
+                        CommonResponse cmr = performAction(cashBlockRequest);
+                        if (cmr.getResponseCode() == 1) {
+                            cashAcc.setBlockedReference(cmr.getResponseMessage());
+                            cashAcc.setTransStatus(LsfConstants.SHARE_BLOCK_STATUS);
+                        }
+                    }
+                });
+            }
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public Object releaseCollaterals(MApplicationCollaterals collaterals) {
 
         MurabahApplication application = lsfRepository.getMurabahApplication(collaterals.getApplicationId());

@@ -105,32 +105,35 @@ public class InvestorAccountCreationProcessor implements MessageProcessor {
         return null;
     }
 
-    public String manualCreationExchangeAccount(String applicationId) {
+    public String manualCreationExchangeAccount(String applicationId, String accontId) {
+        log.info("Manual creation of exchange account for application ID: {}", applicationId);
         MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(applicationId);
         TradingAcc lsfTradingAccount = lsfCore.getLsfTypeTradinAccountForUser(
                 murabahApplication.getCustomerId(),
                 murabahApplication.getId());
-
+        String tradingAccountId = accontId;
         if (lsfTradingAccount != null) {
-            AccountCreationRequest createExchangeAccount = new AccountCreationRequest();
-            createExchangeAccount.setReqType(LsfConstants.CREATE_EXCHANGE_ACCOUNT);
-            createExchangeAccount.setTradingAccountId(lsfTradingAccount.getAccountId());
-            createExchangeAccount.setExchange(lsfTradingAccount.getExchange());
-            String omsResponseForExchangeAccountCreation = helper.cashAccountRelatedOMS(gson.toJson(
-                    createExchangeAccount));
-            CommonResponse exchangeAccountResponse = helper.processOMSCommonResponseAccountCreation(
-                    omsResponseForExchangeAccountCreation);
-            if (exchangeAccountResponse.getResponseCode() == 1) {
-                lsfRepository.updateActivity(
-                        murabahApplication.getId(),
-                        LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATED_AND_SENT_EXCHANGE_ACCOUNT_CREATION);
-            } else {
-                lsfRepository.updateActivity(
-                        murabahApplication.getId(),
-                        LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATED_FAILED_TO_SUBMIT_EXCHANGE_ACCOUNT_CREATION);
-            }
-            return exchangeAccountResponse.toString();
+            tradingAccountId = lsfTradingAccount.getAccountId() != null ? lsfTradingAccount.getAccountId() : accontId;
         }
-        return "Done";
+
+        AccountCreationRequest createExchangeAccount = new AccountCreationRequest();
+        createExchangeAccount.setReqType(LsfConstants.CREATE_EXCHANGE_ACCOUNT);
+        createExchangeAccount.setTradingAccountId(tradingAccountId);
+        createExchangeAccount.setExchange("TDWL");
+        String omsResponseForExchangeAccountCreation = helper.cashAccountRelatedOMS(gson.toJson(
+                createExchangeAccount));
+        CommonResponse exchangeAccountResponse = helper.processOMSCommonResponseAccountCreation(
+                omsResponseForExchangeAccountCreation);
+        log.info("===========LSF : Creating Exchange Account for Trading Account Response: {}", exchangeAccountResponse);
+        if (exchangeAccountResponse.getResponseCode() == 1) {
+            lsfRepository.updateActivity(
+                    murabahApplication.getId(),
+                    LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATED_AND_SENT_EXCHANGE_ACCOUNT_CREATION);
+        } else {
+            lsfRepository.updateActivity(
+                    murabahApplication.getId(),
+                    LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATED_FAILED_TO_SUBMIT_EXCHANGE_ACCOUNT_CREATION);
+        }
+        return gson.toJson(exchangeAccountResponse);
     }
 }

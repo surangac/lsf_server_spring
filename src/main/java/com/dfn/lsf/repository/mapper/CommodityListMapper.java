@@ -34,6 +34,7 @@ public class CommodityListMapper implements RowMapper<Commodity> {
         }catch (Exception e){
 
         }
+        commodity.setAllowedForPo(resultSet.getInt("M12_ALLOWED_FOR_PO"));
         return commodity;
     }
 }
