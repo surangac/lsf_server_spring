@@ -445,7 +445,9 @@ public class LsfConstants {
 
     // PO Approval Status
     public static final int PO_APPROVAL_L1_BOUGHT_AMT = 2;
+    public static final int PO_REJECT_L1_BOUGHT_AMT = -2;
     public static final int PO_APPROVAL_L1_SOLD_AMT = 3;
+    public static final int PO_REJECT_L1_SOLD_AMT = -3;
     public static final int PO_APPROVAL_L2_SOLD_AMT = 2;
 
 }

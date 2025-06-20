@@ -53,6 +53,7 @@ public class RollOverProcessor implements MessageProcessor {
             throw new IllegalArgumentException("Application is not eligible for roll over: " + appId);
         }
         RollOverSummeryResponse rollOverSummery = new RollOverSummeryResponse();
+        var murabahProduct = lsfRepository.getMurabahaProduct(newApplication.getProductType());
 
         rollOverSummery.setAppId(newApplication.getId());
         rollOverSummery.setRollOverSeqNumber(newApplication.getRollOverSeqNumber());
@@ -91,6 +92,12 @@ public class RollOverProcessor implements MessageProcessor {
         rollOverSummery.setProductType(newApplication.getProductType());
         rollOverSummery.setFinanceMethod(newApplication.getFinanceMethod());
         rollOverSummery.setFacilityType(newApplication.getFacilityType());
+
+        rollOverSummery.setProductName(murabahProduct.getProductName());
+        rollOverSummery.setInitialRAPV(newApplication.getInitialRAPV());
+        rollOverSummery.setApprovedLimit(newApplication.getProposedLimit());
+        rollOverSummery.setEmail(newApplication.getEmail());
+        rollOverSummery.setMobile(newApplication.getMobileNo());
 
         log.info("RollOver summery application processed with ID: {}", rollOverSummery.getAppId());
         return gson.toJson(rollOverSummery);
@@ -159,6 +166,8 @@ public class RollOverProcessor implements MessageProcessor {
         rollOverSummeryResponse.setTotalCollateralValue(rollOverSummeryResponse.getTotalPfValue() + rollOverSummeryResponse.getTotalCashBalance());
         rollOverSummeryResponse.setApprovedLimit(po.getOrderSettlementAmount());
         rollOverSummeryResponse.setRollOverSeqNumber(oldApplication.getRollOverSeqNumber() + 1);
+        rollOverSummeryResponse.setEmail(oldApplication.getEmail());
+        rollOverSummeryResponse.setMobile(oldApplication.getMobileNo());
         log.info("Creating roll over summary response for application ID: {}", appId);
         return gson.toJson(rollOverSummeryResponse);
     }
@@ -177,6 +186,9 @@ public class RollOverProcessor implements MessageProcessor {
                                                      2);
 
                 createCollaterals(newApplication, newRollOverApp);
+                newApplication.setCurrentLevel(1);
+                lsfRepository.updateMurabahApplication(newApplication);
+
                 cmnResponse.setResponseCode(200);
                 cmnResponse.setResponseMessage("Roll Over application created successfully.");
                 cmnResponse.setResponseObject(newApplication);
@@ -228,6 +240,8 @@ public class RollOverProcessor implements MessageProcessor {
         newApplication.setFacilityType(rollOverSummeryResponse.getFacilityType());
         newApplication.setProposedLimit(rollOverSummeryResponse.getApprovedLimit());
         newApplication.setProfitPercentage(rollOverSummeryResponse.getProfitPercentage());
+        newApplication.setEmail(rollOverSummeryResponse.getEmail());
+        newApplication.setMobileNo(rollOverSummeryResponse.getMobile());
 
         double initialRapv = rollOverSummeryResponse.getRequiredAmount() - rollOverSummeryResponse.getAdminFee() - rollOverSummeryResponse.getVatAmount();
 

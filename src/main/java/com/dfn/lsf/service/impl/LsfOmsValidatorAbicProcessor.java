@@ -187,8 +187,8 @@ public class LsfOmsValidatorAbicProcessor {
 
    private boolean validateWithSettlementDate(String applicationID){
        List<PurchaseOrder> orders= lsfRepository.getAllPurchaseOrder(applicationID);
-        int dateDiff=LSFUtils.getDaysToSettlement(orders.get(0).getSettlementDate());
-        if((dateDiff==0 && LSFUtils.isMarketOpened())||(dateDiff>0)){
+        int dateDiff=LSFUtils.getDaysToSettlement(orders.getFirst().getSettlementDate());
+        if (dateDiff==0||dateDiff>0) {
             return true;
         }else {
             return false;

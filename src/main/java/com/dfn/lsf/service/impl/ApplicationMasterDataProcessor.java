@@ -613,13 +613,9 @@ public class ApplicationMasterDataProcessor implements MessageProcessor {
         logger.info("===========LSF : (getActiveCommodity)-REQUEST ");
         try {
             List<Commodity> commodityList = lsfRepository.getAllActiveCommodities();
-            if (commodityList != null) {
-                cmr.setResponseCode(200);
-                cmr.setResponseObject(commodityList);
-            } else {
-                cmr.setResponseCode(500);
-                cmr.setErrorMessage("No Data found for getActiveCommodity");
-            }
+           // var poCommodity = commodityList.stream().filter(commodity -> commodity.getAllowedForPo()==1).toList();
+            cmr.setResponseCode(200);
+            cmr.setResponseObject(commodityList);
         } catch (Exception e) {
             logger.info("Error while getting getActiveCommodity " + e.getMessage());
             cmr.setResponseCode(400);

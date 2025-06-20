@@ -40,4 +40,7 @@ public class RollOverSummeryResponse {
     private String proposalDate;
     private String cashAccountId;
     private String tradingAccountId;
+    private Double initialRAPV;
+    private String email;
+    private String mobile;
 }

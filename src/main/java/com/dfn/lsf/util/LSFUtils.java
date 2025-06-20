@@ -137,30 +137,31 @@ public class LSFUtils {
         return  roundedValue;
     }
     
-    public static boolean isMarketOpened(){ /*---Check Whether Current time is in between market open time gap---*/
-         boolean response = false;
-        try {
-            String openTime = GlobalParameters.getInstance().getMarketOpenTime();
-            String closedTime = GlobalParameters.getInstance().getMarketClosedTime();
-            SimpleDateFormat format = new SimpleDateFormat("HH:mm");
-            java.util.Date d1 =(java.util.Date)format.parse(openTime);
-            java.util.Date d2 =(java.util.Date)format.parse(closedTime);
-            java.sql.Time open = new java.sql.Time(d1.getTime());
-            java.sql.Time close = new java.sql.Time(d2.getTime());
-
-            Calendar now = Calendar.getInstance();
-            String currentTime = now.get(Calendar.HOUR_OF_DAY) + ":" + now.get(Calendar.MINUTE);
-            java.util.Date d3 =(java.util.Date)format.parse(currentTime);
-            java.sql.Time nw = new java.sql.Time(d3.getTime());
-
-            if(nw.after(open) && nw.before(close) ){
-               response = true;
-            }
-        } catch(Exception e) {
-            System.out.println("Exception is " + e.toString());
-            response = false;
-        }
-        return response;
+    public static boolean isMarketOpened() { /*---Check Whether Current time is in between market open time gap---*/
+        return true;
+//        boolean response = false;
+//        try {
+//            String openTime = GlobalParameters.getInstance().getMarketOpenTime();
+//            String closedTime = GlobalParameters.getInstance().getMarketClosedTime();
+//            SimpleDateFormat format = new SimpleDateFormat("HH:mm");
+//            java.util.Date d1 =(java.util.Date)format.parse(openTime);
+//            java.util.Date d2 =(java.util.Date)format.parse(closedTime);
+//            java.sql.Time open = new java.sql.Time(d1.getTime());
+//            java.sql.Time close = new java.sql.Time(d2.getTime());
+//
+//            Calendar now = Calendar.getInstance();
+//            String currentTime = now.get(Calendar.HOUR_OF_DAY) + ":" + now.get(Calendar.MINUTE);
+//            java.util.Date d3 =(java.util.Date)format.parse(currentTime);
+//            java.sql.Time nw = new java.sql.Time(d3.getTime());
+//
+//            if(nw.after(open) && nw.before(close) ){
+//               response = true;
+//            }
+//        } catch(Exception e) {
+//            System.out.println("Exception is " + e.toString());
+//            response = false;
+//        }
+//        return response;
     }
 
     public static boolean isPurchaseOrderCreationAllowed(boolean bypassUmessage){ /*----PO Submission should be allowed until 1h 15min before market close time---*/
