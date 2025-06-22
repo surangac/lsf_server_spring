@@ -243,6 +243,9 @@ public class LsfCoreProcessor implements MessageProcessor {
 
         if (LSFUtils.isPurchaseOrderCreationAllowed(bypassUmessage)) { /*----PO Submission should be allowed until 1h 15min before market close time---*/
             MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(po.getApplicationId());
+            if ( murabahApplication != null && murabahApplication.isRollOverApp() ) {
+                return createPurchaseOrderRollOver(po, murabahApplication);
+            }
             MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(po.getApplicationId());
             if (Integer.parseInt(murabahApplication.getOverallStatus()) < 0 || murabahApplication.getCurrentLevel() == GlobalParameters.getInstance().getGetAppCloseLevel()) {
                 commonResponse.setResponseCode(500);
@@ -309,6 +312,57 @@ public class LsfCoreProcessor implements MessageProcessor {
             log.debug("===========LSF : (createPurchaseOrder)-LSF-SERVER RESPONSE  : " + gson.toJson(commonResponse));
             return gson.toJson(commonResponse);
         }
+    }
+
+    protected String createPurchaseOrderRollOver(PurchaseOrder po, MurabahApplication murabahApplication) {
+        CommonResponse commonResponse = new CommonResponse();
+        String approvedbyId = "SYSTEM";
+        String approvedbyName = "SYSTEM";
+        int approvalStatus = 1;
+
+        if (Integer.parseInt(murabahApplication.getOverallStatus()) < 0 || murabahApplication.getCurrentLevel() == GlobalParameters.getInstance().getGetAppCloseLevel()) {
+            commonResponse.setResponseCode(500);
+            commonResponse.setErrorMessage("Invalid Details");
+            commonResponse.setErrorCode(LsfConstants.ERROR_INVALID_DETAILS);
+            log.debug("===========LSF : (createPurchaseOrder)-LSF-SERVER RESPONSE  : " + gson.toJson(commonResponse));
+            return gson.toJson(commonResponse);
+        }
+
+        if(murabahApplication.getProfitPercentage()>0){
+            po.setProfitPercentage(murabahApplication.getProfitPercentage());
+        }else {
+            CommissionStructure applyingCommissionStructure = lsfCore.getCommissionStructureBasedOnOrderValue(po.getOrderValue());
+            if (applyingCommissionStructure != null) {
+                po.setProfitPercentage(applyingCommissionStructure.getPercentageAmount());
+            }
+        }
+        try {
+            MApplicationCollaterals collaterals = lsfRepository.getApplicationCollateral(po.getApplicationId());
+
+            collaterals.setOutstandingAmount(collaterals.getOutstandingAmount() + po.getOrderSettlementAmount());
+            collaterals.setUtilizedLimitAmount(collaterals.getUtilizedLimitAmount() + po.getOrderSettlementAmount());
+            lsfCore.calculateFTV(collaterals);
+            lsfCore.calculateRemainingOperativeLimit(collaterals);
+            lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_PO_CREATED_WAITING_TO_ORDER_FILL);
+            lsfRepository.addPurchaseOrder(po);
+            lsfRepository.addEditCollaterals(collaterals);
+            po.setApprovalStatus(approvalStatus);
+            po.setApprovedById(approvedbyId);
+            po.setApprovedByName(approvedbyName);
+            lsfRepository.approveRejectOrder(po);
+
+            notificationManager.sendNotification(murabahApplication);
+            lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_SENT_INVESTOR_ACCOUNT_CREATION);
+
+            String respMessage = murabahApplication.getCurrentLevel() + "|" + murabahApplication.getOverallStatus();
+            commonResponse.setResponseCode(200);
+            commonResponse.setResponseMessage(respMessage);
+
+        } catch (Exception ex) {
+            commonResponse.setResponseCode(500);
+            commonResponse.setErrorMessage(ex.getMessage());
+        }
+        return gson.toJson(commonResponse);
     }
 
     protected String approvePurchaseOrderABIC(PurchaseOrder purchaseOrder, MApplicationCollaterals completeCollateral, CommonResponse cmr, int financeMethod) {
@@ -861,6 +915,8 @@ public class LsfCoreProcessor implements MessageProcessor {
                         if (!murabahApplication.isRollOverApp()) {
                             transferCollateralsToLSFAccount(murabahApplication, purchaseOrder, collaterals);
                             transferPOToLSFAccount(murabahApplication, purchaseOrder);
+                        } else {
+                            lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_SENT);
                         }
 
                     } else {

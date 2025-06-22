@@ -260,10 +260,10 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     public MApplicationCollaterals getCollateralForRollOverCollaterelWindow(String applicationId, MApplicationCollaterals applicationCollaterals) {
-        var cashAccountLsfType = this.getCashAccountsInCollateral(applicationId, applicationCollaterals.getId(), 0);
+        var cashAccountLsfType = this.getCashAccountsInCollateral(applicationId, applicationCollaterals.getId(), 1);
         applicationCollaterals.setCashAccForColleterals(cashAccountLsfType);
 
-        List<TradingAcc> tradingAccListLsfType = this.getTradingAccountInCollateral(applicationId, applicationCollaterals.getId(), 0);
+        List<TradingAcc> tradingAccListLsfType = this.getTradingAccountInCollateral(applicationId, applicationCollaterals.getId(), 1);
         // LSF type trading accounts corresponding Symbol list
         for (TradingAcc tradingAcc : tradingAccListLsfType) {
             tradingAcc.setSymbolsForColleteral(this.getSymbolsInTradingAccount(tradingAcc.getAccountId(), tradingAcc.getApplicationId()));

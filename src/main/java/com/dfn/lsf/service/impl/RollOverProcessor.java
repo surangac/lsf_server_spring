@@ -72,16 +72,20 @@ public class RollOverProcessor implements MessageProcessor {
 
         rollOverSummery.setRequiredAmount(newApplication.getFinanceRequiredAmt());
 
+        var collaterals = lsfRepository.getApplicationCompleteCollateralForRollOver(newApplication.getId());
+
         var tradingAccounts = helper.getLsfTypeTradingAccounts(newApplication.getCustomerId(), newApplication.getRollOverAppId(), newApplication.getMarginabilityGroup());
         if (tradingAccounts.isEmpty()) {
             throw new IllegalArgumentException("No trading accounts found for application ID: " + appId);
         }
-        var totalPfValue = calculateTotalPfValue(tradingAccounts);
-        var cashAccounts = helper.getLsfTypeCashAccounts(newApplication.getCustomerId(), newApplication.getRollOverAppId());
-        var totalCashBalance = cashAccounts.getFirst().getCashBalance() - cashAccounts.getFirst().getBlockedAmount();
+        var totalPfValue = calculateTotalPfValue(tradingAccounts, collaterals.getTradingAccForColleterals());
 
-        rollOverSummery.setCashAccounts(cashAccounts);
-        rollOverSummery.setTradingAccounts(tradingAccounts);
+        var cashAccounts = collaterals.getCashAccForColleterals().getFirst();
+                //helper.getLsfTypeCashAccounts(newApplication.getCustomerId(), newApplication.getRollOverAppId());
+        var totalCashBalance = cashAccounts.getAmountAsColletarals();
+
+        rollOverSummery.setLsfTypeCashAccounts(collaterals.getCashAccForColleterals());
+        rollOverSummery.setLsfTypeTradingAccounts(collaterals.getTradingAccForColleterals());
         rollOverSummery.setTotalPfValue(totalPfValue);
         rollOverSummery.setTotalCashBalance(totalCashBalance);
         rollOverSummery.setTotalCollateralValue(totalPfValue + totalCashBalance);
@@ -95,7 +99,7 @@ public class RollOverProcessor implements MessageProcessor {
 
         rollOverSummery.setProductName(murabahProduct.getProductName());
         rollOverSummery.setInitialRAPV(newApplication.getInitialRAPV());
-        rollOverSummery.setApprovedLimit(newApplication.getProposedLimit());
+        rollOverSummery.setApprovedLimit(collaterals.getApprovedLimitAmount());
         rollOverSummery.setEmail(newApplication.getEmail());
         rollOverSummery.setMobile(newApplication.getMobileNo());
 
@@ -156,15 +160,25 @@ public class RollOverProcessor implements MessageProcessor {
         rollOverSummeryResponse.setVatAmount(vatAmount);
         rollOverSummeryResponse.setProfitPercentage(oldApplication.getProfitPercentage());
 
-        ProfitResponse profitResponse = lsfCore.calculateProfit(
-        Integer.parseInt(oldApplication.getTenor()),
-        po.getOrderSettlementAmount(),
-        oldApplication.getProfitPercentage());
 
-        rollOverSummeryResponse.setRequiredAmount(po.getOrderSettlementAmount());
+
+        if (murabahProduct.getProfitMethod().equals("Full Profit")) {
+
+            rollOverSummeryResponse.setRequiredAmount(po.getOrderCompletedValue() + po.getProfitAmount());
+        } else {
+            rollOverSummeryResponse.setRequiredAmount(po.getOrderSettlementAmount());
+        }
+
+        ProfitResponse profitResponse = lsfCore.calculateProfit(
+                Integer.parseInt(oldApplication.getTenor()),
+                rollOverSummeryResponse.getRequiredAmount(),
+                oldApplication.getProfitPercentage());
+
         rollOverSummeryResponse.setNewProfitAmount(profitResponse.getProfitAmount());
         rollOverSummeryResponse.setTotalCollateralValue(rollOverSummeryResponse.getTotalPfValue() + rollOverSummeryResponse.getTotalCashBalance());
-        rollOverSummeryResponse.setApprovedLimit(po.getOrderSettlementAmount());
+
+        rollOverSummeryResponse.setApprovedLimit(rollOverSummeryResponse.getRequiredAmount());
+
         rollOverSummeryResponse.setRollOverSeqNumber(oldApplication.getRollOverSeqNumber() + 1);
         rollOverSummeryResponse.setEmail(oldApplication.getEmail());
         rollOverSummeryResponse.setMobile(oldApplication.getMobileNo());
@@ -205,6 +219,7 @@ public class RollOverProcessor implements MessageProcessor {
     private MurabahApplication processNewApplication(RollOverSummeryResponse rollOverSummeryResponse) throws Exception {
         java.text.DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         MurabahApplication newApplication = new MurabahApplication();
+        MurabahApplication oldApplication = lsfRepository.getMurabahApplication(rollOverSummeryResponse.getOriginalAppId());
 
         Status status = new Status();
         status.setLevelId(1);
@@ -225,6 +240,7 @@ public class RollOverProcessor implements MessageProcessor {
         newApplication.setTenor(rollOverSummeryResponse.getTenor());
 
         newApplication.setFinanceRequiredAmt(rollOverSummeryResponse.getRequiredAmount());
+
         newApplication.setRollOverAppId(rollOverSummeryResponse.getOriginalAppId());
         newApplication.setRollOverSeqNumber(rollOverSummeryResponse.getRollOverSeqNumber());
 
@@ -243,9 +259,26 @@ public class RollOverProcessor implements MessageProcessor {
         newApplication.setEmail(rollOverSummeryResponse.getEmail());
         newApplication.setMobileNo(rollOverSummeryResponse.getMobile());
 
-        double initialRapv = rollOverSummeryResponse.getRequiredAmount() - rollOverSummeryResponse.getAdminFee() - rollOverSummeryResponse.getVatAmount();
+        ProfitResponse profitResponse = lsfCore.calculateProfit(
+                Integer.parseInt(rollOverSummeryResponse.getTenor()),
+                newApplication.getFinanceRequiredAmt(),
+                rollOverSummeryResponse.getProfitPercentage());
 
-        newApplication.setInitialRAPV(initialRapv);
+        rollOverSummeryResponse.setNewProfitAmount(profitResponse.getProfitAmount());
+        //double initialRapv = rollOverSummeryResponse.getRequiredAmount() - rollOverSummeryResponse.getAdminFee() - rollOverSummeryResponse.getVatAmount();
+
+        newApplication.setInitialRAPV(rollOverSummeryResponse.getRequiredAmount());
+        newApplication.setMarginabilityGroup(oldApplication.getMarginabilityGroup());
+        newApplication.setStockConcentrationGroup(oldApplication.getStockConcentrationGroup());
+        newApplication.setAddress(oldApplication.getAddress());
+        newApplication.setTradingAccExchange(lsfTradingAccount.getExchange());
+        newApplication.setCashAccount(cashAccount.getAccountId());
+        newApplication.setCustomerReferenceNumber(oldApplication.getCustomerReferenceNumber());
+        newApplication.setZipCode(oldApplication.getZipCode());
+        newApplication.setCity(oldApplication.getCity());
+        newApplication.setPoBox(oldApplication.getPoBox());
+        newApplication.setPreferedLanguage(oldApplication.getPreferedLanguage());
+
 
         String id = lsfRepository.updateMurabahApplication(newApplication);
         newApplication.setId(id);
@@ -257,6 +290,20 @@ public class RollOverProcessor implements MessageProcessor {
         return commodities.stream()
                 .mapToDouble(Commodity::getBoughtAmnt)
                 .sum();
+    }
+
+    private double calculateTotalPfValue(List<TradingAccOmsResp> lsfTradingAccList, List<TradingAcc> tradingAccList) {
+        var tradingAccFromOms = lsfTradingAccList.getFirst();
+        var totalPFValue = 0.0;
+        var tradingAccFromDb = tradingAccList.getFirst();
+        for (Symbol smb: tradingAccFromOms.getSymbolList()) {
+
+            var smbFromDb = tradingAccFromDb.getSymbolsForColleteral().stream().filter(symbol -> symbol.getExchange().equals(smb.getExchange()) && symbol.getSymbolCode().equals(smb.getSymbolCode())).findFirst().orElse(null);
+            assert smbFromDb != null;
+            double contribToColletaral = ((smbFromDb.getColleteralQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
+            totalPFValue += contribToColletaral;
+        }
+        return totalPFValue;
     }
 
     private double calculateTotalPfValue(List<TradingAccOmsResp> lsfTradingAccList) {
@@ -280,13 +327,13 @@ public class RollOverProcessor implements MessageProcessor {
         collaterals.setVatAmount(rollOverSummeryResponse.getVatAmount());
         collaterals.setApprovedLimitAmount(rollOverSummeryResponse.getRequiredAmount());
 
-        double cashCollateral = application.getInitialRAPV() - rollOverSummeryResponse.getTotalPfValue() < 0 ? 0 : application.getInitialRAPV() - rollOverSummeryResponse.getTotalPfValue();
+        double cashCollateral = application.getFinanceRequiredAmt() - rollOverSummeryResponse.getTotalPfValue() < 0 ? 0 : application.getInitialRAPV() - rollOverSummeryResponse.getTotalPfValue();
 
         collaterals.setNetTotalColleteral(cashCollateral + rollOverSummeryResponse.getTotalPfValue());
-        if (rollOverSummeryResponse.getTotalCashBalance() > cashCollateral + rollOverSummeryResponse.getVatAmount() + rollOverSummeryResponse.getAdminFee()) {
-            collaterals.setInitialCashCollaterals(rollOverSummeryResponse.getTotalCashBalance() - (cashCollateral + rollOverSummeryResponse.getVatAmount() + rollOverSummeryResponse.getAdminFee()));
+        if (rollOverSummeryResponse.getTotalCashBalance() > cashCollateral + rollOverSummeryResponse.getVatAmount() + GlobalParameters.getInstance().getComodityAdminFee()) {
+            collaterals.setInitialCashCollaterals(cashCollateral + rollOverSummeryResponse.getVatAmount() + GlobalParameters.getInstance().getComodityAdminFee());
         } else {
-            collaterals.setInitialCashCollaterals(rollOverSummeryResponse.getTotalCashBalance() );
+            collaterals.setInitialCashCollaterals(rollOverSummeryResponse.getTotalCashBalance());
         }
         collaterals.setInitialPFCollaterals(rollOverSummeryResponse.getTotalPfValue());
         collaterals.setIsExchangeAccountCreated(true);
@@ -324,6 +371,8 @@ public class RollOverProcessor implements MessageProcessor {
 
         collaterals.setLsfTypeTradingAccounts(tradingAccList);
         collaterals.setUpdatedDate(dateFormat.format(java.sql.Date.valueOf(LocalDate.now())));
+        collaterals.setRemainingOperativeLimitAmount(collaterals.getNetTotalColleteral());
+        collaterals.setOpperativeLimitAmount(collaterals.getNetTotalColleteral());
 
         var blockResponse = lsfCore.blockCollaterals_RollOverAcc(collaterals, application);
         if (blockResponse) {

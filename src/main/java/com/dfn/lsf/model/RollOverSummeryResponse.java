@@ -43,4 +43,6 @@ public class RollOverSummeryResponse {
     private Double initialRAPV;
     private String email;
     private String mobile;
+    private List<TradingAcc> lsfTypeTradingAccounts;
+    private List<CashAcc> lsfTypeCashAccounts;
 }

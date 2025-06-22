@@ -306,10 +306,7 @@ public class LsfCoreService {
                     CashTransferRequest cashBlockRequest = new CashTransferRequest();
                     cashBlockRequest.setReqType(LsfConstants.CASH_BLOCK_REQUEST);
                     cashBlockRequest.setFromCashAccountId(cashAcc.getAccountId());
-                    double adminFee = GlobalParameters.getInstance().getComodityAdminFee();
-                    double vat = calculateVatAmt(adminFee);
-                    double totalCharge = LSFUtils.ceilTwoDecimals(adminFee + vat);
-                    cashBlockRequest.setAmount(cashAcc.getAmountAsColletarals() + totalCharge);
+                    cashBlockRequest.setAmount(collaterals.getInitialCashCollaterals());
 
                     if (cashBlockRequest.getAmount() > 0) {
                         CommonResponse cmr = performAction(cashBlockRequest);
