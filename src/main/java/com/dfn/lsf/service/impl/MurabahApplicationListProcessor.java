@@ -469,6 +469,9 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
 
         try {
             List<MurabahApplication> fromDB = lsfRepository.getHistoryApplication(filterCriteria, filterValue, fromDate, toDate, Integer.parseInt(reqStatus));
+            fromDB.forEach(application -> {
+                application.setAgreementList(lsfRepository.getActiveAgreements(Integer.parseInt(application.getId())));
+            });
             listResponse.setApplicationList(fromDB);
         } catch (Exception e) { 
             listResponse.setResponseCode(500);

@@ -216,7 +216,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                 if (map.containsKey("tradingAccExchange")) {
                     pfRequest.setExchange(map.get("tradingAccExchange").toString());
                 }
-                cmr = helper.processOMSCommonResponse(helper.portfolioRelatedOMS(gson.toJson(pfRequest)).toString());
+                cmr = helper.processOMSCommonResponse(helper.portfolioRelatedOMS(gson.toJson(pfRequest)));
             }
         } catch (Exception ex) {
             cmr.setResponseCode(500);

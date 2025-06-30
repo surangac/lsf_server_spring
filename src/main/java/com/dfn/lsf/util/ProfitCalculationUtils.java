@@ -36,7 +36,7 @@ public class ProfitCalculationUtils {
             CashAcc lsfCashAccount = null;
             TradingAcc lsfTradingAccount = null;
             PurchaseOrder purchaseOrder = null;
-            List<PurchaseOrder> orderList = lsfRepository.getPurchaseOrderForApplication(murabahApplication.getId());
+            List<PurchaseOrder> orderList = lsfRepository.getAllPurchaseOrder(murabahApplication.getId());
 
             logger.debug("===========LSF : Received Order List for ApplicationID :"
                          + murabahApplication.getId()

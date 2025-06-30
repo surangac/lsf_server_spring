@@ -45,7 +45,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
 
     @Override
     public String process(final String request) {
-        String message = (String) request;
+        String message = request;
         Map<String, Object> resultMap = new HashMap<>();
         resultMap = gson.fromJson(message, resultMap.getClass());
         String subMessageType = resultMap.get("subMessageType").toString();
@@ -57,10 +57,6 @@ public class SettlementInquiryProcessor implements MessageProcessor {
             case LsfConstants.SETTLEMENT_BREAKDOWN_APPLICATION: {// settlement breakdown-client
                 return getSettlementBreakDownForApplication(resultMap.get("id").toString());
             }
-           /* case LsfConstants.PERFORM_EARLY_SETTLEMENT: {//early settlement-client
-                return performEarlySettlement(resultMap.get("id").toString(), resultMap.get("customerID").toString(),
-                 Double.valueOf(resultMap.get("settlementAmount").toString()));
-            }*/
             case LsfConstants.GET_SETTLEMENT_LIST: {//get settlement list-admin
                 return getSettlementList(resultMap);
             }
@@ -150,7 +146,25 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                         settlementSummary.setLoanAmount(purchaseOrder.getOrderValue());
                         settlementSummary.setAvailableCashBalance(murabahApplication.getAvailableCashBalance());
                         settlementSummary.setCumulativeProfit(purchaseOrder.getProfitAmount());
-                        settlementSummary.setTotalSettlementAmount(purchaseOrder.getOrderSettlementAmount());
+
+                        if (murabahApplication.getProductType() == 1) {
+                            orderProfit = lsfRepository.getSummationOfProfitUntilToday(applicationID, purchaseOrder.getId());
+                            if (orderProfit != null) {
+                                settlementSummary.setCumulativeProfit(orderProfit.getCumulativeProfitAmount());
+                                settlementSummary.setLoanProfit(purchaseOrder.getProfitAmount());
+                            } else {
+                                settlementSummary.setLoanProfit(purchaseOrder.getProfitAmount());
+                            }
+                        } else {
+                            OrderProfit profit = lsfCore.calculateConditionalProfit(collaterals,
+                                                                                    purchaseOrder,
+                                                                                    murabahApplication.getDiscountOnProfit());
+                            settlementSummary.setOrderProfit(profit);
+                            settlementSummary.setCumulativeProfit(profit.getChargeCommissionAmt());
+                            settlementSummary.setLoanProfit(profit.getChargeCommissionAmt());
+                        }
+
+                        settlementSummary.setTotalSettlementAmount(purchaseOrder.getOrderCompletedValue() + settlementSummary.getCumulativeProfit());
                     }
                     lsfCore.calculateFTV(collaterals);
 

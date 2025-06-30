@@ -67,7 +67,13 @@ public class RollOverProcessor implements MessageProcessor {
         rollOverSummery.setOverallStatus(Integer.parseInt(newApplication.getOverallStatus()));
 
         rollOverSummery.setCurrentLevel(newApplication.getCurrentLevel());
-        rollOverSummery.setAdminFee(newApplication.getAdminFeeCharged());
+
+        double adminFee = GlobalParameters.getInstance().getComodityAdminFee();
+        double vatAmount = lsfCore.calculateVatAmt(adminFee);
+
+        rollOverSummery.setAdminFee(adminFee);
+        rollOverSummery.setVatAmount(vatAmount);
+
         rollOverSummery.setTenor(newApplication.getTenor());
 
         rollOverSummery.setRequiredAmount(newApplication.getFinanceRequiredAmt());
@@ -81,7 +87,6 @@ public class RollOverProcessor implements MessageProcessor {
         var totalPfValue = calculateTotalPfValue(tradingAccounts, collaterals.getTradingAccForColleterals());
 
         var cashAccounts = collaterals.getCashAccForColleterals().getFirst();
-                //helper.getLsfTypeCashAccounts(newApplication.getCustomerId(), newApplication.getRollOverAppId());
         var totalCashBalance = cashAccounts.getAmountAsColletarals();
 
         rollOverSummery.setLsfTypeCashAccounts(collaterals.getCashAccForColleterals());
@@ -160,21 +165,13 @@ public class RollOverProcessor implements MessageProcessor {
         rollOverSummeryResponse.setVatAmount(vatAmount);
         rollOverSummeryResponse.setProfitPercentage(oldApplication.getProfitPercentage());
 
-
-
         if (murabahProduct.getProfitMethod().equals("Full Profit")) {
-
             rollOverSummeryResponse.setRequiredAmount(po.getOrderCompletedValue() + po.getProfitAmount());
         } else {
             rollOverSummeryResponse.setRequiredAmount(po.getOrderSettlementAmount());
         }
 
-        ProfitResponse profitResponse = lsfCore.calculateProfit(
-                Integer.parseInt(oldApplication.getTenor()),
-                rollOverSummeryResponse.getRequiredAmount(),
-                oldApplication.getProfitPercentage());
-
-        rollOverSummeryResponse.setNewProfitAmount(profitResponse.getProfitAmount());
+        rollOverSummeryResponse.setNewProfitAmount(po.getProfitAmount());
         rollOverSummeryResponse.setTotalCollateralValue(rollOverSummeryResponse.getTotalPfValue() + rollOverSummeryResponse.getTotalCashBalance());
 
         rollOverSummeryResponse.setApprovedLimit(rollOverSummeryResponse.getRequiredAmount());
@@ -297,7 +294,6 @@ public class RollOverProcessor implements MessageProcessor {
         var totalPFValue = 0.0;
         var tradingAccFromDb = tradingAccList.getFirst();
         for (Symbol smb: tradingAccFromOms.getSymbolList()) {
-
             var smbFromDb = tradingAccFromDb.getSymbolsForColleteral().stream().filter(symbol -> symbol.getExchange().equals(smb.getExchange()) && symbol.getSymbolCode().equals(smb.getSymbolCode())).findFirst().orElse(null);
             assert smbFromDb != null;
             double contribToColletaral = ((smbFromDb.getColleteralQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();

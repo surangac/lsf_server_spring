@@ -2,6 +2,7 @@ package com.dfn.lsf.controller;
 
 import com.dfn.lsf.model.CashAcc;
 import com.dfn.lsf.service.impl.InvestorAccountCreationProcessor;
+import com.dfn.lsf.service.scheduler.SettlementCalculationProcessor;
 import com.dfn.lsf.util.Helper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,9 @@ public class TestController {
     @Autowired
     private InvestorAccountCreationProcessor investorAccountCreationProcessor;
 
+    @Autowired
+    private SettlementCalculationProcessor settlementCalculationProcessor;
+
     // This is a placeholder for the TestController class.
     // You can add methods here to handle specific requests or perform tests.
 
@@ -35,5 +39,11 @@ public class TestController {
     public ResponseEntity<String> createExcahngeAccountManually(@RequestParam String appId, @RequestParam String tradingAccId) {
         String response = investorAccountCreationProcessor.manualCreationExchangeAccount(appId, tradingAccId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/calculateSettlement")
+    public ResponseEntity<String> calculateSettlement() {
+        settlementCalculationProcessor.runSettlementCalculation();
+        return ResponseEntity.ok("Done, settlement calculation initiated.");
     }
 }

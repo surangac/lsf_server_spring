@@ -3,7 +3,6 @@ package com.dfn.lsf.service.impl;
 import java.util.Map;
 
 import com.dfn.lsf.util.MessageType;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import com.dfn.lsf.model.CashAcc;
@@ -149,44 +148,39 @@ public class SettlementProcessor implements MessageProcessor {
         CommonResponse commonResponse = new CommonResponse();
         int responseCode = 200;
         String responseMessage = "";
-        String masterCashAccount = null;
 
         log.info("===========LSF : (performEarlySettlementCommodity)-REQUEST  : , ApplicationID:" + applicationID + ",Order ID:" + orderID + ", Amount:" + settlementAmount);
 
         MurabahApplication application = lsfRepository.getMurabahApplication(applicationID);
 
-        masterCashAccount = lsfCoreService.getMasterCashAccount();//getting ABIC master cash account
+        String masterCashAccount = lsfCoreService.getMasterCashAccount();
         application.setCurrentLevel(17);
         application.setOverallStatus(String.valueOf(16));
-        String fromAccount = application.getCashAccount();
 
-        if(application.getAvailableCashBalance() < settlementAmount) {
-            responseCode = 500;
-            responseMessage = "Insufficient balance in the customer cash account";
-            return gson.toJson(commonResponse);
-        }
+        CashAcc lsfCashAccount = lsfCoreService.getLsfTypeCashAccountForUser(userID,applicationID);
+        PurchaseOrder purchaseOrder= lsfRepository.getSinglePurchaseOrder(orderID);
 
-        if (lsfCoreService.cashTransferToMasterAccount(fromAccount, masterCashAccount, settlementAmount, applicationID)) {
-            lsfRepository.updatePOToSettledState(Integer.parseInt(orderID));
-            log.info("===========LSF :(performEarlySettlement)- Cash Transfer Succeed , From(Customer Cash Account):" + fromAccount+ ", To:(Master Cash Account)" + masterCashAccount + ", Amount :" + settlementAmount);
-            responseMessage = "Successfully Deducted Outstanding Amount.";
-            //Todo -- After Sending the Account Closure Request to OMS LSF is not waiting to the OMS Response
-            application.setCurrentLevel(18);
-            application.setOverallStatus(String.valueOf(17));
+        if (((lsfCashAccount.getCashBalance()-lsfCashAccount.getNetReceivable())>settlementAmount) && purchaseOrder.getSettlementStatus()!=1) {
+            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), masterCashAccount, settlementAmount, applicationID)) {
+                lsfRepository.updatePOToSettledState(Integer.parseInt(orderID));
+                log.info("===========LSF :(performEarlySettlementCommodity)- Cash Transfer Succeed , From(Customer Cash Account):" + lsfCashAccount.getAccountId() + ", To:(Master Cash Account)" + masterCashAccount + ", Amount :" + settlementAmount);
+                application.setCurrentLevel(18);
+                application.setOverallStatus(String.valueOf(17));
 
-            lsfRepository.updateAccountDeletionState(applicationID, 1);
-
-            try {
-                notificationManager.sendEarlySettlementNotification(application);
-            } catch (Exception e) {
-                commonResponse.setResponseCode(responseCode);
-                commonResponse.setResponseMessage(responseMessage + " , failed to send the notification.");
+                try {
+                    notificationManager.sendEarlySettlementNotification(application);
+                } catch (Exception e) {
+                    commonResponse.setResponseCode(responseCode);
+                    commonResponse.setResponseMessage(responseMessage + " , failed to send the notification.");
+                }
+            } else {
+                responseCode = 500;
+                responseMessage = "Failed to deduct outstanding due to Cash Transfer failure.";
             }
         } else {
             responseCode = 500;
-            responseMessage = "Failed to deduct outstanding due to Cash Transfer failure.";
+            responseMessage = "Already settled or,You have pending orders in the LSF Cash Account :" + lsfCashAccount.getAccountId() + ", Can't perform settlement";
         }
-
         lsfRepository.updateMurabahApplication(application);
         commonResponse.setResponseCode(responseCode);
         commonResponse.setResponseMessage(responseMessage);
@@ -211,7 +205,7 @@ public class SettlementProcessor implements MessageProcessor {
                 ((lsfCashAccount.getCashBalance()-lsfCashAccount.getNetReceivable())>settlementAmount)
                 &&
                 purchaseOrder.getSettlementStatus()!=1
-                ){
+                ) {
             MurabahApplication application = lsfRepository.getMurabahApplication(applicationID);
 
             if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), masterCashAccount, settlementAmount, applicationID)) {
@@ -233,12 +227,10 @@ public class SettlementProcessor implements MessageProcessor {
                 responseCode = 500;
                 responseMessage = "Failed to deduct outstanding due to Cash Transfer failure.";
             }
-        }else{
+        } else {
             responseCode = 500;
             responseMessage = "Already settled or,You have pending orders in the LSF Trading Account :" + lsfTradingAcc.getAccountId() + ", Can't perform settlement";
         }
-
-
         commonResponse.setResponseCode(responseCode);
         commonResponse.setResponseMessage(responseMessage);
         log.info("===========LSF : (performManualSettlement)-LSF-SERVER RESPONSE  : " + gson.toJson(commonResponse));

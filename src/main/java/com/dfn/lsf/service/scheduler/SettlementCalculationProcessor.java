@@ -38,7 +38,7 @@ public class SettlementCalculationProcessor implements MessageProcessor {
 
     @Override
     public String process(final String request) {
-        String rawMessage = (String) request;
+        String rawMessage = request;
         Map<String, Object> map = new HashMap<String, Object>();
         CommonResponse cmr = null;
         map = gson.fromJson(rawMessage, map.getClass());
@@ -76,9 +76,8 @@ public class SettlementCalculationProcessor implements MessageProcessor {
         masterCashAccount = lsfCore.getMasterCashAccount();
         if (!murabahApplicationList.isEmpty()) {
             /*--ALBILADSUP-389--*/
-            // add new entry once the job is started by the scheduler
             lsfRepository.insertProfitCalculationMasterEntry(murabahApplicationList.size());
-            for (MurabahApplication murabahApplication : murabahApplicationList) { //iterate  applications
+            for (MurabahApplication murabahApplication : murabahApplicationList) {
                 profitCalculationUtils.runCalculationForTheCurrentDay(murabahApplication, masterCashAccount);
             }
         } else {

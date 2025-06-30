@@ -43,6 +43,7 @@ public class LsfCoreProcessor implements MessageProcessor {
     private final Helper helper;
     private final LsfCoreService lsfCore;
     private final NotificationManager notificationManager;
+    private final SettlementProcessor settlementProcessor;
 
     @Value("${app.bypass.umessage:false}")
     private boolean bypassUmessage;
@@ -564,17 +565,6 @@ public class LsfCoreProcessor implements MessageProcessor {
             //po.setApprovalStatus(LsfConstants.PO_APPROVAL_L1_SOLD_AMT);
             po.setApprovedById(approvedbyId);
             po.setApprovedByName(approvedbyName);
-
-//            lsfRepository.updatePurchaseOrderByAdmin(po);
-//            String response = lsfRepository.approveRejectPOCommodity(po);
-//            if(response.equals("1")) {
-//                lsfRepository.updateActivity(po.getApplicationId(), LsfConstants.STATUS_COMMODITY_PO_SOLD_AMT_L1_APPROVED);
-//                cmr.setResponseCode(200);
-//                cmr.setResponseMessage("Commodity Order Approved");
-//            } else {
-//                cmr.setResponseCode(500);
-//                cmr.setErrorMessage("Commodity Order Approval Failed");
-//            }
 
             if (approvalStatus == 1) {
                 po.setApprovalStatus(LsfConstants.PO_APPROVAL_L1_SOLD_AMT);
@@ -1423,7 +1413,7 @@ public class LsfCoreProcessor implements MessageProcessor {
         return gson.toJson(cmr);
     }
 
-    private String commodityPOExecution(Map<String, Object> map){
+    private String commodityPOExecution(Map<String, Object> map) {
         CommonResponse cmr = new CommonResponse();
         try {
             String poId = map.get("id").toString();
@@ -1484,41 +1474,18 @@ public class LsfCoreProcessor implements MessageProcessor {
             updatePoCommodityList(po, commodities);
             double totalSoldAmount = getTotalSoldAmount(po);
 
-            //lsfRepository.updateCommodityPOExecution(po);
-//            MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(application.getId());
-//
-//            collaterals.setOutstandingAmount(LSFUtils.ceilTwoDecimals(totalSoldAmount));
-
             updatePoCommodityList(po, commodities);
- //           lsfRepository.updatePurchaseOrderByAdmin(po);
-
-//            ProfitResponse profitResponse = lsfCore.calculateProfit(
-//                    Integer.parseInt(application.getTenor()),
-//                    totalSoldAmount,
-//                    application.getProfitPercentage());
-//
-//            log.debug("===========LSF : (commodityPOExecution)-REQUEST , orderID :"
-//                      + po.getId()
-//                      + " , order completed value:"
-//                      + totalSoldAmount
-//                      + " , new Profit:"
-//                      + profitResponse.getProfitAmount());
-
-//            lsfRepository.upadateOrderStatus(
-//                    po.getId(),
-//                    1,
-//                    totalSoldAmount,
-//                    profitResponse.getTotalProfit(),
-//                    profitResponse.getProfitPercent(),
-//                    0);
-           // lsfRepository.addEditCollaterals(collaterals);
-  //          lsfCore.releaseCollaterals(collaterals);
-            // this had already been done in the order acceptance level method
-//            if (!application.isRollOverApp()) {
-//                transferCollateralsToLSFAccount(application, po, collaterals);
-//            }
             lsfRepository.updateActivity(po.getApplicationId(), LsfConstants.STATUS_COMMODITY_PO_EXECUTED);
             transferCommodityValuetoLsfCashAccount(application, po.getId(), totalSoldAmount);
+
+            // If the Application is RollOver, then need to settle the Previouse Loan
+            // if PO.sellButNotSettle is 0
+            if (po.getSellButNotSettle() == 0 && application.isRollOverApp()) {
+                log.info("Po Sell But Not Settle is set to : {}", po.getSellButNotSettle());
+                performSettlementPreviousCommodity(application.getRollOverAppId(), statusChangedIP);
+            } else {
+                log.info("===========LSF : (commodityPOExecution) PO Sell But Not Settle is set to 1, so not settling the Murabah Application");
+            }
 
             cmr.setResponseCode(200);
             cmr.setResponseMessage("Successfully Updated the Purchase order by admin");
@@ -1529,6 +1496,15 @@ public class LsfCoreProcessor implements MessageProcessor {
         }
 
         return gson.toJson(cmr);
+    }
+
+    private void performSettlementPreviousCommodity(String originalApplicationId, String statusChangedIP) {
+        var allPo = lsfRepository.getAllPurchaseOrder(originalApplicationId);
+        if (allPo != null && !allPo.isEmpty()) {
+            PurchaseOrder po = allPo.getFirst();
+            log.info("===========LSF : (commodityPOExecution) PO Sell But Not Settle is set to 0, so settling the Murabah Application");
+            settlementProcessor.performEarlySettlementCommodity(po.getApplicationId(), po.getCustomerId(), po.getOrderSettlementAmount(), po.getId());
+        }
     }
 
     private double getTotalSoldAmount(PurchaseOrder po){
