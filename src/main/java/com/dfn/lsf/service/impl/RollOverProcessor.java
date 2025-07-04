@@ -307,9 +307,14 @@ public class RollOverProcessor implements MessageProcessor {
         var tradingAccFromDb = tradingAccList.getFirst();
         for (Symbol smb: tradingAccFromOms.getSymbolList()) {
             var smbFromDb = tradingAccFromDb.getSymbolsForColleteral().stream().filter(symbol -> symbol.getExchange().equals(smb.getExchange()) && symbol.getSymbolCode().equals(smb.getSymbolCode())).findFirst().orElse(null);
-            assert smbFromDb != null;
-            double contribToColletaral = ((smbFromDb.getColleteralQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
-            totalPFValue += contribToColletaral;
+            if (smbFromDb != null) {
+                double price = smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed();
+                double contribToColletaral = ((smbFromDb.getColleteralQty() * price) / 100.0) * smb.getMarginabilityPercentage();
+
+                totalPFValue += contribToColletaral;
+            } else {
+                System.out.println("Missing symbol in DB: " + smb.getSymbolCode() + " - " + smb.getExchange());
+            }
         }
         return totalPFValue;
     }
