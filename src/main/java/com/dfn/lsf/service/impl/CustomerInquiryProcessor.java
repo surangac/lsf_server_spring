@@ -209,15 +209,47 @@ public class CustomerInquiryProcessor implements MessageProcessor {
         CommonResponse cmr = new CommonResponse();
         try {
             if (map.containsKey("tradingAcc")) {
+//                String accountNo = map.get("tradingAcc").toString();
+//                ShareTransferRequest pfRequest = new ShareTransferRequest();
+//                pfRequest.setReqType(LsfConstants.GET_PORTFOLIO_VALUE);
+//                pfRequest.setFromTradingAccountId(accountNo);
+//                if (map.containsKey("tradingAccExchange")) {
+//                    pfRequest.setExchange(map.get("tradingAccExchange").toString());
+//                }
+//                cmr = helper.processOMSCommonResponse(helper.portfolioRelatedOMS(gson.toJson(pfRequest)));
+
+                var customerId = map.get("customerId").toString();
                 String accountNo = map.get("tradingAcc").toString();
-                ShareTransferRequest pfRequest = new ShareTransferRequest();
-                pfRequest.setReqType(LsfConstants.GET_PORTFOLIO_VALUE);
-                pfRequest.setFromTradingAccountId(accountNo);
-                if (map.containsKey("tradingAccExchange")) {
-                    pfRequest.setExchange(map.get("tradingAccExchange").toString());
+                var defaultGroup = lsfRepository.getDefaultMarginGroups();
+                if (defaultGroup == null) {
+                    cmr.setResponseCode(500);
+                    cmr.setErrorMessage("Default Margin Group not found!");
+                    return gson.toJson(cmr);
                 }
-                cmr = helper.processOMSCommonResponse(helper.portfolioRelatedOMS(gson.toJson(pfRequest)));
+                var groupId = defaultGroup.getFirst().getId();
+
+                List<TradingAccOmsResp> nonLsfAccounts = helper.getPFDetailsNonLSF(customerId, groupId);
+                var tradingAccount = nonLsfAccounts.stream().filter(tradingAccOmsResp -> tradingAccOmsResp.getAccountId().equals(accountNo))
+                                                   .findFirst();
+
+                if (tradingAccount.isPresent()) {
+                    var tradingAcc = tradingAccount.get();
+                    double totalPfValue = tradingAcc.getSymbolList().stream()
+                                                    .mapToDouble(symbol -> (symbol.getMarketValue()/100) * symbol.getMarginabilityPercentage())
+                                                    .sum();
+
+                    Map<String, Object> responseMap = new HashMap<>();
+                    responseMap.put("amount", String.format("%.2f", totalPfValue));
+
+                    cmr.setResponseObject(responseMap);
+                    cmr.setResponseCode(200);
+                    cmr.setResponseMessage("Portfolio Value retrieved successfully.");
+                } else {
+                    cmr.setResponseCode(500);
+                    cmr.setErrorMessage("Trading account not found: " + accountNo);
+                }
             }
+
         } catch (Exception ex) {
             cmr.setResponseCode(500);
             cmr.setErrorMessage("PF request Failed!");

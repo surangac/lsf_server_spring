@@ -1096,7 +1096,7 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     @Override
     public List<MarginabilityGroup> getDefaultMarginGroups() {
-        return oracleRepository.<MarginabilityGroup>getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_DEFAULT_GROUP_L11, null, rowMapperFactory.getRowMapper(RowMapperI.MARGINABILITY_GROUPS));
+        return oracleRepository.getProcResult(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_GET_DEFAULT_GROUP_L11, null, rowMapperFactory.getRowMapper(RowMapperI.MARGINABILITY_GROUPS));
     }
 
     @Override

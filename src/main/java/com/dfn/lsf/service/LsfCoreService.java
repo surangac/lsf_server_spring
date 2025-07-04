@@ -823,7 +823,7 @@ public class LsfCoreService {
         return profitResponse;
     }
 
-    public ProfitResponse calculateProfitOnStructure(double amount, int loanPeriodInDays, double profitPercentage) {
+    public ProfitResponse calculateProfitOnStructure(double amount, int loanPeriodInDays, double profitPercentage, boolean isRollover) {
         List<CommissionStructure> commissionStructures = lsfRepository.getCommissionStructure();
         CommissionStructure applyingStructuer = null;
         ProfitResponse profitResponse = new ProfitResponse();
@@ -836,6 +836,9 @@ public class LsfCoreService {
         if (profitPercentage > 0) {
             orderValue = amount / (1 + (profitPercentage * loanPeriodInDays / 36000));
             profit = amount - orderValue;
+            if (isRollover) {
+                profit = amount * applyingStructuer.getPercentageAmount()* loanPeriodInDays / 36000;
+            }
             sibour = amount * (0 / 100);
             libour = amount * (0 / 100);
             tototal = amount + profit + sibour + libour;
@@ -856,6 +859,9 @@ public class LsfCoreService {
             if (applyingStructuer != null) {
                 orderValue = amount / (1 + (applyingStructuer.getPercentageAmount() * loanPeriodInDays / 36000));
                   profit = amount - orderValue;
+                if (isRollover) {
+                    profit = amount * applyingStructuer.getPercentageAmount()* loanPeriodInDays / 36000;
+                }
                 sibour = amount * (applyingStructuer.getSibourRate() / 100);
                 libour = amount * (applyingStructuer.getLibourRate() / 100);
                 tototal = amount + profit + sibour + libour;
@@ -1461,7 +1467,7 @@ public class LsfCoreService {
         profit.setApplicationID(purchaseOrder.getApplicationId());
 
         double totalCommissionOMS = 0;
-        if(collaterals.getLsfTypeTradingAccounts().size() > 0){
+        if(collaterals.getLsfTypeTradingAccounts().size() > 0) {
             totalCommissionOMS =  getTotalCommissionFromOMS(collaterals.getLsfTypeTradingAccounts().get(0).getAccountId());
 
         }

@@ -143,11 +143,11 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                         }
 
                     } else {
-                        settlementSummary.setLoanAmount(purchaseOrder.getOrderValue());
+                        settlementSummary.setLoanAmount(purchaseOrder.getOrderCompletedValue());
                         settlementSummary.setAvailableCashBalance(murabahApplication.getAvailableCashBalance());
                         settlementSummary.setCumulativeProfit(purchaseOrder.getProfitAmount());
 
-                        if (murabahApplication.getProductType() == 1) {
+                        if (murabahApplication.getProductType() != 3) {
                             orderProfit = lsfRepository.getSummationOfProfitUntilToday(applicationID, purchaseOrder.getId());
                             if (orderProfit != null) {
                                 settlementSummary.setCumulativeProfit(orderProfit.getCumulativeProfitAmount());

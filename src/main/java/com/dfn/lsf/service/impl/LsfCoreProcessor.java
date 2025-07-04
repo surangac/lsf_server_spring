@@ -785,6 +785,10 @@ public class LsfCoreProcessor implements MessageProcessor {
         try {
             ProfitResponse profitResponse = new ProfitResponse();
             double profitPercent = getApplicationProfitPercentage(map);
+            boolean isRollOver = false;
+            if(map.containsKey("isRollOver")) {
+                isRollOver = map.get("isRollOver").toString().equalsIgnoreCase("1");
+            }
             log.info("===========LSF : (calculateProfit)-Profit Persentate:" + profitPercent);
             if (GlobalParameters.getInstance().getProfitCalculateMethode() == LsfConstants.PROFIT_CALC_TENOR_BASED) {
                 if (!map.get("tenorId").toString().equals("-1")) {
@@ -793,7 +797,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             } else {
                 int tenor = Integer.parseInt(map.get("tenorId").toString());
                 int loanPeriodInDays = 30 * tenor;// days per month is taken as 30
-                profitResponse = lsfCore.calculateProfitOnStructure(Double.parseDouble(map.get("ordervalue").toString()), loanPeriodInDays, profitPercent);
+                profitResponse = lsfCore.calculateProfitOnStructure(Double.parseDouble(map.get("ordervalue").toString()), loanPeriodInDays, profitPercent, isRollOver);
             }
             cmr.setResponseCode(200);
             cmr.setResponseObject(profitResponse);
@@ -987,7 +991,7 @@ public class LsfCoreProcessor implements MessageProcessor {
         String appId = murabahApplication.isRollOverApp() ? murabahApplication.getRollOverAppId() : murabahApplication.getId();
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount)-REQUEST  : , ApplicationID:" + appId + ",Order ID:" + poId + ", Amount:" + soldAmount);
         CashAcc lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(), appId);
-        String masterCashAccount = lsfCore.getMasterCashAccount();
+        String masterCashAccount =  GlobalParameters.getInstance().getInstitutionInvestAccount();//.  lsfCore.getMasterCashAccount();
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + soldAmount);
         lsfCore.cashTransfer(masterCashAccount, lsfCashAccount.getAccountId(), soldAmount, murabahApplication.getId());
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + soldAmount);

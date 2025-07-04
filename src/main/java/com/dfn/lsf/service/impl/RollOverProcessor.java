@@ -165,13 +165,25 @@ public class RollOverProcessor implements MessageProcessor {
         rollOverSummeryResponse.setVatAmount(vatAmount);
         rollOverSummeryResponse.setProfitPercentage(oldApplication.getProfitPercentage());
 
-        if (murabahProduct.getProfitMethod().equals("Full Profit")) {
-            rollOverSummeryResponse.setRequiredAmount(po.getOrderCompletedValue() + po.getProfitAmount());
+        if (oldApplication.getProductType() != 3) {
+            var orderProfit = lsfRepository.getSummationOfProfitUntilToday(appId, po.getId());
+            if (orderProfit != null) {
+                rollOverSummeryResponse.setRequiredAmount(po.getOrderCompletedValue() + orderProfit.getCumulativeProfitAmount());
+            } else {
+                rollOverSummeryResponse.setRequiredAmount(po.getOrderSettlementAmount());
+            }
         } else {
-            rollOverSummeryResponse.setRequiredAmount(po.getOrderSettlementAmount());
-        }
+            var collaterals = lsfRepository.getApplicationCompleteCollateral(appId);
+            OrderProfit profit = lsfCore.calculateConditionalProfit(collaterals,
+                                                                    po,
+                                                                    oldApplication.getDiscountOnProfit());
 
-        rollOverSummeryResponse.setNewProfitAmount(po.getProfitAmount());
+            rollOverSummeryResponse.setRequiredAmount(po.getOrderCompletedValue() + profit.getCumulativeProfitAmount());
+        }
+        rollOverSummeryResponse.setRequiredAmount(Math.round((rollOverSummeryResponse.getRequiredAmount()) * 100.0) / 100.0);
+        var profit = rollOverSummeryResponse.getRequiredAmount() * oldApplication.getProfitPercentage() * (Integer.parseInt(oldApplication.getTenor()) * 30) / 36000;
+
+        rollOverSummeryResponse.setNewProfitAmount(profit);
         rollOverSummeryResponse.setTotalCollateralValue(rollOverSummeryResponse.getTotalPfValue() + rollOverSummeryResponse.getTotalCashBalance());
 
         rollOverSummeryResponse.setApprovedLimit(rollOverSummeryResponse.getRequiredAmount());
@@ -349,6 +361,7 @@ public class RollOverProcessor implements MessageProcessor {
                                                                                     tradingAcc.setExchange(tradingAccOmsResp.getExchange());
                                                                                     tradingAcc.setLsfType(true);
                                                                                     tradingAcc.setAccountId(tradingAccOmsResp.getAccountId());
+                                                                                    tradingAcc.setSymbolsForColleteral(new ArrayList<>());
                                                                                     Optional.ofNullable(tradingAccOmsResp.getSymbolList())
                                                                                             .ifPresent(
                                                                                                     symbols -> symbols.forEach(Symbol -> {
