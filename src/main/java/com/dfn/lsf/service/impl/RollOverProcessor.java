@@ -312,8 +312,6 @@ public class RollOverProcessor implements MessageProcessor {
                 double contribToColletaral = ((smbFromDb.getColleteralQty() * price) / 100.0) * smb.getMarginabilityPercentage();
 
                 totalPFValue += contribToColletaral;
-            } else {
-                System.out.println("Missing symbol in DB: " + smb.getSymbolCode() + " - " + smb.getExchange());
             }
         }
         return totalPFValue;
