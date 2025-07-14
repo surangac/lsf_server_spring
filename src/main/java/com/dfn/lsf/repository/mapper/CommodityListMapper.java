@@ -25,7 +25,7 @@ public class CommodityListMapper implements RowMapper<Commodity> {
 
         }
         try {
-            commodity.setSoldAmnt(resultSet.getInt("l34_sold_amnt"));
+            commodity.setSoldAmnt(resultSet.getDouble("l34_sold_amnt"));
         }catch (Exception e){
 
         }

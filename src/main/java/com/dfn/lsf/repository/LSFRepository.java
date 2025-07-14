@@ -203,6 +203,7 @@ public interface LSFRepository {
     String updatePurchaseOrderSymbols(Symbol symbol, String orderId);
     String updatePurchaseOrderCommodity(Commodity symbol, String orderId);
     String updatePurchaseOrderByAdmin(PurchaseOrder po);
+    String updatePurchaseCommodityList(String orderId, List<Commodity> commodities);
     String updateCommodityPOExecution(PurchaseOrder po);
     List<Symbol> getPurchaseOrderSymbols(String orderId);
 

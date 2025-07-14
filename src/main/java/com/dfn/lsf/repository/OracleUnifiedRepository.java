@@ -1877,6 +1877,20 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
+    public String updatePurchaseCommodityList(String orderId, List<Commodity> commodities) {
+        String key = "";
+        Map<String, Object> parameterMap = new HashMap<>();
+        try {
+            for (Commodity commodity : commodities) {
+                this.updatePurchaseOrderCommodity(commodity, orderId);
+            }
+        } catch (Exception e){
+        }
+
+        return key;
+    }
+
+    @Override
     public List<Symbol> getPurchaseOrderSymbols(String orderId) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pL22_PURCHASE_ORD_ID", orderId);

@@ -381,12 +381,51 @@ public class MurabahApplicationPersistProcessor implements MessageProcessor {
         trReq.setReqType(LsfConstants.VALIDATING_TRADING_ACCOUNT);
         trReq.setTradingAccountId(map.get("tradingAcc").toString());
         Object resMap = helper.sendMessageToOms(gson.toJson(trReq));
+
         TradingAccResponse tradingAccResponse = gson.fromJson(resMap.toString(), TradingAccResponse.class);
-        for (Symbol symbol : tradingAccResponse.getResponseObject()) {
-            symbol.setLiquidityType(lsfRepository.getSymbolLiquidityType(symbol));
+        String marginabilityGroupId = null;
+        if (map.get("appId") != null) {
+            String appId = map.get("appId").toString();
+            MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(appId);
+            marginabilityGroupId = murabahApplication != null ? murabahApplication.getMarginabilityGroup() : null;
         }
+
+        processSymbols(tradingAccResponse.getResponseObject(), marginabilityGroupId);
         logger.debug("===========LSF : LSF-SERVER RESPONSE validateTradingAcc :" + gson.toJson(resMap));
         return gson.toJson(tradingAccResponse);
+    }
+
+
+    private void processSymbols(List<Symbol> tradingAccountSymbols, String marginabilityGroupId) {
+        MarginabilityGroup marginabilityGroup = null;
+        List<SymbolMarginabilityPercentage> symbolMarginabilityPercentages = null;
+        if (marginabilityGroupId != null) {
+            marginabilityGroup = helper.getMarginabilityGroup(marginabilityGroupId);
+        } else {
+            marginabilityGroup = lsfRepository.getDefaultMarginGroups().getFirst();
+        }
+        if(marginabilityGroup != null) {
+            symbolMarginabilityPercentages = marginabilityGroup.getMarginableSymbols();
+        }
+
+        if (tradingAccountSymbols != null) {
+            for (Symbol symbol : tradingAccountSymbols) {
+
+                if (marginabilityGroup != null) {
+                    symbol.setMarginabilityPercentage(marginabilityGroup.getGlobalMarginablePercentage());
+                }
+
+                if(symbolMarginabilityPercentages != null) {
+                    for(SymbolMarginabilityPercentage smp :symbolMarginabilityPercentages) {
+                        if(smp.getSymbolCode().equals(symbol.getSymbolCode()) && smp.getExchange().equals(symbol.getExchange())){
+                            symbol.setMarginabilityPercentage(smp.getMarginabilityPercentage());
+                        }
+                    }
+                }
+
+                symbol.setMarketValue(symbol.getAvailableQty() * Math.max(symbol.getLastTradePrice(), symbol.getPreviousClosed()));
+            }
+        }
     }
 
     private String saveQuestionerForUser(Map<String, Object> map) {

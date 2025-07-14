@@ -63,7 +63,7 @@ public class SettlementCalculationProcessor implements MessageProcessor {
         return gson.toJson(cmr);
     }
 // schedule to run every day at 8:00 AM and 4:00 PM 
-    @Scheduled(cron = "0 0 8,16 * * *")
+    @Scheduled(cron = "0 30 15 * * *")
     public void runSettlementCalculation() {
         String masterCashAccount = null;
         logger.info("===========LSF : Settlement Calculation Request Received  :");

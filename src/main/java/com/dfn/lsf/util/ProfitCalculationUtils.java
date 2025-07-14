@@ -31,6 +31,7 @@ public class ProfitCalculationUtils {
             double profit = 0.0;
             String orderID;
             String applicationID = murabahApplication.getId();
+            String originalAppId = murabahApplication.isRollOverApp() ? murabahApplication.getRollOverAppId() : applicationID;
             String settlementDate = "";
             OrderProfit lastEntry = null;
             CashAcc lsfCashAccount = null;
@@ -50,7 +51,7 @@ public class ProfitCalculationUtils {
                 settlementDate = String.valueOf(purchaseOrder.getSettlementDate());
 
                 lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(),
-                                                                      murabahApplication.getId());
+                                                                      originalAppId);
 
                 if (murabahApplication.getProductType() != 3) {
 
@@ -79,6 +80,9 @@ public class ProfitCalculationUtils {
                                  + lsfTypeCashAccountBalance
                                  + ", Profit Amount :"
                                  + profit);
+
+
+
                     lastEntry = ProfitCalculationUtils.getLastEntry(applicationID,
                                                                     orderID,
                                                                     lsfRepository); //retrieving last profit entry for
@@ -177,9 +181,15 @@ public class ProfitCalculationUtils {
     }
 
     public static OrderProfit getLastEntry(String applicationID, String orderID, LSFRepository lsfDaoI) {
-        List<OrderProfit> orderProfitList = lsfDaoI.getLastEntryForApplication(applicationID, orderID);
-        if (orderProfitList != null && orderProfitList.size() > 0) {
-            return orderProfitList.get(0);
+        var orderProfitList = lsfDaoI.getAllOrderProfitsForApplication(applicationID, orderID);
+
+        //List<OrderProfit> orderProfitList = lsfDaoI.getLastEntryForApplication(applicationID, orderID);
+        if (orderProfitList != null && !orderProfitList.isEmpty()) {
+            double cumProfit = orderProfitList.stream().mapToDouble(OrderProfit::getProfitAmount).sum();
+            return new OrderProfit().setOrderID(orderID)
+                                    .setApplicationID(applicationID)
+                                    .setCumulativeProfitAmount(cumProfit)
+                                    .setProfitAmount(orderProfitList.getFirst().getProfitAmount());
         } else {
             return null;
         }

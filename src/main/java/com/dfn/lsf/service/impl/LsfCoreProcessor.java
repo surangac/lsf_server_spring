@@ -836,7 +836,7 @@ public class LsfCoreProcessor implements MessageProcessor {
         MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(applicationID);
         MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(applicationID);
         boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
-        if(isCommodityApplication && murabahApplication.getCurrentLevel() > 15) {
+        if (isCommodityApplication && murabahApplication.getCurrentLevel() > 15) {
             response.setResponseCode(500);
             response.setErrorMessage("Order Agreement cannot be signed for Commodity Application at this stage.");
             log.debug("===========LSF : (reqApproveOrderAgreement)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
@@ -943,18 +943,19 @@ public class LsfCoreProcessor implements MessageProcessor {
     private void liquidateOrder(String orderId, MurabahApplication murabahApplication, String approveStatus, String statusComment, String statusChangedIP, MApplicationCollaterals collaterals) {
         String applicationID = murabahApplication.getId();
         if (!murabahApplication.getFinanceMethod().equalsIgnoreCase("1")) {
-            if(collaterals.isExchangeAccountCreated()) {
-                TradingAcc lsfTradingAcc = lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(),murabahApplication.getId());
-                CashAcc  lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(),murabahApplication.getId());
+            //if(collaterals.isExchangeAccountCreated()) {
+            TradingAcc lsfTradingAcc = lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(),murabahApplication.getId());
+            CashAcc  lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(),murabahApplication.getId());
 
-                AccountDeletionRequestState accountDeletionRequestState = lsfCore.closeLSFAccount(applicationID, lsfTradingAcc.getAccountId(), murabahApplication.getTradingAcc(), lsfCashAccount.getAccountId(), murabahApplication.getCashAccount());
+            AccountDeletionRequestState accountDeletionRequestState = lsfCore.closeLSFAccount(applicationID, lsfTradingAcc.getAccountId(), murabahApplication.getTradingAcc(), lsfCashAccount.getAccountId(), murabahApplication.getCashAccount());
 
-                if (accountDeletionRequestState.isSent()) {
-                    log.info("===========LSF :(customerRejectOrderContract)- Account Deletion Request Sent to OMS, Application ID :" + applicationID);
-                }
-            } else {
-                log.info("===========LSF :(customerRejectOrderContract)- Account Deletion Request not Sent as Exchange Account has not been created.");
+            if (accountDeletionRequestState.isSent()) {
+                log.info("===========LSF :(customerRejectOrderContract)- Account Deletion Request Sent to OMS, Application ID :" + applicationID);
             }
+//            } else {
+//                AccountDeletionRequestState accountDeletionRequestState = lsfCore.closeLSFAccount(applicationID, lsfTradingAcc.getAccountId(), murabahApplication.getTradingAcc(), lsfCashAccount.getAccountId(), murabahApplication.getCashAccount());
+//                log.info("===========LSF :(customerRejectOrderContract)- Account Deletion Request not Sent as Exchange Account has not been created.");
+//            }
             return;
         }
         
@@ -1479,6 +1480,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             double totalSoldAmount = getTotalSoldAmount(po);
 
             updatePoCommodityList(po, commodities);
+            lsfRepository.updatePurchaseCommodityList(po.getId(), po.getCommodityList());
             lsfRepository.updateActivity(po.getApplicationId(), LsfConstants.STATUS_COMMODITY_PO_EXECUTED);
             transferCommodityValuetoLsfCashAccount(application, po.getId(), totalSoldAmount);
 
@@ -1540,7 +1542,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                     commodity.setUnitOfMeasure(params.get("unitOfMeasure").toString());
                     commodity.setStatus((int) Double.parseDouble(params.get("status").toString()));
                     commodity.setPercentage(Double.parseDouble(params.get("percentage").toString()));
-                    commodity.setSoldAmnt((int) Double.parseDouble(params.get("soldAmnt").toString()));
+                    commodity.setSoldAmnt(Double.parseDouble(params.get("soldAmnt").toString()));
                     commodities.add(commodity);
 
                 }

@@ -644,6 +644,9 @@ public class LsfCoreService {
 
                 totalPFMarketValue = totalPFMarketValue + smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
                 totalWeightedPFMarketValue = totalWeightedPFMarketValue + contribToColletaral;
+                if (mApplicationCollaterals.getSecurityList() == null) {
+                    mApplicationCollaterals.setSecurityList(new ArrayList<>());
+                }
                 mApplicationCollaterals.getSecurityList().add(smb);
             }
             lsfRepository.updateRevaluationInfo(tradingAcc.getAccountId(), totalPFMarketValue, totalWeightedPFMarketValue);
@@ -1196,7 +1199,8 @@ public class LsfCoreService {
                 isTransferred = true;
             } else {
                 isTransferred = false;
-                log.error("===========LSF : Cash Transfer Failure(Transfer Failed) , From Account:" + fromAccount + " ,To Account :" + toAccount + " , Failure Reason :" + resultArray[1]);
+                String reason = resultArray.length > 1 ? resultArray[1] : "Unknown reason";
+                log.error("===========LSF : Cash Transfer Failure(Transfer Failed) , From Account:" + fromAccount + " ,To Account :" + toAccount + " , Failure Reason :" + reason);
             }
         } else {
             isTransferred = false;

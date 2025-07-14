@@ -16,7 +16,7 @@ public class Commodity {
     private String unitOfMeasure;
     private int status;
     private double percentage;
-    private int soldAmnt;
+    private double soldAmnt;
     private String arabicName;
     private String englishName;
     private double boughtAmnt;
