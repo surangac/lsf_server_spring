@@ -450,4 +450,6 @@ public class LsfConstants {
     public static final int PO_REJECT_L1_SOLD_AMT = -3;
     public static final int PO_APPROVAL_L2_SOLD_AMT = 2;
 
+    public static final String STATUS_COMMODITY_VALUE_TRANSFERRED_TO_LSF_CASH_ACCOUNT = "Success";
+    public static final String STATUS_COMMODITY_VALUE_TRANSFERRED_TO_LSF_CASH_ACCOUNT_FAILED = "Failed";
 }

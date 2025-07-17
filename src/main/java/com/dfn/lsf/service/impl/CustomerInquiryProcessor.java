@@ -238,8 +238,14 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                                                     .mapToDouble(symbol -> (symbol.getMarketValue()/100) * symbol.getMarginabilityPercentage())
                                                     .sum();
 
+                    double marketValue = tradingAcc.getSymbolList().stream()
+                                                    .mapToDouble(Symbol::getMarketValue)
+                                                    .sum();
+
+
                     Map<String, Object> responseMap = new HashMap<>();
                     responseMap.put("amount", String.format("%.2f", totalPfValue));
+                    responseMap.put("marketValue", String.format("%.2f", marketValue));
 
                     cmr.setResponseObject(responseMap);
                     cmr.setResponseCode(200);

@@ -82,6 +82,7 @@ public class MurabahApplication extends MessageHeader {
     private String additionalDetails;
     private String additionalDocName;
     private String additionalDocPath;
+    private String facilityTransferStatus;
 
     public String getAdditionalDetails() {
         return additionalDetails;
@@ -679,5 +680,16 @@ public class MurabahApplication extends MessageHeader {
 
     public boolean isRollOverApp() {
         return rollOverAppId != null && !rollOverAppId.equals("-1") && rollOverSeqNumber > 0;
+    }
+
+    public String displayApplicationId() {
+        return isRollOverApp() ? id + "R" + rollOverSeqNumber : id;
+    }
+
+    public String getFacilityTransferStatus() {
+        return facilityTransferStatus;
+    }
+    public void setFacilityTransferStatus(String facilityTransferStatus) {
+        this.facilityTransferStatus = facilityTransferStatus;
     }
 }

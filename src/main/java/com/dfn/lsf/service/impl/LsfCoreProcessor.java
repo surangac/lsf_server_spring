@@ -994,8 +994,13 @@ public class LsfCoreProcessor implements MessageProcessor {
         CashAcc lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(), appId);
         String masterCashAccount =  GlobalParameters.getInstance().getInstitutionInvestAccount();//.  lsfCore.getMasterCashAccount();
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + soldAmount);
-        lsfCore.cashTransfer(masterCashAccount, lsfCashAccount.getAccountId(), soldAmount, murabahApplication.getId());
+        var isTransferred = lsfCore.cashTransfer(masterCashAccount, lsfCashAccount.getAccountId(), soldAmount, murabahApplication.getId());
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + soldAmount);
+        if (isTransferred) {
+            lsfRepository.updateFacilityTransferStatus(murabahApplication.getId(), LsfConstants.STATUS_COMMODITY_VALUE_TRANSFERRED_TO_LSF_CASH_ACCOUNT);
+        } else {
+            lsfRepository.updateFacilityTransferStatus(murabahApplication.getId(), LsfConstants.STATUS_COMMODITY_VALUE_TRANSFERRED_TO_LSF_CASH_ACCOUNT_FAILED);
+        }
     }
 
     private void transferCollateralsToLSFAccount(MurabahApplication murabahApplication, PurchaseOrder purchaseOrder, MApplicationCollaterals collaterals) {
@@ -1042,9 +1047,11 @@ public class LsfCoreProcessor implements MessageProcessor {
             PurchaseOrder po = purchaseOrders.get(0);
             if (po.getCustomerApproveStatus() == 1 && !(application.getLsfAccountDeletionState() == LsfConstants.REQUEST_SENT_TO_OMS || application.getLsfAccountDeletionState() == LsfConstants.ACCOUNT_DELETION_SUCCESS || application.getLsfAccountDeletionState() == LsfConstants.EXCHANGE_ACCOUNT_DELETION_FAILED_FROM_EXCHANGE || application.getLsfAccountDeletionState() == LsfConstants.SHARE_TRANSFER_FAILED_WITH_EXCHANGE)) {
                 if (application != null) {
-                    MApplicationCollaterals response = lsfCore.reValuationProcess(application,true);
+                    MApplicationCollaterals response = application.isRollOverApp()
+                                                       ? lsfCore.reValuationProcess_RollOverApp(application, true)
+                                                       : lsfCore.reValuationProcess(application,true);
                     log.info("===========LSF : (reqDashBoardPFSummary)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
-                    getBPDetails(response, applicationID);
+                    getBPDetails(response, application);
                     return gson.toJson(response);
                 } else {
                     return null;
@@ -1057,8 +1064,7 @@ public class LsfCoreProcessor implements MessageProcessor {
 
     }
 
-    private MApplicationCollaterals getBPDetails(MApplicationCollaterals collaterals, String applicationID) { // calculating buyingPower for each marginability
-        MurabahApplication application = lsfRepository.getMurabahApplication(applicationID);
+    private MApplicationCollaterals getBPDetails(final MApplicationCollaterals collaterals, final MurabahApplication application) { // calculating buyingPower for each marginability
         MarginabilityGroup marginabilityGroup = helper.getMarginabilityGroup(application.getMarginabilityGroup());
         List<BPSummary> bpList = new ArrayList<>();
         List<LiquidityType> attachedLiqGoupList = null;

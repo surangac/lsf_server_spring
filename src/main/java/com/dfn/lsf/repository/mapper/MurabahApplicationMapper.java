@@ -116,6 +116,12 @@ public class MurabahApplicationMapper implements RowMapper<MurabahApplication> {
             obj.setRollOverSeqNumber(0);
         }
 
+        try {
+            obj.setFacilityTransferStatus(rs.getString("L01_FACILITY_TRANSFER_STATUS"));
+        } catch (Exception e){
+            obj.setFacilityTransferStatus("PENDING");
+        }
+
         return obj;
 
     }
