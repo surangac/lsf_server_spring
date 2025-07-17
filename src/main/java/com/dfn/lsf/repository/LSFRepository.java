@@ -314,7 +314,7 @@ public interface LSFRepository {
     List<Symbol> getSymbolsInTradingAccount(String tradingAccountId,String applicationId);
 
     /*--------------------------Marginability Group Related-----------------------*/
-    boolean removeMarginabilityGroup(String marginabilityGroupID);
+    String removeMarginabilityGroup(String marginabilityGroupID);
 
     /*--------------------------Stock Concentration Group Related-----------------------*/
     String updateStockConcentrationGroup(StockConcentrationGroup concentrationGroup);

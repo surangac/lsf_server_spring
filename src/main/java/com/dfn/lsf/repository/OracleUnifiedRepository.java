@@ -1777,12 +1777,21 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     /*--------------------------Marginability Group Related-----------------------*/
     @Override
-    public boolean removeMarginabilityGroup(String marginabilityGroupID) {
-        boolean response = false;
+    public String removeMarginabilityGroup(String marginabilityGroupID) {
+        String response = "";
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl11_marginability_grp_id", Integer.parseInt(marginabilityGroupID));
-        if (oracleRepository.executeProc(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_L11_REMOVE, parameterMap).equalsIgnoreCase("1")) {
-            response = true;
+        try {
+            String result = oracleRepository.executeProc(DBConstants.PKG_L11_MARGINABILITY_GROUP, DBConstants.PROC_L11_REMOVE, parameterMap);
+            if ("1".equals(result)) {
+                response = "success";
+            } else if ("-1".equals(result)) {
+                response = "Cannot delete. symbols have beed added to this group";
+            } else {
+                response = "Delete failed";
+            }
+        } catch (Exception e) {
+            log.error("Error processing message: {}", e.getMessage(), e);
         }
 
         return response;

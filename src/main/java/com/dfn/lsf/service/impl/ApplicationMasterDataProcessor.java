@@ -430,13 +430,14 @@ public class ApplicationMasterDataProcessor implements MessageProcessor {
             id = map.get("id").toString();
         }
         logger.debug("===========LSF : (removeMarginabilityGroup)-REQUEST ,  ID :" + id);
-        if (lsfRepository.removeMarginabilityGroup(id)) {
+        String response = lsfRepository.removeMarginabilityGroup(id);
+        logger.debug("===========LSF : (removeMarginabilityGroup)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
+        if (response == "success")  {
             cmr.setResponseCode(200);
-            cmr.setResponseMessage("Done");
         } else {
             cmr.setResponseCode(500);
-            cmr.setResponseMessage("Failed");
         }
+        cmr.setResponseMessage(response);
         logger.debug("===========LSF : (removeMarginabilityGroup)-LSF-SERVER RESPONSE  : " + gson.toJson(cmr));
         return gson.toJson(cmr);
     }
