@@ -82,6 +82,8 @@ public class MurabahApplication extends MessageHeader {
     private String additionalDetails;
     private String additionalDocName;
     private String additionalDocPath;
+    private String deviceType;
+    private String ipAddress;
 
     public String getAdditionalDetails() {
         return additionalDetails;
@@ -680,4 +682,21 @@ public class MurabahApplication extends MessageHeader {
     public boolean isRollOverApp() {
         return rollOverAppId != null && !rollOverAppId.equals("-1") && rollOverSeqNumber > 0;
     }
+
+    public String getDeviceType() {
+        return deviceType;
+    }
+
+    public void setDeviceType(String deviceType) {
+        this.deviceType = deviceType;
+    }
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+
 }

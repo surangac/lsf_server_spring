@@ -180,6 +180,12 @@ public class MurabahApplicationPersistProcessor implements MessageProcessor {
         if (map.containsKey("teleNo") && (map.get("teleNo")) != null) {
             murabahApplication.setTeleNo(map.get("teleNo").toString());
         }
+        if (map.containsKey("deviceType") && (map.get("deviceType")) != null) {
+            murabahApplication.setDeviceType(map.get("deviceType").toString());
+        }
+        if (map.containsKey("ipAddress") && (map.get("ipAddress")) != null) {
+            murabahApplication.setIpAddress(map.get("ipAddress").toString());
+        }
         murabahApplication.setTenor(map.get("tenor").toString());
         murabahApplication.setTradingAcc(tradingAcc);
         murabahApplication.setTradingAccExchange(map.get("tradingAccExchange").toString());

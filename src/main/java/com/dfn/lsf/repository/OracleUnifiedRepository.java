@@ -368,6 +368,8 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl01_product_type", murabahApplication.getProductType());
         parameterMap.put("pl01_rollover_app_id",murabahApplication.getRollOverAppId());
         parameterMap.put("pl01_finance_method", (int)(Double.parseDouble(murabahApplication.getFinanceMethod())));
+        parameterMap.put("pl01_device_type",murabahApplication.getDeviceType());
+        parameterMap.put("pl01_ip_address",murabahApplication.getIpAddress());
         return oracleRepository.executeProc(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_ADD_UPDATE_APPLICATION, parameterMap);
     }
     

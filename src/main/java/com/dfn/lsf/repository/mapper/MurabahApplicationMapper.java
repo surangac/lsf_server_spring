@@ -62,6 +62,8 @@ public class MurabahApplicationMapper implements RowMapper<MurabahApplication> {
         obj.setPoBox(rs.getString("l01_pobox"));
         obj.setLsfAccountDeletionState(rs.getInt("l01_acc_closed_status"));
         obj.setCustomerActivityID(rs.getInt("l01_acc_activity_id"));
+        obj.setDeviceType(rs.getString("l01_device_type"));
+        obj.setIpAddress(rs.getString("l01_ip_address"));
         /*try{
             rs.findColumn("m02_state_description");
             obj.setStatusDescription(rs.getString("m02_state_description"));
