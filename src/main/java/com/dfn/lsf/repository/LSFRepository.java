@@ -98,6 +98,8 @@ public interface LSFRepository {
 
     String whiteListApplication(String applicationId,String customerId);
 
+    String updateFacilityTransferStatus(String applicationId, String status);
+
     UserAccountDetails getApplicationAccountDetails(String applicationId, String colletralID);
 
     OrderContractCustomerInfo getOrderContractCustomerInfo(String applicationId);

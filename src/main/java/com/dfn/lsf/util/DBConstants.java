@@ -101,6 +101,7 @@ public class DBConstants {
     public static final String PROC_L01_GET_PHYSICAL_DELIVER_LIST = "l01_get_physical_deliver_list";
     public static final String PROC_L01_UPDATE_ADDITIONAL_DETAILS = "l01_update_aditional_details";
     public static final String PROC_M04_SIMAH_REPORT = "simah_report";
+    public static final String PROC_UPDATE_FACILITY_TRANS_STATUS = "l01_update_facility_trn_status";
 
 
     /*-----------------------Murabah Application Related Portfolio------------------*/

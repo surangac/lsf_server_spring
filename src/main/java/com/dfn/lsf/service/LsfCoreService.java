@@ -533,6 +533,9 @@ public class LsfCoreService {
 
                 totalPFMarketValue = totalPFMarketValue + smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
                 totalWeightedPFMarketValue = totalWeightedPFMarketValue + contribToColletaral;
+                if (mApplicationCollaterals.getSecurityList() == null) {
+                    mApplicationCollaterals.setSecurityList(new ArrayList<>());
+                }
                 mApplicationCollaterals.getSecurityList().add(smb);
             }
             lsfRepository.updateRevaluationInfo(tradingAcc.getAccountId(), totalPFMarketValue, totalWeightedPFMarketValue);

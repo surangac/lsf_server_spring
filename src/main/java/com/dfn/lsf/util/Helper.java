@@ -553,7 +553,8 @@ public class Helper {
                 int pendingSettle = Math.round(Float.parseFloat(symbolObj.getOrDefault("pendingSettle", "0").toString()));
                 int sellPending = Math.round(Float.parseFloat(symbolObj.getOrDefault("sellPending", "0").toString()));
                 symbol.setAvailableQty(Math.round(Float.parseFloat(symbolObj.get("availableQty").toString())) - pendingSettle + sellPending);
-                symbol.setMarketValue(symbol.getAvailableQty() * Math.max(symbol.getLastTradePrice(), symbol.getPreviousClosed()));
+                double marketPrice = symbol.getLastTradePrice() > 0 ? symbol.getLastTradePrice(): symbol.getPreviousClosed();
+                symbol.setMarketValue(symbol.getAvailableQty() * marketPrice);
 
                 LiquidityType attachedToSymbolLiq = existingSymbolLiqudityType(symbol.getSymbolCode(), symbol.getExchange());
                 symbol.setLiquidityType(attachedToSymbolLiq);
@@ -583,8 +584,8 @@ public class Helper {
         }
     }
 
-    public TradingAccOmsResp getTradingAccount(String customerId, String tradingAccId, String originalAppId, String marginabilityGrp, boolean isRollBackAcc) {
-        List<TradingAccOmsResp> tradingAccList = isRollBackAcc? getLsfTypeTradingAccounts(customerId, originalAppId, marginabilityGrp) : getNonLsfTypeTradingAccounts(customerId);
+    public TradingAccOmsResp getTradingAccount(String customerId, String tradingAccId, String originalAppId, String marginabilityGrp, boolean isRollOverAcc) {
+        List<TradingAccOmsResp> tradingAccList = isRollOverAcc? getLsfTypeTradingAccounts(customerId, originalAppId, marginabilityGrp) : getNonLsfTypeTradingAccounts(customerId);
         if (tradingAccList != null) {
             return tradingAccList.stream()
                 .filter(tradingAcc -> tradingAcc.getAccountId().equals(tradingAccId))

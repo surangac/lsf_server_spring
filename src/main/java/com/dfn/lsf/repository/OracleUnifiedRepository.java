@@ -682,6 +682,14 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
+    public String updateFacilityTransferStatus(String applicationId, String status) {
+        Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("pl01_app_id", applicationId);
+        parameterMap.put("pstatus", status);
+        return oracleRepository.executeProc(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_UPDATE_FACILITY_TRANS_STATUS, parameterMap);
+    }
+
+    @Override
     public UserAccountDetails getApplicationAccountDetails(String applicationId, String colletralID) {
         UserAccountDetails userAccountDetails = new UserAccountDetails();
         List<CashAcc> marginCashAccounts = getCashAccountsInCollateral(applicationId, colletralID, 0);
