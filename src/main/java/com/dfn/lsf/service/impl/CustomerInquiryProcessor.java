@@ -669,6 +669,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                     + gson.toJson(resMap)
                     + ", customerID :"
                     + trReq.getCustomerId());
+
         return resMap;
     }
 
