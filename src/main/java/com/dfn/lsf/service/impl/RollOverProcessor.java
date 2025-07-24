@@ -287,6 +287,8 @@ public class RollOverProcessor implements MessageProcessor {
         newApplication.setCity(oldApplication.getCity());
         newApplication.setPoBox(oldApplication.getPoBox());
         newApplication.setPreferedLanguage(oldApplication.getPreferedLanguage());
+        newApplication.setDeviceType(rollOverSummeryResponse.getDeviceType());
+        newApplication.setIpAddress(rollOverSummeryResponse.getIpAddress());
 
 
         String id = lsfRepository.updateMurabahApplication(newApplication);

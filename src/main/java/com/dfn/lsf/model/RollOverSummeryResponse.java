@@ -45,4 +45,6 @@ public class RollOverSummeryResponse {
     private String mobile;
     private List<TradingAcc> lsfTypeTradingAccounts;
     private List<CashAcc> lsfTypeCashAccounts;
+    private String deviceType;
+    private String ipAddress;
 }
