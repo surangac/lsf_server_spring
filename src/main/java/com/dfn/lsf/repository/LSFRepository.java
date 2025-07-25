@@ -509,4 +509,5 @@ public interface LSFRepository {
     List<MurabahApplication> getBlackListedApplications();
     List<Agreement> getAgreements();
     String updateAdditionalDetails(PhysicalDeliverOrder physicalDeliverOrder);
+    int hasRollOver(String applicationId);
 }

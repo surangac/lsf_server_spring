@@ -3122,6 +3122,14 @@ public class OracleUnifiedRepository implements LSFRepository {
         return oracleRepository.executeProc(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_UPDATE_ADDITIONAL_DETAILS, parameterMap);
     }
 
+    @Override
+    public int hasRollOver(String applicationID) {
+        Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("pl01_app_id", applicationID);
+        String  rolloverCount= oracleRepository.executeProc(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_ROLLOVER_COUNT, parameterMap);
+        return Integer.parseInt(rolloverCount);
+    }
+
     // private final RowMapper<MurabahApplication> murabahApplicationRowMapper = (rs, rowNum) -> {
     //     MurabahApplication application = new MurabahApplication();
     //     application.setId(rs.getString("l01_app_id"));

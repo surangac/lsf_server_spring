@@ -698,11 +698,11 @@ public class LsfCoreProcessor implements MessageProcessor {
         }
 
         /*--- validation for Stock Concentration---*/
-        if (!lsfCore.validateSymbolAmountAgainstConcentration(concenTrationGrp, purchaseOrder.getSymbolList())) {
-            cmr.setResponseCode(500);
-            cmr.setErrorMessage("Stock Concentration validation failed");
-            return false;
-        }
+//        if (!lsfCore.validateSymbolAmountAgainstConcentration(concenTrationGrp, purchaseOrder.getSymbolList())) {
+//            cmr.setResponseCode(500);
+//            cmr.setErrorMessage("Stock Concentration validation failed");
+//            return false;
+//        }
         return true;
     }
 
@@ -1065,16 +1065,26 @@ public class LsfCoreProcessor implements MessageProcessor {
     }
 
     private MApplicationCollaterals getBPDetails(final MApplicationCollaterals collaterals, final MurabahApplication application) { // calculating buyingPower for each marginability
-        MarginabilityGroup marginabilityGroup = helper.getMarginabilityGroup(application.getMarginabilityGroup());
+        //MarginabilityGroup marginabilityGroup = helper.getMarginabilityGroup(application.getMarginabilityGroup());
+        List<MarginabilityGroup> marginabilityGroups = lsfRepository.getMarginabilityGroups("1");
+
         List<BPSummary> bpList = new ArrayList<>();
-        List<LiquidityType> attachedLiqGoupList = null;
-        if (marginabilityGroup != null) {
-            attachedLiqGoupList = marginabilityGroup.getMarginabilityList();
-            for (LiquidityType liquidityType : attachedLiqGoupList) {
-                BPSummary bfSummary = calculateBP(liquidityType, collaterals.getTotalCashColleteral(), collaterals.getTotalPFColleteral(), collaterals.getOutstandingAmount());
-                bpList.add(bfSummary);
-            }
+        for(MarginabilityGroup marginabilityGroup : marginabilityGroups) {
+            var liquidityType = new LiquidityType();
+            liquidityType.setLiquidName(String.valueOf(marginabilityGroup.getGlobalMarginablePercentage()) + "%");
+            liquidityType.setMarginabilityPercent(marginabilityGroup.getGlobalMarginablePercentage());
+            liquidityType.setStockConcentrationPercent(marginabilityGroup.getGlobalMarginablePercentage());
+            BPSummary bfSummary = calculateBP(liquidityType, collaterals.getTotalCashColleteral(), collaterals.getTotalPFColleteral(), collaterals.getOutstandingAmount());
+            bpList.add(bfSummary);
         }
+
+//        if (marginabilityGroup != null) {
+//            attachedLiqGoupList = marginabilityGroup.getMarginabilityList();
+//            for (LiquidityType liquidityType : attachedLiqGoupList) {
+//                BPSummary bfSummary = calculateBP(liquidityType, collaterals.getTotalCashColleteral(), collaterals.getTotalPFColleteral(), collaterals.getOutstandingAmount());
+//                bpList.add(bfSummary);
+//            }
+//        }
         if (bpList.size() > 0) {
             collaterals.setBuyingPowerSummary(bpList);
         }
@@ -1084,7 +1094,8 @@ public class LsfCoreProcessor implements MessageProcessor {
     private static BPSummary calculateBP(LiquidityType liquidityType, double totalCash, double totalPF, double totalOutstanding) {
         BPSummary BPSummary = new BPSummary();
         BPSummary.setMarginabilityType(liquidityType.getLiquidName());
-        double marginabilityDifference = 1 - (liquidityType.getMarginabilityPercent() / 100);
+        double marginabilityDifference = (liquidityType.getMarginabilityPercent() / 100);
+        marginabilityDifference = marginabilityDifference == 0 ? 1 : marginabilityDifference; // to avoid division by zero
         if (marginabilityDifference == 1.0) {
             double bf = (totalPF + totalCash) - (GlobalParameters.getInstance().getFirstMarginCall() / 100) * totalOutstanding;
             if (bf > totalCash) {
@@ -1095,7 +1106,7 @@ public class LsfCoreProcessor implements MessageProcessor {
 
         } else {
             double sum = totalCash + totalPF;
-            double buyingPower = (sum - (GlobalParameters.getInstance().getFirstMarginCall() / 100) * totalOutstanding) / marginabilityDifference;
+            double buyingPower = (sum - (GlobalParameters.getInstance().getFirstMarginCall() / 100) * totalOutstanding) * marginabilityDifference;
             if (buyingPower > 0) {
                 if (buyingPower > totalCash) {
                     BPSummary.setBuyingPower(BigDecimal.valueOf(totalCash));

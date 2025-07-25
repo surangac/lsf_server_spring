@@ -355,4 +355,5 @@ public class DBConstants {
     public static final String L34_PO_COMMODITIES_PKG = "l34_po_commodities_pkg";
     public static final String L34_ADD_EDIT = "l34_add_edit";
     public static final String L34_GET_PO_COMMODITIES = "l34_get_po_commodities";
+    public static final String PROC_L01_GET_ROLLOVER_COUNT = "l01_has_roll_over";
 }

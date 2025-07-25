@@ -1,5 +1,6 @@
 package com.dfn.lsf.service.scheduler;
 
+import com.dfn.lsf.model.GlobalParameters;
 import com.dfn.lsf.model.MurabahApplication;
 import com.dfn.lsf.repository.LSFRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +19,12 @@ public class CommodityAuthorisationService {
     public void authoriseCommodity_sell(String commodityId) {
         log.info("===========LSF Commodity Authorisation Service - authoriseCommodity_sell===========");
         List<MurabahApplication> murabahApplicationList = lsfRepository.getOrderContractSingedApplications();
+        int timeToAuthorise = GlobalParameters.getInstance().getGracePeriodforCommoditySell();
         var commodityApps = murabahApplicationList.stream().filter(application -> application.getFinanceMethod().equals("2"));
         if (commodityApps.findAny().isPresent()) {
             log.info("Commodity applications found for sell authorisation: {}", commodityApps.count());
             for (MurabahApplication application : commodityApps.toList()) {
+                var purchaseOrders = lsfRepository.getAllPurchaseOrder(application.getId());
 
             }
         } else {

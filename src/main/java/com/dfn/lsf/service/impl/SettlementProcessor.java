@@ -85,7 +85,7 @@ public class SettlementProcessor implements MessageProcessor {
             return gson.toJson(commonResponse);
         }
 
-        if(!application.getFinanceMethod().equals("1")){
+        if(!application.getFinanceMethod().equals("1")) {
             return performEarlySettlementCommodity(applicationID, userID, settlementAmount, orderID);
         }
         log.info("===========LSF : (performEarlySettlement)-REQUEST  : , ApplicationID:" + applicationID + ",Order ID:" + orderID + ", Amount:" + settlementAmount);
@@ -148,10 +148,27 @@ public class SettlementProcessor implements MessageProcessor {
         CommonResponse commonResponse = new CommonResponse();
         int responseCode = 200;
         String responseMessage = "";
+        String toCashAccount = null;
+        String toTradingAccount = null;
 
         log.info("===========LSF : (performEarlySettlementCommodity)-REQUEST  : , ApplicationID:" + applicationID + ",Order ID:" + orderID + ", Amount:" + settlementAmount);
 
         MurabahApplication application = lsfRepository.getMurabahApplication(applicationID);
+
+        // check if the is Rollover application
+        if (application.isRollOverApp()) {
+            MurabahApplication originalApplication = lsfRepository.getMurabahApplication(application.getRollOverAppId());
+            // check whether the original application is in settlement process
+            if (originalApplication.getCurrentLevel() != 18) {
+                responseCode = 500;
+                responseMessage = "The original application must be settled before settling the rollover.";
+                commonResponse.setResponseCode(responseCode);
+                commonResponse.setResponseMessage(responseMessage);
+                return gson.toJson(commonResponse);
+            }
+            toCashAccount = originalApplication.getCashAccount();
+            toTradingAccount = originalApplication.getTradingAcc();
+        }
 
         String masterCashAccount = lsfCoreService.getMasterCashAccount();
         application.setCurrentLevel(17);
@@ -159,6 +176,13 @@ public class SettlementProcessor implements MessageProcessor {
 
         CashAcc lsfCashAccount = lsfCoreService.getLsfTypeCashAccountForUser(userID,applicationID);
         PurchaseOrder purchaseOrder= lsfRepository.getSinglePurchaseOrder(orderID);
+        if (purchaseOrder.getIsPhysicalDelivery() == 1 || purchaseOrder.getSellButNotSettle() ==1) {
+            responseCode = 500;
+            responseMessage = "Cannot perform early settlement for physical delivery orders or orders in sell but not settle state.";
+            commonResponse.setResponseCode(responseCode);
+            commonResponse.setResponseMessage(responseMessage);
+            return gson.toJson(commonResponse);
+        }
 
         if (((lsfCashAccount.getCashBalance()-lsfCashAccount.getNetReceivable())>settlementAmount) && purchaseOrder.getSettlementStatus()!=1) {
             if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), masterCashAccount, settlementAmount, applicationID)) {
@@ -167,6 +191,25 @@ public class SettlementProcessor implements MessageProcessor {
                 application.setCurrentLevel(18);
                 application.setOverallStatus(String.valueOf(17));
 
+                if(application.isRollOverApp() || !hasRolloverApplication(application)) {
+                    AccountDeletionRequestState accountDeletionRequestState = new AccountDeletionRequestState();
+                    accountDeletionRequestState = lsfCoreService.closeLSFAccount(applicationID, application.getTradingAcc(), toTradingAccount, lsfCashAccount.getAccountId(), toCashAccount);
+                    if (accountDeletionRequestState.isSent()) {
+                        log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Sent to OMS, Application ID :" + applicationID);
+
+                        try {
+                            notificationManager.sendEarlySettlementNotification(application);
+                        } catch (Exception e) {
+                            commonResponse.setResponseCode(responseCode);
+                            commonResponse.setResponseMessage(responseMessage + " , failed to send the notification.");
+                        }
+                    } else{
+                        log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Rejected from OMS, Application ID :" + applicationID + ", Reason :" +  accountDeletionRequestState.getFailureReason());
+                        responseCode = 200; // since cash transfer is success response code is set to 200
+                        commonResponse.setErrorCode(-1); // error code is set since cash transfer is success and account closure is failed
+                        responseMessage = accountDeletionRequestState.getFailureReason();
+                    }
+                }
                 try {
                     notificationManager.sendEarlySettlementNotification(application);
                 } catch (Exception e) {
@@ -188,6 +231,12 @@ public class SettlementProcessor implements MessageProcessor {
         log.info("===========LSF : (performEarlySettlement)-LSF-SERVER RESPONSE  : " + gson.toJson(commonResponse));
         return gson.toJson(commonResponse);
     }
+
+    private boolean hasRolloverApplication(MurabahApplication application) {
+        int rollOverCount = lsfRepository.hasRollOver(application.getId());
+        return rollOverCount >0 ? true : false;
+    }
+
 
     public String performManualSettlement(String applicationID, String userID, double settlementAmount, String orderID) {
         CommonResponse commonResponse = new CommonResponse();
