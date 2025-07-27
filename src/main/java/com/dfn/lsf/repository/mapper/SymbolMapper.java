@@ -69,25 +69,25 @@ public class SymbolMapper implements RowMapper<Symbol> {
             //ex.printStackTrace();
         }
         try {
-            obj.setAvailableQty(rs.getInt("pl09_available_qty"));
+            obj.setAvailableQty(rs.getInt("l09_available_qty"));
 
         } catch (Exception ex) {
           //  ex.printStackTrace();
         }
         try {
 
-            obj.setPreviousClosed(rs.getDouble("pl09_close_price"));
+            obj.setPreviousClosed(rs.getDouble("l09_close_price"));
 
 
         } catch (Exception ex) {
           //  ex.printStackTrace();
         }
+        obj.setLastTradePrice(rs.getDouble("l08_ltp"));
         try {
-
-            obj.setLastTradePrice(rs.getDouble("pl09_ltp"));
+            obj.setLastTradePrice(rs.getDouble("l09_ltp"));
 
         } catch (Exception ex) {
-           // ex.printStackTrace();
+            obj.setLastTradePrice(rs.getDouble("l08_ltp"));
         }
         LiquidityType concentrationType = new LiquidityType();
         try {
@@ -113,7 +113,7 @@ public class SymbolMapper implements RowMapper<Symbol> {
         }
         obj.setLiquidityType(liq);
         obj.setAllowedForCollateral(rs.getInt("l08_allowed_for_collateral"));
-        obj.setLastTradePrice(rs.getDouble("l08_ltp"));
+
         try {
             obj.setInstrumentType(rs.getInt("L08_INSTRUMENT_TYPE"));
         }catch (Exception e){

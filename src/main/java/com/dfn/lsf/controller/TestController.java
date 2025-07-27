@@ -1,6 +1,7 @@
 package com.dfn.lsf.controller;
 
 import com.dfn.lsf.model.CashAcc;
+import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.impl.InvestorAccountCreationProcessor;
 import com.dfn.lsf.service.scheduler.SettlementCalculationProcessor;
 import com.dfn.lsf.util.Helper;
@@ -24,6 +25,9 @@ public class TestController {
     @Autowired
     private SettlementCalculationProcessor settlementCalculationProcessor;
 
+    @Autowired
+    private LsfCoreService lsfCoreService;
+
     // This is a placeholder for the TestController class.
     // You can add methods here to handle specific requests or perform tests.
 
@@ -32,6 +36,7 @@ public class TestController {
     @GetMapping("/test")
     public ResponseEntity<List<CashAcc>> testEndpoint() {
         List<CashAcc> cashAccounts = helper.getLsfTypeCashAccounts("11140210", "16840");
+        lsfCoreService.initialValuation("19420");
         return ResponseEntity.ok(cashAccounts);
     }
 
