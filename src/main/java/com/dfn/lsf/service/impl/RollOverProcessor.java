@@ -276,7 +276,7 @@ public class RollOverProcessor implements MessageProcessor {
         rollOverSummeryResponse.setNewProfitAmount(profitResponse.getProfitAmount());
         //double initialRapv = rollOverSummeryResponse.getRequiredAmount() - rollOverSummeryResponse.getAdminFee() - rollOverSummeryResponse.getVatAmount();
 
-        newApplication.setInitialRAPV(rollOverSummeryResponse.getRequiredAmount());
+        newApplication.setInitialRAPV(rollOverSummeryResponse.getTotalPfValue());
         newApplication.setMarginabilityGroup(oldApplication.getMarginabilityGroup());
         newApplication.setStockConcentrationGroup(oldApplication.getStockConcentrationGroup());
         newApplication.setAddress(oldApplication.getAddress());

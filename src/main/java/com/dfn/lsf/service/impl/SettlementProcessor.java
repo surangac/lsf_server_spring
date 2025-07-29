@@ -303,7 +303,7 @@ public class SettlementProcessor implements MessageProcessor {
         PurchaseOrder oldPO = lsfRepository.getSinglePurchaseOrder(oldAppId);
         PurchaseOrder newPO = lsfRepository.getSinglePurchaseOrder(newApplication.getId());
         performEarlySettlement(oldAppId,customerId,oldPO.getOrderSettlementAmount(),oldPO.getId());
-        newPO.setAuthAbicToSell(1);
+        newPO.setAuthAbicToSell("1");
         newPO.setIsPhysicalDelivery(0);
         lsfRepository.addAuthAbicToSellStatus(newPO);
         responseMessage = "Confirmed Rollover Successfully";
