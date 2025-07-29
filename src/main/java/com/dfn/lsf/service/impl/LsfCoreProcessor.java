@@ -2,12 +2,7 @@ package com.dfn.lsf.service.impl;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import com.dfn.lsf.model.*;
 import com.dfn.lsf.util.*;
@@ -924,7 +919,8 @@ public class LsfCoreProcessor implements MessageProcessor {
             } else if (approveStatus !=null && approveStatus.equalsIgnoreCase("-1")) { /*---If Client Reject the Agreement---*/
                 log.debug("===========LSF :Order Contract Rejected, Order Contract Rejected, Release Collateral from OMS :" + orderId + " , Application ID :" + applicationID + "Status :" + response.getResponseCode());
                 response = (CommonResponse) lsfCore.releaseCollaterals(collaterals);
-                liquidateOrder(orderId, murabahApplication, approveStatus, statusComment, statusChangedIP, collaterals);   
+                lsfRepository.updateCustomerOrderStatus(orderId, "-1", statusComment, statusChangedIP);
+                liquidateOrder(orderId, murabahApplication, approveStatus, statusComment, statusChangedIP, collaterals);
             }
             response.setResponseCode(responseCode);
             response.setResponseMessage(responseMessage);
@@ -1573,11 +1569,11 @@ public class LsfCoreProcessor implements MessageProcessor {
         CommonResponse cmr = new CommonResponse();
         PurchaseOrder po = new PurchaseOrder();
 
-        int authAbicToSell = Integer.parseInt(map.get("authAbicToSell").toString());
+        String authAbicToSell = map.get("authAbicToSell").toString();
         
         po.setId(map.get("poid").toString());
         po.setAuthAbicToSell(authAbicToSell);
-        if (authAbicToSell == 0){
+        if (Objects.equals(authAbicToSell, "0") || authAbicToSell.equalsIgnoreCase("0")){
             po.setIsPhysicalDelivery(1);
         }else {
             po.setIsPhysicalDelivery(0);
@@ -1597,8 +1593,8 @@ public class LsfCoreProcessor implements MessageProcessor {
         CommonResponse cmr = new CommonResponse();
         PurchaseOrder po = new PurchaseOrder();
         po.setId(map.get("poid").toString());
-        po.setAuthAbicToSell((int) Double.parseDouble(map.get("authAbicToSell").toString()));
-        if (po.getAuthAbicToSell() == 0){
+        po.setAuthAbicToSell(map.get("authAbicToSell").toString());
+        if (Objects.equals(po.getAuthAbicToSell(), "0")) {
             po.setIsPhysicalDelivery(1);
         }else {
             po.setIsPhysicalDelivery(0);

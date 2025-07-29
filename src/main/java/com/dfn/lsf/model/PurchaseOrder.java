@@ -50,7 +50,7 @@ public class PurchaseOrder {
     private double vatAmount;
     private Date customerApprovedDate;
     private List<Commodity> commodityList;
-    private int authAbicToSell;
+    private String authAbicToSell;
     private int soldAmnt;
     private int cashTransferStatus = -1; //0-Cash blocked,1-Block release,2-transfered
     private String investorAcc;
@@ -62,4 +62,5 @@ public class PurchaseOrder {
     private int isLsfType;
     private String certificateNumber;
     private String displayApplicationId;
+    private String acceptedDate;
 }

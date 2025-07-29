@@ -3,6 +3,7 @@ package com.dfn.lsf.controller;
 import com.dfn.lsf.model.CashAcc;
 import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.impl.InvestorAccountCreationProcessor;
+import com.dfn.lsf.service.scheduler.CommodityAuthorisationService;
 import com.dfn.lsf.service.scheduler.SettlementCalculationProcessor;
 import com.dfn.lsf.util.Helper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,16 +29,20 @@ public class TestController {
     @Autowired
     private LsfCoreService lsfCoreService;
 
+    @Autowired
+    private CommodityAuthorisationService commodityAuthorisationService;
+
     // This is a placeholder for the TestController class.
     // You can add methods here to handle specific requests or perform tests.
 
     // Example method (uncomment and modify as needed):
 
     @GetMapping("/test")
-    public ResponseEntity<List<CashAcc>> testEndpoint() {
-        List<CashAcc> cashAccounts = helper.getLsfTypeCashAccounts("11140210", "16840");
-        lsfCoreService.initialValuation("19420");
-        return ResponseEntity.ok(cashAccounts);
+    public ResponseEntity<String> testEndpoint() {
+        //List<CashAcc> cashAccounts = helper.getLsfTypeCashAccounts("11140210", "16840");
+        //lsfCoreService.initialValuation("19420");
+        commodityAuthorisationService.authoriseCommodity_sell("12345");
+        return ResponseEntity.ok("Test endpoint is working!");
     }
 
     @GetMapping("/createExchangeAccount")

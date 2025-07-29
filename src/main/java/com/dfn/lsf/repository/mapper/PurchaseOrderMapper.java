@@ -80,7 +80,7 @@ public class PurchaseOrderMapper implements RowMapper<PurchaseOrder> {
         obj.setTransferCharges(rs.getDouble("l14_transfer_charges"));
         obj.setVatAmount(rs.getDouble("l14_vat_amount"));
         try {
-            obj.setAuthAbicToSell(rs.getInt("l14_auth_abic_to_sell"));
+            obj.setAuthAbicToSell(rs.getString("l14_auth_abic_to_sell"));
 //        obj.setSoldAmnt(rs.getInt("l34_sold_amnt"));
         }catch (Exception e) {
 
@@ -117,6 +117,11 @@ public class PurchaseOrderMapper implements RowMapper<PurchaseOrder> {
         }
         try {
             obj.setCertificateNumber(rs.getString("l14_certificate_number"));
+        } catch (Exception e) {
+            // Handle exception if necessary
+        }
+        try {
+            obj.setAcceptedDate(rs.getString("l14_accepted_date"));
         } catch (Exception e) {
             // Handle exception if necessary
         }

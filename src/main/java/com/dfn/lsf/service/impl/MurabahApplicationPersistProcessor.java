@@ -295,7 +295,7 @@ public class MurabahApplicationPersistProcessor implements MessageProcessor {
                     if (map.containsKey("isPhysicalDelivery")) {
                         int isPhysicalDelivery = Integer.parseInt(map.get("isPhysicalDelivery").toString());
                         po.setIsPhysicalDelivery(isPhysicalDelivery);
-                        po.setAuthAbicToSell(isPhysicalDelivery == 1 ? 0 : 1);
+                        po.setAuthAbicToSell(isPhysicalDelivery == 1 ? "0" : "1");
                         count ++;
                     }
                     if(map.containsKey("sellButNotSettle")) {
