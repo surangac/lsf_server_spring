@@ -25,6 +25,7 @@ public class PhysicalDeliveryOrderMapper implements RowMapper<PhysicalDeliverOrd
         obj.setAdditionalDetails(resultSet.getString("L01_ADITIONAL_DETAILS"));
         obj.setAdditionalDocName(resultSet.getString("L01_ADDITIONAL_DOC_NAME"));
         obj.setAdditionalDocPath(resultSet.getString("L01_ADDITIONAL_DOC_PATH"));
+        obj.setDisplayApplicationId(resultSet.getString("L01_APP_ID"));
         return obj;
     }
 }

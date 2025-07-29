@@ -144,6 +144,7 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
                     List<MurabahApplication> fromDB = getSnapshotCurrentLevel(applicationId, reqStatus);
                     List<MurabahApplication> reversed = lsfRepository.getReversedApplication(reqStatus);
                     for (MurabahApplication murabahApplication : reversed) {
+                        murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
                         fromDB.add(murabahApplication);
                     }
                     MurabahApplicationListResponse listResponse = new MurabahApplicationListResponse();
