@@ -861,7 +861,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             log.debug("===========LSF : (reqApproveOrderAgreement)-Request  : " + gson.toJson(map) + " , Application ID: " + applicationID);
             //   lsfCore.addContractDetailsToMap(applicationID, map);/*---Add Order Contract singed customer data to Map---*/
             if (approveStatus !=null && approveStatus.equalsIgnoreCase("1")) { /*---- If Client accept the agreement----*/
-                if(!collaterals.isExchangeAccountCreated()) {
+                if(!collaterals.isExchangeAccountCreated() && !murabahApplication.isRollOverApp()) {
                     response.setResponseCode(500);
                     response.setErrorMessage("Exchange Account not yet created.");
                     response.setErrorCode(LsfConstants.ERROR_EXCHNAGE_ACCOUNT_NOT_YET_CREATED);

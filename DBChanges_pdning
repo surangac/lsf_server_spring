@@ -79,6 +79,7 @@ VW_L14_PURCHASE_ORDER
 VW_L14_PROFIT
 ALTER TABLE MUBASHER_LSF.L08_SYMBOL MODIFY L08_SHORT_DESC VARCHAR2(100);
 
--- 24th July
+-- 29th July
 vw_l08_symbol_base
 l35_symbol_marginability_pkg
+l14_purchase_order_pkg
