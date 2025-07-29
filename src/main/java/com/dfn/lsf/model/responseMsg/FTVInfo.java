@@ -37,4 +37,5 @@ public class FTVInfo {
     private double adminFeeCharged;
     private double maximumWithdrawAmount;
     private double availableCashBalance;
+    private String displayApplicationId;
 }

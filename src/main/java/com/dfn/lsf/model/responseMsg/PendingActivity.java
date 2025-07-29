@@ -13,6 +13,7 @@ public class PendingActivity {
     private String nonLSFCashAccount;
     private String lsfTypeTradingAccount;
     private String lsfTypeCashAccount;
+    private String displayApplicationID;
 
     public String getApplicationID() {
         return applicationID;
@@ -84,5 +85,13 @@ public class PendingActivity {
 
     public void setLsfTypeCashAccount(String lsfTypeCashAccount) {
         this.lsfTypeCashAccount = lsfTypeCashAccount;
+    }
+
+    public String getDisplayApplicationID() {
+        return displayApplicationID;
+    }
+
+    public void setDisplayApplicationID(String displayApplicationID) {
+        this.displayApplicationID = displayApplicationID;
     }
 }

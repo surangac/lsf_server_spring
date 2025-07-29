@@ -33,6 +33,7 @@ public class SettlementSummaryResponse {
     private int isInRollOverPrd;
     private String rollOverAppId;
     private double ftv;
+    private String displayApplicationId;
 
     public int getDiscountOnProfit() {
         return discountOnProfit;
@@ -224,5 +225,13 @@ public class SettlementSummaryResponse {
 
     public void setFtv(double ftv) {
         this.ftv = ftv;
+    }
+
+    public String getDisplayApplicationId() {
+        return displayApplicationId;
+    }
+
+    public void setDisplayApplicationId(String displayApplicationId) {
+        this.displayApplicationId = displayApplicationId;
     }
 }

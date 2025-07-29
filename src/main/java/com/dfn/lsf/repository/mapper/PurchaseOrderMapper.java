@@ -120,6 +120,11 @@ public class PurchaseOrderMapper implements RowMapper<PurchaseOrder> {
         } catch (Exception e) {
             // Handle exception if necessary
         }
+        try {
+            obj.setDisplayApplicationId(rs.getString("L14_APP_ID"));
+        } catch (Exception e) {
+            // Handle exception if necessary
+        }
         return obj;
     }
 }

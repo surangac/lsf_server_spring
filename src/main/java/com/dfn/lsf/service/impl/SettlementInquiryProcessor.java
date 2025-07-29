@@ -340,6 +340,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                 settlementSummary.setLoanAmount(purchaseOrder.getOrderCompletedValue());
                 settlementSummary.setSettlementDate(formatSettlementDate(String.valueOf(purchaseOrder.getSettlementDate())));
                 settlementSummary.setSettelmentStatus(purchaseOrder.getSettlementStatus());
+                settlementSummary.setDisplayApplicationId(purchaseOrder.getDisplayApplicationId());
                 cashAcc = lsfCore.getLsfTypeCashAccountForUser(purchaseOrder.getCustomerId(),
                                                                purchaseOrder.getApplicationId());
                 if (cashAcc != null) {

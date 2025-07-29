@@ -90,6 +90,7 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
                                                                                .getInstitutionInvestAccount());
                 List<PurchaseOrder> purchaseOrderList = lsfRepository.getAllPurchaseOrderforCommodity(murabahApplication.getId());
                 murabahApplication.setPurchaseOrderList(purchaseOrderList);
+                murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
             });
         }
         CommonResponse commonResponse = new CommonResponse();
@@ -106,6 +107,9 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
             reqStatus = Integer.parseInt(returnMap.get("requestStatus").toString());
         }
         List<MurabahApplication>  murabahApplications = lsfRepository.getSnapshotCurrentLevel(reqStatus);
+        for (MurabahApplication murabahApplication  : murabahApplications) {
+            murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
+        }
         CommonResponse commonResponse = new CommonResponse();
         commonResponse.setResponseCode(200);
         commonResponse.setResponseObject(murabahApplications);
@@ -291,6 +295,7 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
                     List<MurabahApplication> fromDB = getSnapshotCurrentLevel(Integer.parseInt(reqStatus));
                     List<MurabahApplication> reversed = lsfRepository.getReversedApplication(Integer.parseInt(reqStatus));
                     for (MurabahApplication murabahApplication : reversed) {
+                        murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
                         fromDB.add(murabahApplication);
                     }
                     MurabahApplicationListResponse listResponse = new MurabahApplicationListResponse();
@@ -364,6 +369,10 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
                 
                 List<MurabahApplication> fromDB = lsfRepository.getFilteredApplication(filterCriteria, filterValue, fromDate, toDate, Integer.parseInt(reqStatus));
 
+                for (MurabahApplication murabahApplication : fromDB) {
+                    murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
+                }
+
 //                if (returnMap.containsKey("requestStatus")) {
 //                    filterCriteria = 7;
 //                    filterValue = reqStatus;
@@ -402,6 +411,7 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
         murabahApplications = lsfRepository.getSnapshotCurrentLevel(requestStatus);
         if (murabahApplications.size() > 0) {
             for (MurabahApplication murabahApplication : murabahApplications) {
+                murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
                 List<Comment> finalCommentList = new ArrayList<>();
                 if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
                     statusList = lsfRepository.getApplicationStatus(murabahApplication.getId());
@@ -471,6 +481,7 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
             List<MurabahApplication> fromDB = lsfRepository.getHistoryApplication(filterCriteria, filterValue, fromDate, toDate, Integer.parseInt(reqStatus));
             fromDB.forEach(application -> {
                 application.setAgreementList(lsfRepository.getActiveAgreements(Integer.parseInt(application.getId())));
+                application.setDisplayApplicationId(application.getDisplayApplicationId());
             });
             listResponse.setApplicationList(fromDB);
         } catch (Exception e) { 

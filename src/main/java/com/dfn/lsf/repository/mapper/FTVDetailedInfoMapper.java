@@ -34,6 +34,7 @@ public class FTVDetailedInfoMapper implements RowMapper<FTVInfo> {
         ftvInfo.setTenor(rs.getInt("Tenor"));
         ftvInfo.setExpireDate(rs.getString("Expiry_date"));
         ftvInfo.setDayesLeft(rs.getInt("Days_left"));
+        ftvInfo.setDisplayApplicationId(rs.getString("l01_display_application_id"));
         return ftvInfo;
     }
 }

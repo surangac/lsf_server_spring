@@ -58,7 +58,7 @@ public class CommonInquiryProcessor implements MessageProcessor {
             // Handle different sub-message types
             switch (subMessageType) {
                 case LsfConstants.REQ_DETAILED_FTV_LIST:/*-----------Get All Detailed FTV List - Admin-----------*/
-                return getDetailedFTVList(requestMap);
+                    return getDetailedFTVList(requestMap);
                 case LsfConstants.GET_APPLICATIONS_FTV:
                     return getFTVList();
                 case LsfConstants.REQ_APPROVED_PURCHASE_ORDERS:
@@ -183,6 +183,7 @@ public class CommonInquiryProcessor implements MessageProcessor {
             for (MurabahApplication murabahApplication : murabahApplications) {
                 List<Status> appStatusList = lsfRepository.getApplicationStatus(murabahApplication.getId());
                 murabahApplication.setAppStatus(appStatusList);
+                murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
             }
         }
 

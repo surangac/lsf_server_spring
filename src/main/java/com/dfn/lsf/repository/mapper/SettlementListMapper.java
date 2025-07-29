@@ -20,6 +20,7 @@ public class SettlementListMapper implements RowMapper<SettlementSummaryResponse
         settlementSummary.setLsfAccountDeletionState(rs.getInt("l01_acc_closed_status"));
         settlementSummary.setAvailableCashBalance(rs.getDouble("l07_cash_balance"));
         settlementSummary.setCumulativeProfit(rs.getDouble("cumProfit"));
+        settlementSummary.setDisplayApplicationId(rs.getString("l01_display_application_id"));
         if(rs.getInt("l14_customer_approve_state") == 0){
             settlementSummary.setIsCustomerApproved(false);
         }else{

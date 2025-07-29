@@ -59,6 +59,7 @@ public class AuditInquiryProcessor implements MessageProcessor {
         log.debug("===========LSF : (getApplicationStatusSummary)-REQUEST ");
         List<ApplicationStatus> applicationStatusList = lsfRepository.applicationStatusSummary();
         for (ApplicationStatus applicationStatus : applicationStatusList) {
+            applicationStatus.setDisplayApplicationID(applicationStatus.getDisplayApplicationID());
             if( applicationStatus.getOverallStatus() > 0){
                 if (applicationStatus.getCurrentLevel() == 18) {
                     if (applicationStatus.getLiquidatedStatus() != null && applicationStatus.getLiquidatedStatus().equalsIgnoreCase("1")) {

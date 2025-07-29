@@ -85,6 +85,7 @@ public class MurabahApplication extends MessageHeader {
     private String facilityTransferStatus;
     private String deviceType;
     private String ipAddress;
+    private String displayApplicationId;
 
     public String getAdditionalDetails() {
         return additionalDetails;
@@ -684,7 +685,11 @@ public class MurabahApplication extends MessageHeader {
         return rollOverAppId != null && !rollOverAppId.equals("-1") && rollOverSeqNumber > 0;
     }
 
-    public String displayApplicationId() {
+    public void setDisplayApplicationId(String id1) {
+        this.displayApplicationId =  isRollOverApp() ? id + "R" + rollOverSeqNumber : id;
+    }
+
+    public String getDisplayApplicationId() {
         return isRollOverApp() ? id + "R" + rollOverSeqNumber : id;
     }
 

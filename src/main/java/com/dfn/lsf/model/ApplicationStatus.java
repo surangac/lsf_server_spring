@@ -24,4 +24,5 @@ public class ApplicationStatus {
     private String liquidatedStatus;
     private int customerActivityID;
     private String portfolioNo;
+    private String displayApplicationID;
 }

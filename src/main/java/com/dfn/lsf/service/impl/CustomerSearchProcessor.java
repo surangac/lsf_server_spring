@@ -78,6 +78,7 @@ public class CustomerSearchProcessor implements MessageProcessor {
                     customerDetailsMap.put("occupation", application.getOccupation());
                     customerDetailsMap.put("applicationID", application.getId());
                     customerDetailsMap.put("statusDescription", application.getStatusDescription());
+                    customerDetailsMap.put("displayApplicationId", application.getDisplayApplicationId());
                     responseMapList.add(customerDetailsMap);
                 }
                 cmr.setResponseCode(200);

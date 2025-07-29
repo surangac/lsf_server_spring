@@ -523,6 +523,7 @@ public class OracleUnifiedRepository implements LSFRepository {
             for (MurabahApplication murabahApplication : murabahApplications) {
                 statusList = getApplicationStatus(murabahApplication.getId());
                 murabahApplication.setAppStatus(statusList);
+                murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
                 commentList = getApplicationComment(murabahApplication.getId());
                 for (Comment comment : commentList) {
                     if (Integer.parseInt(comment.getParentID()) == 0) {

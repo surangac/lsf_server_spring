@@ -22,6 +22,7 @@ public class PendingActivityMapper implements RowMapper<PendingActivity> {
         pendingActivity.setNonLSFCashAccount(resultSet.getString("nonlsftypecash"));
         pendingActivity.setLsfTypeTradingAccount(resultSet.getString("lsftypetrading"));
         pendingActivity.setLsfTypeCashAccount(resultSet.getString("lsftypecash"));
+        pendingActivity.setDisplayApplicationID(resultSet.getString("l01_display_application_id"));
         return pendingActivity;
     }
 }

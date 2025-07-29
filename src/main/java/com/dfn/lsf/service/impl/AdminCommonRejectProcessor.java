@@ -64,6 +64,9 @@ public class AdminCommonRejectProcessor implements MessageProcessor {
         String response = "No Applications";
         List<MurabahApplication> applications = lsfRepository.getApplicationListForAdminCommonReject();
         if (applications != null) {
+            for (MurabahApplication murabahApplication: applications) {
+                murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
+            }
             response = gson.toJson(applications);
         }
         logger.debug("===========LSF : (getApplicationListForAdminReject)-LSF-SERVER RESPONSE  : " + response);

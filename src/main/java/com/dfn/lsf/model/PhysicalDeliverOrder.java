@@ -17,4 +17,5 @@ public class PhysicalDeliverOrder {
     private String additionalDetails;
     private String additionalDocName;
     private String additionalDocPath;
+    private String displayApplicationId;
 }

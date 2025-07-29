@@ -61,4 +61,5 @@ public class PurchaseOrder {
     private String approveComment;
     private int isLsfType;
     private String certificateNumber;
-} 
+    private String displayApplicationId;
+}
