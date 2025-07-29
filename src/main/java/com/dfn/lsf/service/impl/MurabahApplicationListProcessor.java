@@ -177,6 +177,7 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
                         filterValue = returnMap.get("requestStatus").toString();
                         var revertedApp = lsfRepository.getFilteredApplication(filterCriteria, filterValue, fromDate, toDate, reqStatus);
                         for (MurabahApplication murabahApplication : revertedApp) {
+                            murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
                             fromDB.add(murabahApplication);
                         }
                     }
@@ -218,6 +219,7 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
                     filterValue = returnMap.get("requestStatus").toString();
                     var revertedApp = lsfRepository.getFilteredApplication(filterCriteria, filterValue, fromDate, toDate, reqStatus);
                     for (MurabahApplication murabahApplication : revertedApp) {
+                        murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
                         fromDB.add(murabahApplication);
                     }
                 }
