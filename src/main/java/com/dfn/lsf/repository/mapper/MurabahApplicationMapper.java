@@ -124,6 +124,12 @@ public class MurabahApplicationMapper implements RowMapper<MurabahApplication> {
             obj.setFacilityTransferStatus("PENDING");
         }
 
+        try {
+            obj.setDisplayApplicationId(rs.getString("L01_APP_ID"));
+        } catch (Exception e){
+            // obj.setDisplayApplicationId("0");
+        }
+
         return obj;
 
     }
