@@ -14,6 +14,8 @@ import java.text.ParseException;
 import javax.sql.DataSource;
 
 import com.dfn.lsf.model.*;
+import com.dfn.lsf.model.requestMsg.CommonInqueryMessage;
+import com.dfn.lsf.service.integration.IntegrationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,18 +54,22 @@ import com.dfn.lsf.util.LsfConstants;
 import com.dfn.lsf.util.RowMapperI;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import com.google.gson.Gson;
+import com.google.gson.internal.LinkedTreeMap;
 
 @Repository
 public class OracleUnifiedRepository implements LSFRepository {
     
     private static final Logger log = LoggerFactory.getLogger(OracleUnifiedRepository.class);
-    
+
+    private final Gson gson;
     // Spring components
     private final JdbcTemplate jdbcTemplate;
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final MapperRegistry mapperRegistry;
     private final OracleRepository oracleRepository;
     private final RowMapperFactory rowMapperFactory;
+    private final IntegrationService integrationService;
     
     // Virtual thread executor for async operations
     private final Executor virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
@@ -74,13 +80,15 @@ public class OracleUnifiedRepository implements LSFRepository {
     
     
     public OracleUnifiedRepository(DataSource dataSource, RowMapperRegistry rowMapperRegistry,
-                                  OracleRepository oracleRepository, RowMapperFactory rowMapperFactory) {
+                                   OracleRepository oracleRepository, RowMapperFactory rowMapperFactory, IntegrationService integrationService) {
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(dataSource);
         this.mapperRegistry = rowMapperRegistry;
         this.oracleRepository = oracleRepository;
         this.rowMapperFactory = rowMapperFactory;
-        
+        this.integrationService = integrationService;
+        this.gson = new Gson();
+
         // Configure common SQL settings
         this.jdbcTemplate.setQueryTimeout(30); // 30 seconds timeout
     }
@@ -451,6 +459,82 @@ public class OracleUnifiedRepository implements LSFRepository {
         murabahApplications = oracleRepository.<MurabahApplication>getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_FILTERED_APPLICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
         if (murabahApplications.size() > 0) {
             for (MurabahApplication murabahApplication : murabahApplications) {
+
+                CommonInqueryMessage customerInfoRequest = new CommonInqueryMessage();
+                customerInfoRequest.setReqType(LsfConstants.GET_CUSTOMER_INFO);
+                customerInfoRequest.setCustomerId(murabahApplication.getCustomerId());
+
+                String result = integrationService.getCustomerRelatedOmsData(gson.toJson(customerInfoRequest));
+
+                if (result != null) {
+                    CustomerInfoResponse customerInfoResponse = gson.fromJson(
+                            (String) result,
+                            CustomerInfoResponse.class); // getting the user information from OMS and
+                    // overriding changed data
+                    LinkedTreeMap<Object, Object> resMapFromOMS =
+                            (LinkedTreeMap<Object, Object>) customerInfoResponse.getResponseObject();
+
+                    if (resMapFromOMS.containsKey("fax")) {
+                        if (murabahApplication.getFax() != null) {
+                            if (!murabahApplication.getFax().equalsIgnoreCase(resMapFromOMS.get("fax").toString())) {
+                                murabahApplication.setFax(resMapFromOMS.get("fax").toString());
+                            }
+                        } else {
+                            murabahApplication.setFax(resMapFromOMS.get("fax").toString());
+                        }
+                    }
+
+                    if (resMapFromOMS.containsKey("teleNo")) {
+                        if (murabahApplication.getFax() != null) {
+                            if (!murabahApplication.getFax().equalsIgnoreCase(resMapFromOMS.get("teleNo").toString())) {
+                                murabahApplication.setFax(resMapFromOMS.get("teleNo").toString());
+                            }
+                        } else {
+                            murabahApplication.setFax(resMapFromOMS.get("teleNo").toString());
+                        }
+                    }
+
+                    if (resMapFromOMS.containsKey("empAddress")) {
+                        if (murabahApplication.getEmployerAdrs() != null) {
+                            if (!murabahApplication.getEmployerAdrs().equalsIgnoreCase(resMapFromOMS.get("empAddress").toString())) {
+                                murabahApplication.setEmployerAdrs(resMapFromOMS.get("empAddress").toString());
+                            }
+                        } else {
+                            murabahApplication.setEmployerAdrs(resMapFromOMS.get("empAddress").toString());
+                        }
+                    }
+
+                    if (resMapFromOMS.containsKey("aproxNetWorth")) {
+                        if (murabahApplication.getNetWorth() != null) {
+                            if (!murabahApplication.getNetWorth().equalsIgnoreCase(resMapFromOMS.get("aproxNetWorth").toString())) {
+                                murabahApplication.setNetWorth(resMapFromOMS.get("aproxNetWorth").toString());
+                            }
+                        } else {
+                            murabahApplication.setNetWorth(resMapFromOMS.get("aproxNetWorth").toString());
+                        }
+                    }
+
+                    if (resMapFromOMS.containsKey("investExprnc")) {
+                        if (murabahApplication.getInvestExprnc() != null) {
+                            if (!murabahApplication.getInvestExprnc().equalsIgnoreCase(resMapFromOMS.get("investExprnc").toString())) {
+                                murabahApplication.setInvestExprnc(resMapFromOMS.get("investExprnc").toString());
+                            }
+                        } else {
+                            murabahApplication.setInvestExprnc(resMapFromOMS.get("investExprnc").toString());
+                        }
+                    }
+
+                    if (resMapFromOMS.containsKey("riskAppetite")) {
+                        if (murabahApplication.getRiskAppetite() != null) {
+                            if (!murabahApplication.getRiskAppetite().equalsIgnoreCase(resMapFromOMS.get("riskAppetite").toString())) {
+                                murabahApplication.setRiskAppetite(resMapFromOMS.get("riskAppetite").toString());
+                            }
+                        } else {
+                            murabahApplication.setRiskAppetite(resMapFromOMS.get("riskAppetite").toString());
+                        }
+                    }
+                }
+
                 if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
                     statusList = getApplicationStatus(murabahApplication.getId());
                     murabahApplication.setAppStatus(statusList);
@@ -521,6 +605,80 @@ public class OracleUnifiedRepository implements LSFRepository {
         murabahApplications = oracleRepository.getProcResult(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_REVERSED_APPLICATION, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION));
         if (murabahApplications.size() > 0) {
             for (MurabahApplication murabahApplication : murabahApplications) {
+
+                CommonInqueryMessage customerInfoRequest = new CommonInqueryMessage();
+                customerInfoRequest.setReqType(LsfConstants.GET_CUSTOMER_INFO);
+                customerInfoRequest.setCustomerId(murabahApplication.getCustomerId());
+                String result = integrationService.getCustomerRelatedOmsData(gson.toJson(customerInfoRequest));
+                if (result != null) {
+                    CustomerInfoResponse customerInfoResponse = gson.fromJson(
+                            (String) result,
+                            CustomerInfoResponse.class); // getting the user information from OMS and
+                    // overriding changed data
+                    LinkedTreeMap<Object, Object> resMapFromOMS =
+                            (LinkedTreeMap<Object, Object>) customerInfoResponse.getResponseObject();
+
+                    if (resMapFromOMS.containsKey("fax")) {
+                        if (murabahApplication.getFax() != null) {
+                            if (!murabahApplication.getFax().equalsIgnoreCase(resMapFromOMS.get("fax").toString())) {
+                                murabahApplication.setFax(resMapFromOMS.get("fax").toString());
+                            }
+                        } else {
+                            murabahApplication.setFax(resMapFromOMS.get("fax").toString());
+                        }
+                    }
+
+                    if (resMapFromOMS.containsKey("teleNo")) {
+                        if (murabahApplication.getFax() != null) {
+                            if (!murabahApplication.getFax().equalsIgnoreCase(resMapFromOMS.get("teleNo").toString())) {
+                                murabahApplication.setFax(resMapFromOMS.get("teleNo").toString());
+                            }
+                        } else {
+                            murabahApplication.setFax(resMapFromOMS.get("teleNo").toString());
+                        }
+                    }
+
+                    if (resMapFromOMS.containsKey("empAddress")) {
+                        if (murabahApplication.getEmployerAdrs() != null) {
+                            if (!murabahApplication.getEmployerAdrs().equalsIgnoreCase(resMapFromOMS.get("empAddress").toString())) {
+                                murabahApplication.setEmployerAdrs(resMapFromOMS.get("empAddress").toString());
+                            }
+                        } else {
+                            murabahApplication.setEmployerAdrs(resMapFromOMS.get("empAddress").toString());
+                        }
+                    }
+
+                    if (resMapFromOMS.containsKey("aproxNetWorth")) {
+                        if (murabahApplication.getNetWorth() != null) {
+                            if (!murabahApplication.getNetWorth().equalsIgnoreCase(resMapFromOMS.get("aproxNetWorth").toString())) {
+                                murabahApplication.setNetWorth(resMapFromOMS.get("aproxNetWorth").toString());
+                            }
+                        } else {
+                            murabahApplication.setNetWorth(resMapFromOMS.get("aproxNetWorth").toString());
+                        }
+                    }
+
+                    if (resMapFromOMS.containsKey("investExprnc")) {
+                        if (murabahApplication.getInvestExprnc() != null) {
+                            if (!murabahApplication.getInvestExprnc().equalsIgnoreCase(resMapFromOMS.get("investExprnc").toString())) {
+                                murabahApplication.setInvestExprnc(resMapFromOMS.get("investExprnc").toString());
+                            }
+                        } else {
+                            murabahApplication.setInvestExprnc(resMapFromOMS.get("investExprnc").toString());
+                        }
+                    }
+
+                    if (resMapFromOMS.containsKey("riskAppetite")) {
+                        if (murabahApplication.getRiskAppetite() != null) {
+                            if (!murabahApplication.getRiskAppetite().equalsIgnoreCase(resMapFromOMS.get("riskAppetite").toString())) {
+                                murabahApplication.setRiskAppetite(resMapFromOMS.get("riskAppetite").toString());
+                            }
+                        } else {
+                            murabahApplication.setRiskAppetite(resMapFromOMS.get("riskAppetite").toString());
+                        }
+                    }
+                }
+
                 statusList = getApplicationStatus(murabahApplication.getId());
                 murabahApplication.setAppStatus(statusList);
                 murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());

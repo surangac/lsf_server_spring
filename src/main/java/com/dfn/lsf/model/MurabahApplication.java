@@ -85,6 +85,10 @@ public class MurabahApplication extends MessageHeader {
     private String facilityTransferStatus;
     private String deviceType;
     private String ipAddress;
+    private String employerAdrs;
+    private String netWorth;
+    private String investExprnc;
+    private String riskAppetite;
     private String displayApplicationId;
 
     public String getAdditionalDetails() {
@@ -714,5 +718,37 @@ public class MurabahApplication extends MessageHeader {
 
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
+    }
+
+    public String getEmployerAdrs() {
+        return employerAdrs;
+    }
+
+    public void setEmployerAdrs(String employerAdrs) {
+        this.employerAdrs = employerAdrs;
+    }
+
+    public String getNetWorth() {
+        return netWorth;
+    }
+
+    public void setNetWorth(String netWorth) {
+        this.netWorth = netWorth;
+    }
+
+    public String getInvestExprnc() {
+        return investExprnc;
+    }
+
+    public void setInvestExprnc(String investExprnc) {
+        this.investExprnc = investExprnc;
+    }
+
+    public String getRiskAppetite() {
+        return riskAppetite;
+    }
+
+    public void setRiskAppetite(String riskAppetite) {
+        this.riskAppetite = riskAppetite;
     }
 }

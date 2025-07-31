@@ -472,6 +472,91 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                                         isModified = true;
                                     }
                                 }
+
+                                if (resMapFromOMS.containsKey("fax")) {
+                                    if (murabahApplication.getFax() != null) {
+                                        if (!murabahApplication.getFax()
+                                                .equalsIgnoreCase(resMapFromOMS.get("fax")
+                                                        .toString())) {
+                                            murabahApplication.setFax(resMapFromOMS.get("fax").toString());
+                                            isModified = true;
+                                        }
+                                    } else {
+                                        murabahApplication.setFax(resMapFromOMS.get("fax").toString());
+                                        isModified = true;
+                                    }
+                                }
+
+                                if (resMapFromOMS.containsKey("teleNo")) {
+                                    if (murabahApplication.getTeleNo() != null) {
+                                        if (!murabahApplication.getTeleNo()
+                                                .equalsIgnoreCase(resMapFromOMS.get("teleNo")
+                                                        .toString())) {
+                                            murabahApplication.setTeleNo(resMapFromOMS.get("teleNo").toString());
+                                            isModified = true;
+                                        }
+                                    } else {
+                                        murabahApplication.setTeleNo(resMapFromOMS.get("teleNo").toString());
+                                        isModified = true;
+                                    }
+                                }
+
+                                if (resMapFromOMS.containsKey("empAddress")) {
+                                    if (murabahApplication.getEmployerAdrs() != null) {
+                                        if (!murabahApplication.getEmployerAdrs()
+                                                .equalsIgnoreCase(resMapFromOMS.get("empAddress")
+                                                        .toString())) {
+                                            murabahApplication.setEmployerAdrs(resMapFromOMS.get("empAddress").toString());
+                                            isModified = true;
+                                        }
+                                    } else {
+                                        murabahApplication.setEmployerAdrs(resMapFromOMS.get("empAddress").toString());
+                                        isModified = true;
+                                    }
+                                }
+
+                                if (resMapFromOMS.containsKey("aproxNetWorth")) {
+                                    if (murabahApplication.getNetWorth() != null) {
+                                        if (!murabahApplication.getNetWorth()
+                                                .equalsIgnoreCase(resMapFromOMS.get("aproxNetWorth")
+                                                        .toString())) {
+                                            murabahApplication.setNetWorth(resMapFromOMS.get("aproxNetWorth").toString());
+                                            isModified = true;
+                                        }
+                                    } else {
+                                        murabahApplication.setNetWorth(resMapFromOMS.get("aproxNetWorth").toString());
+                                        isModified = true;
+                                    }
+                                }
+
+                                if (resMapFromOMS.containsKey("investExprnc")) {
+                                    if (murabahApplication.getInvestExprnc() != null) {
+                                        if (!murabahApplication.getInvestExprnc()
+                                                .equalsIgnoreCase(resMapFromOMS.get("investExprnc")
+                                                        .toString())) {
+                                            murabahApplication.setInvestExprnc(resMapFromOMS.get("investExprnc").toString());
+                                            isModified = true;
+                                        }
+                                    } else {
+                                        murabahApplication.setInvestExprnc(resMapFromOMS.get("investExprnc").toString());
+                                        isModified = true;
+                                    }
+                                }
+
+                                if (resMapFromOMS.containsKey("riskAppetite")) {
+                                    if (murabahApplication.getRiskAppetite() != null) {
+                                        if (!murabahApplication.getRiskAppetite()
+                                                .equalsIgnoreCase(resMapFromOMS.get("riskAppetite")
+                                                        .toString())) {
+                                            murabahApplication.setRiskAppetite(resMapFromOMS.get("riskAppetite").toString());
+                                            isModified = true;
+                                        }
+                                    } else {
+                                        murabahApplication.setRiskAppetite(resMapFromOMS.get("riskAppetite").toString());
+                                        isModified = true;
+                                    }
+                                }
+
                                 if (resMapFromOMS.containsKey("isArabic")) {
                                     String omsPreferedLanguage = resMapFromOMS.get("isArabic").toString().equals("true")
                                                                  ? "A"
