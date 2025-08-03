@@ -467,6 +467,12 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
             cmr.setErrorMessage("Cash Collateral Amount Should be less than or equal to :" + (accountBalance - (adminFee
                                                                                                                 + vatAmount)));
             cmr.setErrorCode(LsfConstants.ERROR_CASH_AMOUNT_VALIDATION_FAILED);
+
+            List<String> parameters = new ArrayList<>();
+            parameters.add(String.valueOf((accountBalance - (adminFee
+                    + vatAmount))));
+            cmr.setErrorCode(LsfConstants.ERROR_CASH_AMOUNT_VALIDATION_FAILED);
+            cmr.setParameterList(parameters);
         }
         return gson.toJson(cmr);
     }
