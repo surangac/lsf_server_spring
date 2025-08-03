@@ -18,4 +18,6 @@ public class CashTransferRequest {
     private String fromCashAccountId;
     private String toCashAccountId;
     private String params;
+    private String txnCode;
+    private String narration;
 }

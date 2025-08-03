@@ -85,7 +85,8 @@ public class ProfitCalculationUtils {
 
                     lastEntry = ProfitCalculationUtils.getLastEntry(applicationID,
                                                                     orderID,
-                                                                    lsfRepository); //retrieving last profit entry for
+                                                                    lsfRepository,
+                                                                    purchaseOrder.getAcceptedDate()); //retrieving last profit entry for
                     // application
                     newOrderProfit = new OrderProfit();
                     MApplicationCollaterals applicationCollaterals = lsfRepository.getApplicationCollateral(applicationID);
@@ -180,12 +181,35 @@ public class ProfitCalculationUtils {
         return profit;
     }
 
-    public static OrderProfit getLastEntry(String applicationID, String orderID, LSFRepository lsfDaoI) {
+    public static OrderProfit getLastEntry(String applicationID, String orderID, LSFRepository lsfDaoI, String acceptedDate) {
         var orderProfitList = lsfDaoI.getAllOrderProfitsForApplication(applicationID, orderID);
 
+        // Calculate date difference between acceptedDate and current date
+        long dateDiff = 0;
+        try {
+            java.time.LocalDate accepted = java.time.LocalDate.parse(acceptedDate);
+            java.time.LocalDate now = java.time.LocalDate.now();
+            dateDiff = java.time.temporal.ChronoUnit.DAYS.between(accepted, now);
+        } catch (Exception e) {
+            // Handle parse exception if needed
+        }
         //List<OrderProfit> orderProfitList = lsfDaoI.getLastEntryForApplication(applicationID, orderID);
         if (orderProfitList != null && !orderProfitList.isEmpty()) {
             double cumProfit = orderProfitList.stream().mapToDouble(OrderProfit::getProfitAmount).sum();
+            // additional check to ensure the list is not empty and number of entries are equal to dateDiff
+            if (orderProfitList.size() < dateDiff) {
+                logger.warn("===========LSF : Order Profit List size is less than date difference for ApplicationID: "
+                            + applicationID + ", OrderID: " + orderID);
+                // get the average profit amount and multiply by missing days and add to the cumulative profit
+                double averageProfit = orderProfitList.stream()
+                                                      .mapToDouble(OrderProfit::getProfitAmount)
+                                                      .average()
+                                                      .orElse(0.0);
+                double missingDaysProfit = averageProfit * (dateDiff - orderProfitList.size());
+                cumProfit = orderProfitList.stream()
+                                                  .mapToDouble(OrderProfit::getCumulativeProfitAmount)
+                                                  .sum() + missingDaysProfit;
+            }
             return new OrderProfit().setOrderID(orderID)
                                     .setApplicationID(applicationID)
                                     .setCumulativeProfitAmount(cumProfit)

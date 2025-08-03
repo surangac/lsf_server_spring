@@ -1,9 +1,6 @@
 package com.dfn.lsf.service.impl;
 
-import com.dfn.lsf.model.CommonResponse;
-import com.dfn.lsf.model.MApplicationCollaterals;
-import com.dfn.lsf.model.PurchaseOrder;
-import com.dfn.lsf.model.TradingAcc;
+import com.dfn.lsf.model.*;
 import com.dfn.lsf.model.requestMsg.AccountCreationRequest;
 import com.dfn.lsf.model.requestMsg.PendingActivityRequest;
 import com.dfn.lsf.model.responseMsg.AccountDeletionRequestState;
@@ -43,6 +40,7 @@ public class PendingActivityAdminProcessor implements MessageProcessor {
     private final NotificationManager notificationManager;
     private final Helper helper;
     private final LsfCoreService lsfCoreService;
+    private final LsfCoreProcessor lsfCoreProcessor;
 
     @Override
     public String process(String request) {
@@ -85,6 +83,9 @@ public class PendingActivityAdminProcessor implements MessageProcessor {
             case (LsfConstants.STATUS_BASKET_SHARE_TRANSFER_REQUEST_FAILED_TO_SEND_OMS): {
                 return resendBasketShareTransfer(pendingActivityRequest);
             }
+            case (LsfConstants.STATUS_PO_CREATION_FAILED) :{
+                return resendPurchaseOrderCreation(pendingActivityRequest);
+            }
             default: {
                 CommonResponse commonResponse = new CommonResponse();
                 commonResponse.setResponseCode(500);
@@ -93,6 +94,27 @@ public class PendingActivityAdminProcessor implements MessageProcessor {
                 return null;
             }
         }
+    }
+
+    private String resendPurchaseOrderCreation(PendingActivityRequest pendingActivity) {
+        logger.debug("===========LSF :Resending Purchase Order Creation : " + gson.toJson(pendingActivity));
+        CommonResponse commonResponse = new CommonResponse();
+        commonResponse.setResponseCode(200);
+        PurchaseOrder purchaseOrder = lsfRepository.getSinglePurchaseOrder(pendingActivity.getOrderID());
+        MApplicationCollaterals collaterals =
+                lsfRepository.getApplicationCompleteCollateral(pendingActivity.getApplicationID());
+        MurabahApplication application = lsfRepository.getMurabahAppicationApplicationID(
+                pendingActivity.getApplicationID()).getFirst();
+
+        if (purchaseOrder != null) {
+            lsfCoreProcessor.approvePurchaseOrderABIC(purchaseOrder, collaterals, commonResponse, Integer.parseInt(application.getFinanceMethod()));
+        } else {
+            commonResponse.setResponseCode(500);
+            commonResponse.setErrorMessage("Purchase Order Not Found.");
+            commonResponse.setResponseMessage("Purchase Order Not Found.");
+        }
+        logger.debug("===========LSF :Resending Purchase Order Creation , Response: " + gson.toJson(commonResponse));
+        return gson.toJson(commonResponse);
     }
 
     private String resendInvestorAccountCreation(PendingActivityRequest pendingActivity) {

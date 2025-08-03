@@ -361,7 +361,7 @@ public class LsfCoreProcessor implements MessageProcessor {
         return gson.toJson(commonResponse);
     }
 
-    protected String approvePurchaseOrderABIC(PurchaseOrder purchaseOrder, MApplicationCollaterals completeCollateral, CommonResponse cmr, int financeMethod) {
+    public String approvePurchaseOrderABIC(PurchaseOrder purchaseOrder, MApplicationCollaterals completeCollateral, CommonResponse cmr, int financeMethod) {
         String applicationId = "";
         boolean isLsfTypeCashAccExist = false;
         boolean isLsfTypeTradingAccExist = false;
@@ -470,7 +470,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                     }
                 } else {
                     cmr.setResponseCode(500);
-                    cmr.setErrorMessage("Order Creation failed, Exchagne and Investor account creation failed");
+                    cmr.setErrorMessage("Order Creation failed, Exchange and Investor account creation failed");
                     lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_PO_CREATION_FAILED);
                 }
             }
@@ -1055,9 +1055,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             } else {
                 return null;
             }
-
         }
-
     }
 
     private MApplicationCollaterals getBPDetails(final MApplicationCollaterals collaterals, final MurabahApplication application) { // calculating buyingPower for each marginability
@@ -1091,30 +1089,33 @@ public class LsfCoreProcessor implements MessageProcessor {
         BPSummary BPSummary = new BPSummary();
         BPSummary.setMarginabilityType(liquidityType.getLiquidName());
         double marginabilityDifference = (liquidityType.getMarginabilityPercent() / 100);
-        marginabilityDifference = marginabilityDifference == 0 ? 1 : marginabilityDifference; // to avoid division by zero
-        if (marginabilityDifference == 1.0) {
-            double bf = (totalPF + totalCash) - (GlobalParameters.getInstance().getFirstMarginCall() / 100) * totalOutstanding;
-            if (bf > totalCash) {
-                BPSummary.setBuyingPower(BigDecimal.valueOf(totalCash));
-            } else {
-                BPSummary.setBuyingPower(bf > 0 ? BigDecimal.valueOf(bf) : BigDecimal.ZERO);
-            }
+        double bp = totalCash * liquidityType.getMarginabilityPercent()/100;
+        BPSummary.setBuyingPower(BigDecimal.valueOf(bp));
 
-        } else {
-            double sum = totalCash + totalPF;
-            double buyingPower = (sum - (GlobalParameters.getInstance().getFirstMarginCall() / 100) * totalOutstanding) * marginabilityDifference;
-            if (buyingPower > 0) {
-                if (buyingPower > totalCash) {
-                    BPSummary.setBuyingPower(BigDecimal.valueOf(totalCash));
-
-                } else {
-                    BPSummary.setBuyingPower(buyingPower > 0 ? BigDecimal.valueOf(buyingPower) : BigDecimal.ZERO);
-                }
-            } else {
-                BPSummary.setBuyingPower(BigDecimal.ZERO);
-            }
-
-        }
+//        marginabilityDifference = marginabilityDifference == 0 ? 1 : marginabilityDifference; // to avoid division by zero
+//        if (marginabilityDifference == 1.0) {
+//            double bf = (totalPF + totalCash) - (GlobalParameters.getInstance().getFirstMarginCall() / 100) * totalOutstanding;
+//            if (bf > totalCash) {
+//                BPSummary.setBuyingPower(BigDecimal.valueOf(totalCash));
+//            } else {
+//                BPSummary.setBuyingPower(bf > 0 ? BigDecimal.valueOf(bf) : BigDecimal.ZERO);
+//            }
+//
+//        } else {
+//            double sum = totalCash + totalPF;
+//            double buyingPower = (sum - (GlobalParameters.getInstance().getFirstMarginCall() / 100) * totalOutstanding) * marginabilityDifference;
+//            if (buyingPower > 0) {
+//                if (buyingPower > totalCash) {
+//                    BPSummary.setBuyingPower(BigDecimal.valueOf(totalCash));
+//
+//                } else {
+//                    BPSummary.setBuyingPower(buyingPower > 0 ? BigDecimal.valueOf(buyingPower) : BigDecimal.ZERO);
+//                }
+//            } else {
+//                BPSummary.setBuyingPower(BigDecimal.ZERO);
+//            }
+//
+//        }
         log.info("===========LSF : Calculating Buying Power, Total Cash :" + totalCash + " , Total PF :" + totalCash + " , OutStanding :" + totalOutstanding + ", Margin Type :" + liquidityType.getLiquidName() + " , percentage :" + liquidityType.getMarginabilityPercent() + " BP:" + BPSummary.getBuyingPower());
 
         return BPSummary;

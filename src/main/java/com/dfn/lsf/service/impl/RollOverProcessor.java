@@ -248,6 +248,7 @@ public class RollOverProcessor implements MessageProcessor {
         newApplication.setAdminFeeCharged(0.0);
         newApplication.setTenor(rollOverSummeryResponse.getTenor());
 
+        log.info("Processing new roll over application for App ID: {}, Finance Required Amt: {}", rollOverSummeryResponse.getOriginalAppId(), rollOverSummeryResponse.getRequiredAmount());
         newApplication.setFinanceRequiredAmt(rollOverSummeryResponse.getRequiredAmount());
 
         newApplication.setRollOverAppId(rollOverSummeryResponse.getOriginalAppId());
@@ -331,7 +332,7 @@ public class RollOverProcessor implements MessageProcessor {
 
     private void createCollaterals(final MurabahApplication application,final RollOverSummeryResponse rollOverSummeryResponse) throws Exception {
 
-        log.info("=========LSF: creating Collaterals for Roll Over : {}", application.getId());
+        log.info("=========LSF: creating Collaterals for OriginalAppId: {}, Roll Over : {}",application.getRollOverAppId(), application.getId());
         java.text.DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
         MApplicationCollaterals collaterals = new MApplicationCollaterals();
@@ -340,10 +341,15 @@ public class RollOverProcessor implements MessageProcessor {
         collaterals.setVatAmount(rollOverSummeryResponse.getVatAmount());
         collaterals.setApprovedLimitAmount(rollOverSummeryResponse.getRequiredAmount());
 
-        double cashCollateral = application.getFinanceRequiredAmt() - rollOverSummeryResponse.getTotalPfValue() < 0 ? 0 : application.getInitialRAPV() - rollOverSummeryResponse.getTotalPfValue();
+        double cashCollateral = application.getFinanceRequiredAmt() - rollOverSummeryResponse.getTotalPfValue() <= 0 ? 0 : application.getFinanceRequiredAmt() - rollOverSummeryResponse.getTotalPfValue();
+        // add a complete log with financeRequiredAmt, totalPfValue, cashCollateral
+        log.info("Finance Required Amount: {}, Total PF Value: {}, Cash Collateral: {}",
+                 application.getFinanceRequiredAmt(),
+                 rollOverSummeryResponse.getTotalPfValue(),
+                 cashCollateral);
 
         collaterals.setNetTotalColleteral(cashCollateral + rollOverSummeryResponse.getTotalPfValue());
-        if (rollOverSummeryResponse.getTotalCashBalance() > cashCollateral + rollOverSummeryResponse.getVatAmount() + GlobalParameters.getInstance().getComodityAdminFee()) {
+        if (rollOverSummeryResponse.getTotalCashBalance() > cashCollateral + rollOverSummeryResponse.getVatAmount() + rollOverSummeryResponse.getAdminFee()) {
             collaterals.setInitialCashCollaterals(cashCollateral + rollOverSummeryResponse.getVatAmount() + GlobalParameters.getInstance().getComodityAdminFee());
         } else {
             collaterals.setInitialCashCollaterals(rollOverSummeryResponse.getTotalCashBalance());

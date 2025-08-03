@@ -3,14 +3,9 @@ package com.dfn.lsf.service.impl;
 import java.util.List;
 import java.util.Map;
 
+import com.dfn.lsf.model.*;
 import org.springframework.stereotype.Service;
 
-import com.dfn.lsf.model.GlobalParameters;
-import com.dfn.lsf.model.LiquidityType;
-import com.dfn.lsf.model.MApplicationCollaterals;
-import com.dfn.lsf.model.MarginabilityGroup;
-import com.dfn.lsf.model.MurabahApplication;
-import com.dfn.lsf.model.PurchaseOrder;
 import com.dfn.lsf.model.requestMsg.OMSQueueRequest;
 import com.dfn.lsf.model.responseMsg.OMSQueueResponse;
 import com.dfn.lsf.repository.LSFRepository;
@@ -84,25 +79,31 @@ public class LsfOmsValidatorAbicProcessor {
         if (!validateWithSettlementDate(application.getId())) { // if the order value is greater than available cash in LSF cash account
             response.setApproved(false);
         } else {
-            double weightedOrderValue = 0.0;
-            LiquidityType symbolLiquidityType = helper.existingSymbolLiqudityType(request.getSymbol(), request.getExchange());
-            MarginabilityGroup marginabilityGroup = helper.getMarginabilityGroup(application.getMarginabilityGroup());
-            List<LiquidityType> attachedLiqGroupList = null;
-            LiquidityType assignedSymbolLiquidityType = null;
+            String marginabilityGroupId = application.getMarginabilityGroup();
+            List<LiquidityType> attachedLiqGoupList = null;
+            MarginabilityGroup marginabilityGroup = null;
+            List<SymbolMarginabilityPercentage> symbolMarginabilityPercentages = null;
+            if (marginabilityGroupId != null) {
+                marginabilityGroup = helper.getMarginabilityGroup(application.getMarginabilityGroup());
+                if(marginabilityGroup != null) {
+                    attachedLiqGoupList = marginabilityGroup.getMarginabilityList();
+                    symbolMarginabilityPercentages = marginabilityGroup.getMarginableSymbols();
+                }
+            }
+            double symbolMarginabilityPercentage = 0.0;
             if (marginabilityGroup != null) {
-                attachedLiqGroupList = marginabilityGroup.getMarginabilityList();
-                if (attachedLiqGroupList != null) {
-                    for (LiquidityType liq : attachedLiqGroupList) {
-                        if (liq.getLiquidId() == symbolLiquidityType.getLiquidId()) {
-                            assignedSymbolLiquidityType = liq;
-                        }
-                    }
-                    if(assignedSymbolLiquidityType != null){
-                        weightedOrderValue = request.getAmount() * assignedSymbolLiquidityType.getMarginabilityPercent() / 100;
+                symbolMarginabilityPercentage = marginabilityGroup.getGlobalMarginablePercentage();
+            }
 
+            if(symbolMarginabilityPercentages != null) {
+                for(SymbolMarginabilityPercentage smp :symbolMarginabilityPercentages) {
+                    if(smp.getSymbolCode().equals(request.getSymbol()) && smp.getExchange().equals(request.getExchange())){
+                        symbolMarginabilityPercentage = smp.getMarginabilityPercentage();
                     }
                 }
             }
+            double weightedOrderValue = request.getAmount() * symbolMarginabilityPercentage / 100;
+
             // changed by Suranga on 2020/09/23 based on CR RD-ABIC-2020006-159- ML multiple order projected coverage-V1 1
             // 1. avoid adding total block amount to Net Total Colleteral at colleteral calculation logic
             // 2. projected block amount will be calculated based on the available block amount values for each symbol
