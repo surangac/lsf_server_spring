@@ -123,6 +123,8 @@ public class LsfCoreService {
                             BigDecimal bigDecimal = BigDecimal.valueOf(cashAcc.getAmountAsColletarals());
                             bigDecimal.setScale(2);
 
+                            String narration = "Transfer Collateral for [" + collaterals.getApplicationId() + "] | From [" + cashAcc.getAccountId() + "] to [" + collaterals.getLsfTypeCashAccounts().getFirst().getAccountId() + "]";
+
                             CashTransferRequest cashTransferRequest = new CashTransferRequest();
                             cashTransferRequest.setReqType(LsfConstants.CASH_TRANSFER);
                             cashTransferRequest.setId(Long.toString(System.currentTimeMillis()));
@@ -131,7 +133,8 @@ public class LsfCoreService {
                             cashTransferRequest.setAmount(bigDecimal.doubleValue());
                             //   cashAcc.setAmountTransfered(cashAcc.getAmountTransfered() + cashAcc.getAmountAsColletarals());
                             cashAcc.setAmountTransfered(/*cashAcc.getAmountTransfered() +*/ cashAcc.getAmountAsColletarals());
-                            cashTransferRequest.setToCashAccountId(collaterals.getLsfTypeCashAccounts().get(0).getAccountId());
+                            cashTransferRequest.setToCashAccountId(collaterals.getLsfTypeCashAccounts().getFirst().getAccountId());
+                            cashTransferRequest.setNarration(narration);
                             CommonResponse cmr = performAction(cashTransferRequest);
                             log.debug("===========LSF : Performed Cash Transfer , OMS Response:" + gson.toJson(cmr).toString());
                             if (cmr.getResponseCode() == 1) {
@@ -282,7 +285,7 @@ public class LsfCoreService {
                     if (fromAcc != null && fromAcc.getSymbolsForColleteral() != null) {
                         fromAcc.getSymbolsForColleteral().forEach(symbol -> {
                             if (symbol != null) {
-                                log.debug("===LSF : Blocking Symbol for RollOver Acc: {}", symbol.getSymbolCode());
+                                log.info("===LSF : Blocking Symbol for RollOver Acc: {}, trading Acc: {}, symbol: {}, qty: {}",application.getId(), fromAcc.getAccountId(), symbol.getSymbolCode(), symbol.getColleteralQty());
                                 ShareTransferRequest shareBlockRequest = new ShareTransferRequest();
                                 shareBlockRequest.setReqType(LsfConstants.SHARE_BLOCK_REQUEST);
                                 shareBlockRequest.setFromTradingAccountId(fromAcc.getAccountId());
@@ -302,11 +305,11 @@ public class LsfCoreService {
 
             if (collaterals.getLsfTypeCashAccounts() != null) {
                 collaterals.getLsfTypeCashAccounts().forEach(cashAcc -> {
-                    log.debug("===LSF : Blocking Cash for RollOver Acc: {}", cashAcc.getAccountId());
+                    log.info("===LSF : Blocking Cash for RollOver Acc: {}, cash Acc: {}, collteral Amt: {}", application.getId(), cashAcc.getAccountId(), cashAcc.getAmountAsColletarals());
                     CashTransferRequest cashBlockRequest = new CashTransferRequest();
                     cashBlockRequest.setReqType(LsfConstants.CASH_BLOCK_REQUEST);
                     cashBlockRequest.setFromCashAccountId(cashAcc.getAccountId());
-                    cashBlockRequest.setAmount(collaterals.getInitialCashCollaterals());
+                    cashBlockRequest.setAmount(cashAcc.getAmountAsColletarals());
 
                     if (cashBlockRequest.getAmount() > 0) {
                         CommonResponse cmr = performAction(cashBlockRequest);
@@ -1148,6 +1151,7 @@ public class LsfCoreService {
     public boolean cashTransferToMasterAccount(String fromAccount, String toAccount, double transferAmount, String applicationID) {
         boolean isTransferred = false;
         BigDecimal bigDecimal = BigDecimal.valueOf(transferAmount);
+        String narration = "Cash Proceeds - ["+ applicationID +"] - ["+toAccount +"]";
         // Fix: Set scale with proper rounding mode and store in a variable
         BigDecimal roundedValue = bigDecimal.setScale(2, RoundingMode.HALF_UP);
         
@@ -1159,6 +1163,7 @@ public class LsfCoreService {
         cashTransferRequest.setAmount(roundedValue.doubleValue()); // Use the rounded value
         cashTransferRequest.setToCashAccountId(toAccount);
         cashTransferRequest.setParams("1"); // identify the cash transfer to Master Account
+        cashTransferRequest.setNarration(narration);
         String result = (String) helper.sendSettlementRelatedOMSRequest(gson.toJson(cashTransferRequest), LsfConstants.HTTP_PRODUCER_OMS_CASH_TRANSFER_MASTER_CASH_ACCOUNT);
         if (result != null && !result.equalsIgnoreCase("")) {
             Map<String, Object> resMap = new HashMap<>();
@@ -1179,8 +1184,9 @@ public class LsfCoreService {
     }
 
     public boolean cashTransfer(String fromAccount, String toAccount, double transferAmount, String applicationID) {
-        boolean isTransferred = false;
+        boolean isTransferred;
         BigDecimal bigDecimal = BigDecimal.valueOf(transferAmount);
+        String narration = "Commodity Margin Sale Proceeds - ["+ applicationID +"] - ["+toAccount +"]";
         // Fix: Set scale with proper rounding mode and store in a variable
         BigDecimal roundedValue = bigDecimal.setScale(2, RoundingMode.HALF_UP);
 
@@ -1189,8 +1195,9 @@ public class LsfCoreService {
         cashTransferRequest.setId(Long.toString(System.currentTimeMillis()));
         cashTransferRequest.setApplicationid(applicationID);
         cashTransferRequest.setFromCashAccountId(fromAccount);
-        cashTransferRequest.setAmount(roundedValue.doubleValue()); // Use the rounded value
+        cashTransferRequest.setAmount(roundedValue.doubleValue());
         cashTransferRequest.setToCashAccountId(toAccount);
+        cashTransferRequest.setNarration(narration);
         String result = (String) helper.sendMessageToOms(gson.toJson(cashTransferRequest));
         if (result != null && !result.equalsIgnoreCase("")) {
             Map<String, Object> resMap = new HashMap<>();
