@@ -108,7 +108,12 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
         if (returnMap.containsKey("requestStatus")) {
             reqStatus = Integer.parseInt(returnMap.get("requestStatus").toString());
         }
-        List<MurabahApplication>  murabahApplications = lsfRepository.getSnapshotCurrentLevel(reqStatus);
+        List<MurabahApplication> murabahApplications = lsfRepository.getSnapshotCurrentLevel(reqStatus);
+        List<MurabahApplication> reversed = lsfRepository.getReversedApplication(reqStatus);
+        for (MurabahApplication murabahApplication : reversed) {
+            murabahApplications.add(murabahApplication);
+        }
+
         for (MurabahApplication murabahApplication  : murabahApplications) {
             murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
         }
