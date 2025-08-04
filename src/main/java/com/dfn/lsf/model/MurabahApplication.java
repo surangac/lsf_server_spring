@@ -90,6 +90,8 @@ public class MurabahApplication extends MessageHeader {
     private String investExprnc;
     private String riskAppetite;
     private String displayApplicationId;
+    private String kycExpiryDate;
+    private String homeTelephone;
 
     public String getAdditionalDetails() {
         return additionalDetails;
@@ -750,5 +752,21 @@ public class MurabahApplication extends MessageHeader {
 
     public void setRiskAppetite(String riskAppetite) {
         this.riskAppetite = riskAppetite;
+    }
+
+    public String getKycExpiryDate() {
+        return kycExpiryDate;
+    }
+
+    public void setKycExpiryDate(String kycExpiryDate) {
+        this.kycExpiryDate = kycExpiryDate;
+    }
+
+    public String getHomeTelephone() {
+        return homeTelephone;
+    }
+
+    public void setHomeTelephone(String homeTelephone) {
+        this.homeTelephone = homeTelephone;
     }
 }

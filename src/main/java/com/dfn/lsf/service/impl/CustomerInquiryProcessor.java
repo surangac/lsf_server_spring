@@ -170,6 +170,12 @@ public class CustomerInquiryProcessor implements MessageProcessor {
             if (resMap.containsKey("riskAppetite")) {
                 customerInfo.setRiskAppetite(resMap.get("riskAppetite").toString());
             }
+            if (resMap.containsKey("kycExpiryDate")) {
+                customerInfo.setKycExpiryDate(resMap.get("kycExpiryDate").toString());
+            }
+            if (resMap.containsKey("homeTelephone")) {
+                customerInfo.setHomeTelephone(resMap.get("homeTelephone").toString());
+            }
             CommonInqueryMessage customerCashAccountRequest = new CommonInqueryMessage();
             customerCashAccountRequest.setReqType(LsfConstants.GET_NON_LSF_CASH_ACCOUNT_DETAILS);
             customerCashAccountRequest.setCustomerId(customerID);
@@ -553,6 +559,34 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                                         }
                                     } else {
                                         murabahApplication.setRiskAppetite(resMapFromOMS.get("riskAppetite").toString());
+                                        isModified = true;
+                                    }
+                                }
+
+                                if (resMapFromOMS.containsKey("kycExpiryDate")) {
+                                    if (murabahApplication.getKycExpiryDate() != null) {
+                                        if (!murabahApplication.getKycExpiryDate()
+                                                .equalsIgnoreCase(resMapFromOMS.get("kycExpiryDate")
+                                                        .toString())) {
+                                            murabahApplication.setKycExpiryDate(resMapFromOMS.get("kycExpiryDate").toString());
+                                            isModified = true;
+                                        }
+                                    } else {
+                                        murabahApplication.setKycExpiryDate(resMapFromOMS.get("kycExpiryDate").toString());
+                                        isModified = true;
+                                    }
+                                }
+
+                                if (resMapFromOMS.containsKey("homeTelephone")) {
+                                    if (murabahApplication.getHomeTelephone() != null) {
+                                        if (!murabahApplication.getHomeTelephone()
+                                                .equalsIgnoreCase(resMapFromOMS.get("homeTelephone")
+                                                        .toString())) {
+                                            murabahApplication.setHomeTelephone(resMapFromOMS.get("homeTelephone").toString());
+                                            isModified = true;
+                                        }
+                                    } else {
+                                        murabahApplication.setHomeTelephone(resMapFromOMS.get("homeTelephone").toString());
                                         isModified = true;
                                     }
                                 }

@@ -322,6 +322,26 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
                     murabahApplication.setRiskAppetite(resMapFromOMS.get("riskAppetite").toString());
                 }
             }
+
+            if (resMapFromOMS.containsKey("kycExpiryDate")) {
+                if (murabahApplication.getKycExpiryDate() != null) {
+                    if (!murabahApplication.getKycExpiryDate().equalsIgnoreCase(resMapFromOMS.get("kycExpiryDate").toString())) {
+                        murabahApplication.setKycExpiryDate(resMapFromOMS.get("kycExpiryDate").toString());
+                    }
+                } else {
+                    murabahApplication.setKycExpiryDate(resMapFromOMS.get("kycExpiryDate").toString());
+                }
+            }
+
+            if (resMapFromOMS.containsKey("homeTelephone")) {
+                if (murabahApplication.getHomeTelephone() != null) {
+                    if (!murabahApplication.getHomeTelephone().equalsIgnoreCase(resMapFromOMS.get("homeTelephone").toString())) {
+                        murabahApplication.setHomeTelephone(resMapFromOMS.get("homeTelephone").toString());
+                    }
+                } else {
+                    murabahApplication.setHomeTelephone(resMapFromOMS.get("homeTelephone").toString());
+                }
+            }
         }
     }
 

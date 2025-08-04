@@ -33,4 +33,6 @@ public class CustomerInfo {
     private String netWorth;
     private String investExprnc;
     private String riskAppetite;
+    private String kycExpiryDate;
+    private String homeTelephone;
 }
