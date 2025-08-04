@@ -83,3 +83,6 @@ ALTER TABLE MUBASHER_LSF.L08_SYMBOL MODIFY L08_SHORT_DESC VARCHAR2(100);
 vw_l08_symbol_base
 l35_symbol_marginability_pkg
 l14_purchase_order_pkg
+
+-- 4th Aug
+l01_application_pkg

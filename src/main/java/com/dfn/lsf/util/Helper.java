@@ -224,10 +224,14 @@ public class Helper {
             String[] resultArray = s.split(delimitter);
             if (resultArray[0].equals("1")) {
                 cmr.setResponseCode(200);
-                cmr.setResponseMessage(resultArray[1]);
+                if (resultArray.length > 1) {
+                    cmr.setResponseMessage(resultArray[1]);
+                }
             } else {
                 cmr.setResponseCode(500);
-                cmr.setErrorMessage(resultArray[1]);
+                if (resultArray.length > 1) {
+                    cmr.setErrorMessage(resultArray[1]);
+                }
             }
             return cmr;
         } else {
