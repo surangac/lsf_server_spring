@@ -41,9 +41,11 @@ public class NotificationProcessor implements MessageProcessor {
     private final Gson gson;
 
     private final NotificationManager notificationManager;
+    private final AuditLogProcessor auditLogProcessor;
     @Override
     public String process(String request) {
         try {
+            auditLogProcessor.process(request);
             Map<String, Object> requestMap = gson.fromJson(request, Map.class);
             String subMessageType = (String) requestMap.get("subMessageType");
             

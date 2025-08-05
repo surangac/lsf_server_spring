@@ -42,9 +42,11 @@ public class SettlementInquiryProcessor implements MessageProcessor {
 
     private final LsfCoreService lsfCore;
     private final Helper helper;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Override
     public String process(final String request) {
+        auditLogProcessor.process(request);
         String message = request;
         Map<String, Object> resultMap = new HashMap<>();
         resultMap = gson.fromJson(message, resultMap.getClass());

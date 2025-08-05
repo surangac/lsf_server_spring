@@ -37,9 +37,11 @@ public class ReportGenerationProcessor implements MessageProcessor {
 
     private final ReportFactory reportFactory;
     private final ReportComposer reportComposer;
+    private final AuditLogProcessor auditLogProcessor;
     
     @Override
     public String process(String request) {
+        auditLogProcessor.process(request);
         try {
             Map<String, Object> requestMap = gson.fromJson(request, Map.class);
             String subMessageType = (String) requestMap.get("subMessageType");

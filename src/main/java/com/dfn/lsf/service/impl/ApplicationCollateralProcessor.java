@@ -33,9 +33,11 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
     private final Helper helper;
     private final LsfCoreService lsfCore;
     private final NotificationManager notificationManager;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Override
     public String process(String request) {
+        auditLogProcessor.process(request);
         String rawMessage = request;
         logger.debug("====LSF : ApplicationCollateralProcessor , Received Message:" + rawMessage);
         Map<String, Object> map = new HashMap<String, Object>();

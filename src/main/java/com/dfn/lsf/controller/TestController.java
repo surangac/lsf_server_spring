@@ -1,6 +1,7 @@
 package com.dfn.lsf.controller;
 
 import com.dfn.lsf.service.LsfCoreService;
+import com.dfn.lsf.service.impl.AuditLogProcessor;
 import com.dfn.lsf.service.impl.InvestorAccountCreationProcessor;
 import com.dfn.lsf.service.scheduler.SetAuthAbicToSellOrderProcessor;
 import com.dfn.lsf.service.scheduler.SettlementCalculationProcessor;
@@ -29,6 +30,9 @@ public class TestController {
     @Autowired
     private SetAuthAbicToSellOrderProcessor setAuthAbicToSellOrderProcessor;
 
+    @Autowired
+    private AuditLogProcessor auditLogProcessor;
+
     // This is a placeholder for the TestController class.
     // You can add methods here to handle specific requests or perform tests.
 
@@ -50,7 +54,8 @@ public class TestController {
 
     @GetMapping("/calculateSettlement")
     public ResponseEntity<String> calculateSettlement() {
-        settlementCalculationProcessor.runSettlementCalculation();
+       // settlementCalculationProcessor.runSettlementCalculation();
+        auditLogProcessor.process("{\"messageType\":\"12\",\"subMessageType\":\"getCustomerList\",\"corellationID\":\"17485104497910212134107\",\"channelId\":\"2\",\"ipAddress\":\"10.212.134.107\"}");
         return ResponseEntity.ok("Done, settlement calculation initiated.");
     }
 }

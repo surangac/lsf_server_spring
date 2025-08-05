@@ -41,9 +41,11 @@ public class PendingActivityAdminProcessor implements MessageProcessor {
     private final Helper helper;
     private final LsfCoreService lsfCoreService;
     private final LsfCoreProcessor lsfCoreProcessor;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Override
     public String process(String request) {
+        auditLogProcessor.process(request);
         PendingActivityRequest pendingActivityRequest = gson.fromJson((String) request, PendingActivityRequest.class);
         logger.debug("===========LSF : Pending Activity Request Received from Admin , Request :" + request);
         switch (pendingActivityRequest.getActivityID()) {

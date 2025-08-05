@@ -36,9 +36,11 @@ public class MReportGenerationProcessor implements MessageProcessor {
     private final LSFRepository lsfRepository;
     private final Helper helper;
     private final ReportGenerator reportGenerator;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Override
     public String process(String request) {
+        auditLogProcessor.process(request);
         Map<String, Object> map = new HashMap<String, Object>();
         CommonResponse cmr = new CommonResponse();
         map = gson.fromJson(request, map.getClass());

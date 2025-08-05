@@ -38,9 +38,11 @@ public class MurabahApplicationPersistProcessor implements MessageProcessor {
     private final Helper helper;
     private final NotificationManager notificationManager;
     private final LsfCoreService lsfCoreService;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Override
     public String process(String request) {
+        auditLogProcessor.process(request);
         Map<String, Object> map = new HashMap<String, Object>();
         map = gson.fromJson(request, map.getClass());
         String subMessageType = map.get("subMessageType").toString();

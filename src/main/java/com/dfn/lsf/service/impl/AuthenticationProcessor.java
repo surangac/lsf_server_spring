@@ -48,8 +48,11 @@ public class AuthenticationProcessor implements MessageProcessor {
 
     private final LsfCoreService lsfCore;
 
+    private final AuditLogProcessor auditLogProcessor;
+
     @Override
     public String process(String request) {
+        auditLogProcessor.process(request);
         String rawMessage = (String) request;
         Map<String, Object> map = gson.fromJson(rawMessage, new TypeToken<Map<String, Object>>() {}.getType());
         try {

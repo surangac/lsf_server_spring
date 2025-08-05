@@ -33,9 +33,11 @@ public class ProfitCalculationMasterInquiryProcessor implements MessageProcessor
     private final LSFRepository lsfRepository;
     private final ProfitCalculationUtils profitCalculationUtils;
     private final LsfCoreService lsfCore;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Override
-    public String process(String request) {     
+    public String process(String request) {
+        auditLogProcessor.process(request);
         log.info("Processing profit calculation master inquiry request: {}", request);
         Map<String, Object> requestMap = gson.fromJson(request, new TypeToken<Map<String, Object>>() {}.getType());
         String requestType = (String) requestMap.get("requestType");            // todo

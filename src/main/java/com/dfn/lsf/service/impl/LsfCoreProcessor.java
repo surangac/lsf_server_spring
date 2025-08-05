@@ -39,6 +39,7 @@ public class LsfCoreProcessor implements MessageProcessor {
     private final LsfCoreService lsfCore;
     private final NotificationManager notificationManager;
     private final SettlementProcessor settlementProcessor;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Value("${app.bypass.umessage:false}")
     private boolean bypassUmessage;
@@ -46,6 +47,7 @@ public class LsfCoreProcessor implements MessageProcessor {
     @Override
     public String process(String request) {
         try {
+            auditLogProcessor.process(request);
             Map<String, Object> requestMap = gson.fromJson(request, Map.class);
             String subMessageType = (String) requestMap.get("subMessageType");
             
