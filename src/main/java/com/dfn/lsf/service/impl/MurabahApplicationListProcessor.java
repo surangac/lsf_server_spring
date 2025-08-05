@@ -370,11 +370,13 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
                         finalCommentList.add(tempComment);
                     }
                 }
+
+                List<Agreement> agreementList = lsfRepository.getActiveAgreements(Integer.parseInt(murabahApplication.getId()));
+                murabahApplication.setAgreementList(agreementList);
+
                 murabahApplication.setCommentList(finalCommentList);
                 if (requestStatus == 14) {
                     murabahApplication.setInstitutionInvestAccount(GlobalParameters.getInstance().getInstitutionInvestAccount());
-                    List<Agreement> agreementList = lsfRepository.getActiveAgreements(Integer.parseInt(murabahApplication.getId()));
-                    murabahApplication.setAgreementList(agreementList);
 
                     List<PurchaseOrder> purchaseOrderList = lsfRepository.getAllPurchaseOrderforCommodity(murabahApplication.getId());
                     murabahApplication.setPurchaseOrderList(purchaseOrderList);
