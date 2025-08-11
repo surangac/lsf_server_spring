@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.dfn.lsf.util.MessageType;
+import com.google.gson.GsonBuilder;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +42,9 @@ public class ReportingProcessor implements MessageProcessor {
         ReportResponse response = null;
         String rawMessage = (String) request;
         HashMap<String, String> requestMap = new HashMap<>();
+        Gson gson = new GsonBuilder()
+                .serializeNulls()
+                .create();
         requestMap = gson.fromJson(rawMessage, requestMap.getClass());
 
         String reportName = String.valueOf(requestMap.get("report_name"));
