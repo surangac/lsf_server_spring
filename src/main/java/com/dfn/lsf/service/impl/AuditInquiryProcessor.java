@@ -35,9 +35,11 @@ public class AuditInquiryProcessor implements MessageProcessor {
 
     private final Gson gson;
     private final LSFRepository lsfRepository;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Override
     public  String process(String request) {
+        auditLogProcessor.process(request);
         log.info("Processing audit inquiry request: {}", request);
         Map<String, Object> requestMap = gson.fromJson(request, new TypeToken<Map<String, Object>>() {}.getType());
         String subMessageType = (String) requestMap.get("subMessageType");

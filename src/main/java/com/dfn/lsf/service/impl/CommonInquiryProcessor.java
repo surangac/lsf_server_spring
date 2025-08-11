@@ -47,10 +47,12 @@ public class CommonInquiryProcessor implements MessageProcessor {
     private final LSFRepository lsfRepository;
     private final Gson gson;
     private final LsfCoreService lsfCore;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Override
     public String process(String request) {
         try {
+            auditLogProcessor.process(request);
             Map<String, Object> requestMap = gson.fromJson(request, Map.class);
             String subMessageType = (String) requestMap.get("subMessageType");
             

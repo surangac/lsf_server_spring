@@ -46,9 +46,11 @@ public class CustomerInquiryProcessor implements MessageProcessor {
     private final LSFRepository lsfRepository;
     private final Helper helper;
     private final LsfCoreService lsfCore;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Override
     public String process(String request) {
+        auditLogProcessor.process(request);
         Map<String, Object> map = new HashMap<String, Object>();
         CommonResponse cmr = null;
         map = gson.fromJson(request, map.getClass());

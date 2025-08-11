@@ -36,8 +36,11 @@ public class ReportingProcessor implements MessageProcessor {
     private final ReportFactory reportFactory;
     private final Gson gson;
     private final Helper helper;
+    private final AuditLogProcessor auditLogProcessor;
+
     @Override
     public String process(String request) {
+        auditLogProcessor.process(request);
         log.info("Report processor received a request.");
         ReportResponse response = null;
         String rawMessage = (String) request;

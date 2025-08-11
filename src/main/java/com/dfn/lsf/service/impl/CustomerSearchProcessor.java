@@ -38,9 +38,11 @@ public class CustomerSearchProcessor implements MessageProcessor {
     private final Gson gson;
     private final LSFRepository lsfRepository;
     private final Helper helper;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Override
     public String process(String request) {
+        auditLogProcessor.process(request);
         Map<String, Object> map = new HashMap<>();
         map = gson.fromJson(request, map.getClass());
         String subMessageType = map.get("subMessageType").toString();

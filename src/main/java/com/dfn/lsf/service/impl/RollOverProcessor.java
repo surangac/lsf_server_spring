@@ -29,9 +29,11 @@ public class RollOverProcessor implements MessageProcessor {
     private final LsfCoreService lsfCore;
     private final NotificationManager notificationManager;
     private final TransactionTemplate transactionTemplate;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Override
     public String process(final String request) {
+        auditLogProcessor.process(request);
         Map<String, Object> resultMap = new HashMap<>();
         resultMap = gson.fromJson(request, resultMap.getClass());
         String subMessageType = resultMap.get("subMessageType").toString();

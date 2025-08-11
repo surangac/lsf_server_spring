@@ -31,9 +31,11 @@ public class ApplicationCreateCPProcessor implements MessageProcessor {
     private final Gson gson;
     private final LSFRepository lsfRepository;
     private final NotificationManager notificationManager;
+    private final AuditLogProcessor auditLogProcessor;
 
     @Override
     public String process(String request) {
+        auditLogProcessor.process(request);
         String rawMessage = (String) request;
         Map<String, Object> map = new HashMap<String, Object>();
         CommonResponse cmr = new CommonResponse();
