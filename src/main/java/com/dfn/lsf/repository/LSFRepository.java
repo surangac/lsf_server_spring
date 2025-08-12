@@ -68,6 +68,7 @@ public interface LSFRepository {
     List<Comment> getApplicationComment(String applicationID);
 
     String approveApplication(int approveState, String applicationID, String statusMessage, String statusChangedUserID, String statusChangedUserName, String statusChangedIP);
+    String commodityAppStatus(String applicationID, int currentLevel, String statusMessage, String statusChangedUserID, String statusChangedUserName, String statusChangedIP);
 
     String updateMarginabilityGroupAndStockConcentration(String stockConcentrationGroup, String marginabilityGroup, String applicationID);
 

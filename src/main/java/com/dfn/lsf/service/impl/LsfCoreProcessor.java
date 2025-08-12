@@ -549,6 +549,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             applicationId = map.get("applicationId").toString();
             String approvedbyId = map.get("approvedById").toString();
             String approvedbyName = map.get("approvedByName").toString();
+            String statusChangedIP = map.get("ipAddress").toString();
             log.info("===========LSF : (approvePurchaseOrder)-REQUEST, poID :" + poId + " , applicationID:" + applicationId + " ,approvedById: " + approvedbyId + ", approvedbyName" + approvedbyName );
             int approvalStatus = map.get("approvalStatus") != null ? (int) Double.parseDouble(map.get("approvalStatus").toString()) : 0;
 
@@ -569,6 +570,9 @@ public class LsfCoreProcessor implements MessageProcessor {
                 String response = lsfRepository.approveRejectPOCommodity(po);
                 if(response.equalsIgnoreCase("1")) {
                     lsfRepository.updateActivity(po.getApplicationId(), LsfConstants.STATUS_COMMODITY_PO_SOLD_AMT_L1_APPROVED);
+                    MurabahApplication fromDB = lsfRepository.getMurabahApplication(po.getApplicationId());
+                    String statusMessage = "Sold amount Level 1 approved";
+                    lsfRepository.commodityAppStatus(po.getApplicationId(), fromDB.getCurrentLevel(), statusMessage, approvedbyId, approvedbyName, statusChangedIP);
                     cmr.setResponseCode(200);
                     cmr.setResponseMessage("Commodity Order Approved");
                 }
@@ -1125,6 +1129,7 @@ public class LsfCoreProcessor implements MessageProcessor {
         log.info("updatePurchaseOrdByAdmin PO Id: " + poId);
         String approvedbyId = map.get("approvedById").toString();
         String approvedbyName = map.get("approvedByName").toString();
+        String statusChangedIP = map.get("ipAddress").toString();
         CommonResponse cmr = new CommonResponse();
         try {
             PurchaseOrder po = lsfRepository.getSinglePurchaseOrder(poId);
@@ -1164,6 +1169,9 @@ public class LsfCoreProcessor implements MessageProcessor {
 //            po.setApprovedById(approvedbyId);
 //            po.setApprovedByName(approvedbyName);
 //            lsfRepository.approveRejectOrder(po);
+
+            String statusMessage = "Sold amount added";
+            lsfRepository.commodityAppStatus(po.getApplicationId(), fromDB.getCurrentLevel(), statusMessage, approvedbyId, approvedbyName, statusChangedIP);
 
             cmr.setResponseCode(200);
             cmr.setResponseMessage("Successfully Updated the Purchase order by admin");
@@ -1243,6 +1251,8 @@ public class LsfCoreProcessor implements MessageProcessor {
             String response = lsfRepository.approveRejectPOCommodity(po);
             if(response.equalsIgnoreCase("1")) {
                 lsfRepository.updateActivity(po.getApplicationId(), LsfConstants.STATUS_COMMODITY_PO_UPDATED_BY_ADMIN);
+                String statusMessage = "PO value added by Admin";
+                lsfRepository.commodityAppStatus(po.getApplicationId(), fromDB.getCurrentLevel(), statusMessage, approvedbyId, approvedbyName, statusChangedIP);
                 cmr.setResponseCode(200);
                 cmr.setResponseMessage("Commodity Order Approved");
             }
@@ -1311,6 +1321,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             applicationId = map.get("applicationId").toString();
             String approvedbyId = map.get("approvedById").toString();
             String approvedbyName = map.get("approvedByName").toString();
+            String statusChangedIP = map.get("ipAddress").toString();
             int approvalStatus = map.get("approvalStatus") != null ? (int) Double.parseDouble(map.get("approvalStatus").toString()) : 0;
             log.info("===========LSF : (approveL1CommodityPOBoughtAmnt)-REQUEST, poID :" + poId + " , applicationID:" + applicationId + " ,approvedById: " + approvedbyId + ", approvedbyName" + approvedbyName);
 
@@ -1328,6 +1339,9 @@ public class LsfCoreProcessor implements MessageProcessor {
                 String response = lsfRepository.approveRejectPOCommodity(po);
                 if(response.equalsIgnoreCase("1")) {
                     lsfRepository.updateActivity(po.getApplicationId(), LsfConstants.STATUS_COMMODITY_PO_UPDATED_BY_ADMIN_L1_APPROVED);
+                    MurabahApplication fromDB = lsfRepository.getMurabahApplication(po.getApplicationId());
+                    String statusMessage = "PO Level 1 Approved";
+                    lsfRepository.commodityAppStatus(po.getApplicationId(), fromDB.getCurrentLevel(), statusMessage, approvedbyId, approvedbyName, statusChangedIP);
                     cmr.setResponseCode(200);
                     cmr.setResponseMessage("Commodity Order Approved");
                 }
@@ -1425,6 +1439,8 @@ public class LsfCoreProcessor implements MessageProcessor {
                     false);
         }
         notificationManager.sendNotification(fromDB);
+        String message = "PO Level 2 Approved";
+        lsfRepository.commodityAppStatus(po.getApplicationId(), fromDB.getCurrentLevel(), message, approvedbyId, approvedbyName, statusChangedIP);
         cmr.setResponseCode(200);
         cmr.setResponseMessage(responseMessage + "|" + "Successfully Approved the Purchase order by admin");
         log.info("PO {} Successfully Approved by admin", poId);
@@ -1505,6 +1521,12 @@ public class LsfCoreProcessor implements MessageProcessor {
             } else {
                 log.info("===========LSF : (commodityPOExecution) PO Sell But Not Settle is set to 1, so not settling the Murabah Application");
             }
+
+            MurabahApplication fromDB = lsfRepository.getMurabahApplication(po.getApplicationId());
+            String statusMessage = "Sold amount Level 2 Approved";
+            String approvedbyId = map.get("approvedById").toString();
+            String approvedbyName = map.get("approvedByName").toString();
+            lsfRepository.commodityAppStatus(po.getApplicationId(), fromDB.getCurrentLevel(), statusMessage, approvedbyId, approvedbyName, statusChangedIP);
 
             cmr.setResponseCode(200);
             cmr.setResponseMessage("Successfully Updated the Purchase order by admin");

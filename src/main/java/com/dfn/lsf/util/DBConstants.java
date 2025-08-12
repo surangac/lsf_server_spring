@@ -61,6 +61,7 @@ public class DBConstants {
     public static final String PROC_L01_GET_ALL = "l01_get_all";
     public static final String PROC_GET_BY_APPLICATION_ID = "l01_get_by_application_id";
     public static final String PROC_L01_GET_APP_STATE = "l02_get_app_state";
+    public static final String PROC_L02_ADD_UPDATE_APP_STATE = "l02_add_update_state";
     public static final String PROC_L01_GET_APP_REJECTED_REASON = "l02_get_app_rejected_reason";
     public static final String PROC_GET_BY_CUSTOMER_ID = "l01_get_by_customer_id";
     public static final String PROC_GET_APPS_BY_CUSTOMER_ID = "l01_get_apps_by_customer_id";

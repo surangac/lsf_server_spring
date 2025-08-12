@@ -609,6 +609,20 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
+    public String commodityAppStatus(String applicationID, int currentLevel, String statusMessage, String statusChangedUserID, String statusChangedUserName, String statusChangedIP) {
+        Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("pl02_l01_app_id", applicationID);
+        parameterMap.put("pl02_level_id", currentLevel);
+        parameterMap.put("pl02_description", statusMessage);
+        parameterMap.put("pl02_message", statusMessage);
+        parameterMap.put("pl02_sts_changed_user_id", statusChangedUserID);
+        parameterMap.put("pl02_status_id", currentLevel);
+        parameterMap.put("pl02_sts_changed_user_name", statusChangedUserName);
+        parameterMap.put("pl02_status_changed_ip", statusChangedIP);
+        return oracleRepository.executeProc(DBConstants.PKG_M02_APP_STATE_FLOW, DBConstants.PROC_L02_ADD_UPDATE_APP_STATE, parameterMap);
+    }
+
+    @Override
     @CacheEvict(value = "murabahApplications", key = "#applicationID")
     public String updateMarginabilityGroupAndStockConcentration(String stockConcentrationGroup, String marginabilityGroup, String applicationID) {
         Map<String, Object> parameterMap = new HashMap<>();
