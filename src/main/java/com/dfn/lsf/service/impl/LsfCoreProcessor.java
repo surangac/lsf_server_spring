@@ -571,7 +571,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                 if(response.equalsIgnoreCase("1")) {
                     lsfRepository.updateActivity(po.getApplicationId(), LsfConstants.STATUS_COMMODITY_PO_SOLD_AMT_L1_APPROVED);
                     MurabahApplication fromDB = lsfRepository.getMurabahApplication(po.getApplicationId());
-                    String statusMessage = "Sold amount Level 1 approved";
+                    String statusMessage = "Sold Amount Level 1 Approved";
                     lsfRepository.commodityAppStatus(po.getApplicationId(), fromDB.getCurrentLevel(), statusMessage, approvedbyId, approvedbyName, statusChangedIP);
                     cmr.setResponseCode(200);
                     cmr.setResponseMessage("Commodity Order Approved");
@@ -1170,7 +1170,7 @@ public class LsfCoreProcessor implements MessageProcessor {
 //            po.setApprovedByName(approvedbyName);
 //            lsfRepository.approveRejectOrder(po);
 
-            String statusMessage = "Sold amount added";
+            String statusMessage = "Sold Amount Added";
             lsfRepository.commodityAppStatus(po.getApplicationId(), fromDB.getCurrentLevel(), statusMessage, approvedbyId, approvedbyName, statusChangedIP);
 
             cmr.setResponseCode(200);
@@ -1251,7 +1251,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             String response = lsfRepository.approveRejectPOCommodity(po);
             if(response.equalsIgnoreCase("1")) {
                 lsfRepository.updateActivity(po.getApplicationId(), LsfConstants.STATUS_COMMODITY_PO_UPDATED_BY_ADMIN);
-                String statusMessage = "PO value added by Admin";
+                String statusMessage = "PO Value Added by Admin";
                 lsfRepository.commodityAppStatus(po.getApplicationId(), fromDB.getCurrentLevel(), statusMessage, approvedbyId, approvedbyName, statusChangedIP);
                 cmr.setResponseCode(200);
                 cmr.setResponseMessage("Commodity Order Approved");
@@ -1523,7 +1523,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             }
 
             MurabahApplication fromDB = lsfRepository.getMurabahApplication(po.getApplicationId());
-            String statusMessage = "Sold amount Level 2 Approved";
+            String statusMessage = "Sold Amount Level 2 Approved";
             String approvedbyId = map.get("approvedById").toString();
             String approvedbyName = map.get("approvedByName").toString();
             lsfRepository.commodityAppStatus(po.getApplicationId(), fromDB.getCurrentLevel(), statusMessage, approvedbyId, approvedbyName, statusChangedIP);
