@@ -153,6 +153,7 @@ public class AuditInquiryProcessor implements MessageProcessor {
             }
             customerDetailedInfo.setStatusList(lsfRepository.getApplicationStatus(murabahApplication.getId()));
             customerDetailedInfo.setDailyFtvList(lsfRepository.getFTVsummaryForDashBoard(murabahApplication.getId()));
+            customerDetailedInfo.setProductType(murabahApplication.getProductType());
         }
             return gson.toJson(customerDetailedInfo);
     }

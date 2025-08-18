@@ -40,4 +40,5 @@ public class CustomerDetailedInfo {
     private String pendingStatus;
     private List<Status> statusList;
     List<FtvSummary> dailyFtvList;
+    private int productType;
 }
