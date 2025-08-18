@@ -154,6 +154,7 @@ public class AuditInquiryProcessor implements MessageProcessor {
             customerDetailedInfo.setStatusList(lsfRepository.getApplicationStatus(murabahApplication.getId()));
             customerDetailedInfo.setDailyFtvList(lsfRepository.getFTVsummaryForDashBoard(murabahApplication.getId()));
             customerDetailedInfo.setProductType(murabahApplication.getProductType());
+            customerDetailedInfo.setFinanceMethod(murabahApplication.getFinanceMethod());
         }
             return gson.toJson(customerDetailedInfo);
     }

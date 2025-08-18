@@ -41,4 +41,5 @@ public class CustomerDetailedInfo {
     private List<Status> statusList;
     List<FtvSummary> dailyFtvList;
     private int productType;
+    private String financeMethod;
 }
