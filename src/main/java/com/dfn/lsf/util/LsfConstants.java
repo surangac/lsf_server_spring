@@ -414,6 +414,7 @@ public class LsfConstants {
     public static final String CONTRACT_ROLLOVER_PROCESS = "contractRollover";
     public static final int ERROR_NOT_IN_ROLLOVER_PERIOD = 9033;
     public static final int ERROR_NOT_IN_ROLLOVER_RATIO = 9034;
+    public static final int APPLICATION_MUST_BE_SETTLED = 9035;
 
     //ML Application creation
     public static final int ERROR_APPLICATION_IS_AVAILABLE_FOR_THIS_CUSTOMER = 9023;

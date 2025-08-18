@@ -164,6 +164,7 @@ public class SettlementProcessor implements MessageProcessor {
             if (originalApplication.getCurrentLevel() != 18) {
                 responseCode = 500;
                 responseMessage = "The original application must be settled before settling the rollover.";
+                commonResponse.setErrorCode(LsfConstants.APPLICATION_MUST_BE_SETTLED);
                 commonResponse.setResponseCode(responseCode);
                 commonResponse.setResponseMessage(responseMessage);
                 return gson.toJson(commonResponse);
