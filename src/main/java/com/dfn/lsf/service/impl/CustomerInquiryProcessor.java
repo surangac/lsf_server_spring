@@ -692,6 +692,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
                                             Date.from(apprvDate.atZone(ZoneId.systemDefault()).toInstant()),
                                             GlobalParameters.getInstance().getGracePeriodforCommoditySell()));
                                     listResponse.setCustomerContractComment(poList.getFirst().getApproveComment());
+                                    listResponse.setAuthAbicToSell(poList.getFirst().getAuthAbicToSell());
 
                                 } catch (DateTimeParseException e) {
                                     logger.error("Error parsing approved date for application {}: {}", 

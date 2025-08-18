@@ -20,4 +20,5 @@ public class MurabahApplicationListResponse extends CommonResponse {
 
     private List<MurabahApplication> applicationList;
     private String customerContractComment;
+    private String authAbicToSell;
 }
