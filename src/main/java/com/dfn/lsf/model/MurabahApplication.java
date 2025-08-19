@@ -92,6 +92,7 @@ public class MurabahApplication extends MessageHeader {
     private String displayApplicationId;
     private String kycExpiryDate;
     private String homeTelephone;
+    private String authAbicToSell;
 
     public String getAdditionalDetails() {
         return additionalDetails;
@@ -768,5 +769,12 @@ public class MurabahApplication extends MessageHeader {
 
     public void setHomeTelephone(String homeTelephone) {
         this.homeTelephone = homeTelephone;
+    }
+
+    public String getAuthAbicToSell() {
+        return authAbicToSell;
+    }
+    public void setAuthAbicToSell(String authAbicToSell) {
+        this.authAbicToSell = authAbicToSell;
     }
 }
