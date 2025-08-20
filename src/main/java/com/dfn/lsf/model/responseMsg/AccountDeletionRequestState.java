@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 public class AccountDeletionRequestState {
     private boolean isSent;
     private String failureReason;
+    private int errorCode;
 
     public boolean isSent() {
         return isSent;
@@ -21,5 +22,13 @@ public class AccountDeletionRequestState {
 
     public void setFailureReason(String failureReason) {
         this.failureReason = failureReason;
+    }
+
+    public int getErrorCode() {
+        return errorCode;
+    }
+
+    public void setErrorCode(int errorCode) {
+        this.errorCode = errorCode;
     }
 }

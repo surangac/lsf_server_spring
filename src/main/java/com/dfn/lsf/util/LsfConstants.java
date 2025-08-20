@@ -415,6 +415,9 @@ public class LsfConstants {
     public static final int ERROR_NOT_IN_ROLLOVER_PERIOD = 9033;
     public static final int ERROR_NOT_IN_ROLLOVER_RATIO = 9034;
     public static final int APPLICATION_MUST_BE_SETTLED = 9035;
+    public static final int CASH_TRANSFER_FAILED_FROM_OMS = 9036;
+    public static final int FAILED_TO_INITIALIZE_SHARE_TRANSFER = 9037;
+    public static final int SELL_PENDING_AVAILABLE = 9038;
 
     //ML Application creation
     public static final int ERROR_APPLICATION_IS_AVAILABLE_FOR_THIS_CUSTOMER = 9023;

@@ -1354,15 +1354,18 @@ public class LsfCoreService {
             lsfRepository.updateActivity(applicationID, LsfConstants.STATUS_ACCOUNT_DELETION_REQUEST_SENT_TO_OMS);
         } else if (commonResponse.getResponseCode() == LsfConstants.REQUEST_DID_NOT_ACCEPTED_CASH_TRANSFER_FAILED) {
             accountDeletionRequestState.setIsSent(false);
+            accountDeletionRequestState.setErrorCode(LsfConstants.CASH_TRANSFER_FAILED_FROM_OMS);
             accountDeletionRequestState.setFailureReason("Cash Transfer Failed from OMS.Contact ABIC for more information");
             lsfRepository.updateActivity(applicationID, LsfConstants.STATUS_ACCOUNT_DELETION_REQUEST_FAILED_TO_SEND_OMS_DUE_TO_CASH_TRANSFER);
         } else if (commonResponse.getResponseCode() == LsfConstants.REQUEST_DID_NOT_ACCEPTED_SHARE_TRANSFER_FAILED) {
             accountDeletionRequestState.setIsSent(false);
+            accountDeletionRequestState.setErrorCode(LsfConstants.FAILED_TO_INITIALIZE_SHARE_TRANSFER);
             accountDeletionRequestState.setFailureReason("Cash Transferred & Failed to Initialize Share Transfer in OMS.Contact ABIC for more information");
             lsfRepository.updateActivity(applicationID, LsfConstants.STATUS_ACCOUNT_DELETION_REQUEST_FAILED_TO_SEND_OMS_DUE_TO_SHARE_TRANSFER);
 
         } else if (commonResponse.getResponseCode() == LsfConstants.REQUEST_DID_NOT_ACCEPTED_SELL_PENDING_AVAILABLE) {
             accountDeletionRequestState.setIsSent(false);
+            accountDeletionRequestState.setErrorCode(LsfConstants.SELL_PENDING_AVAILABLE);
             accountDeletionRequestState.setFailureReason("Sell Pending Available,Failed to close accounts.Contact ABIC for more information");
             lsfRepository.updateActivity(applicationID, LsfConstants.STATUS_ACCOUNT_DELETION_REQUEST_FAILED_TO_SEND_OMS_DUE_TO_SHARE_TRANSFER);
         }

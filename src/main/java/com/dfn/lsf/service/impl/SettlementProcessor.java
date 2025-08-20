@@ -127,7 +127,7 @@ public class SettlementProcessor implements MessageProcessor {
                 }else{
                     log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Rejected from OMS, Application ID :" + applicationID + ", Reason :" +  accountDeletionRequestState.getFailureReason());
                     responseCode = 200; // since cash transfer is success response code is set to 200
-                    commonResponse.setErrorCode(-1); // error code is set since cash transfer is success and account closure is failed
+                    commonResponse.setErrorCode(accountDeletionRequestState.getErrorCode()); // "-1" error code is set since cash transfer is success and account closure is failed
                     responseMessage = accountDeletionRequestState.getFailureReason();
                 }
             } else {
@@ -209,7 +209,7 @@ public class SettlementProcessor implements MessageProcessor {
                     } else{
                         log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Rejected from OMS, Application ID :" + applicationID + ", Reason :" +  accountDeletionRequestState.getFailureReason());
                         responseCode = 200; // since cash transfer is success response code is set to 200
-                        commonResponse.setErrorCode(-1); // error code is set since cash transfer is success and account closure is failed
+                        commonResponse.setErrorCode(accountDeletionRequestState.getErrorCode()); // error code is set since cash transfer is success and account closure is failed
                         responseMessage = accountDeletionRequestState.getFailureReason();
                     }
                 }
@@ -272,7 +272,7 @@ public class SettlementProcessor implements MessageProcessor {
                 }else{
                     log.info("===========LSF :(performManualSettlement)- Account Deletion Request Rejected from OMS, Application ID :" + applicationID + ", Reason :" +  accountDeletionRequestState.getFailureReason());
                     responseCode = 200;
-                    commonResponse.setErrorCode(-1);
+                    commonResponse.setErrorCode(accountDeletionRequestState.getErrorCode());
                     responseMessage = accountDeletionRequestState.getFailureReason();
                 }
             } else {
