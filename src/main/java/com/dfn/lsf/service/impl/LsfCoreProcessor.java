@@ -1602,6 +1602,14 @@ public class LsfCoreProcessor implements MessageProcessor {
         }
         String key = lsfRepository.addAuthAbicToSellStatus(po);
         if (key.equalsIgnoreCase("1")){
+            String approvedbyId = map.get("customerId").toString();
+            String approvedbyName = map.get("userName").toString();
+            String statusChangedIP = map.get("ipAddress").toString();
+            String appId = map.get("appId").toString();
+            int currentLevel = 16;
+            String statusMessage = "Authorized ABIC to Sell";
+            lsfRepository.commodityAppStatus(appId, currentLevel, statusMessage, approvedbyId, approvedbyName, statusChangedIP);
+
             cmr.setResponseCode(200);
             cmr.setResponseMessage(key+"|Confirmed");
         }else {
