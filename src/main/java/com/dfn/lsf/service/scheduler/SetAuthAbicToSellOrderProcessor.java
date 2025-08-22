@@ -27,9 +27,9 @@ public class SetAuthAbicToSellOrderProcessor {
         log.info("==========Authenticate ABIC to Sell...........!!!!");
         int gracePrd = GlobalParameters.getInstance().getGracePeriodforCommoditySell();
         List<PurchaseOrder> purchaseOrderList  = lsfRepository.getPOForSetAuthAbicToSell(gracePrd);
-        if(purchaseOrderList != null && purchaseOrderList.size() > 0){
+        if(purchaseOrderList != null && purchaseOrderList.size() > 0) {
             for(PurchaseOrder purchaseOrder: purchaseOrderList) {
-                purchaseOrder.setAuthAbicToSell("1");
+                purchaseOrder.setAuthAbicToSell("2");
                 purchaseOrder.setIsPhysicalDelivery(0);
                 lsfRepository.addAuthAbicToSellStatus(purchaseOrder);
                 MurabahApplication application = lsfRepository.getMurabahAppicationApplicationID(purchaseOrder.getApplicationId()).get(0);

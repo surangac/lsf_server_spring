@@ -18,6 +18,7 @@ public class OrderProfitMapper implements RowMapper<OrderProfit> {
         orderProfit.setDate(rs.getString("L23_DATE"));
         orderProfit.setProfitAmount(rs.getDouble("L23_PROFIT_AMT"));
         orderProfit.setCumulativeProfitAmount(rs.getDouble("L23_CUM_PROFIT_AMT"));
+        orderProfit.setCreatedDate(rs.getDate("L23_DATE").toLocalDate());
         return orderProfit;
     }
 }

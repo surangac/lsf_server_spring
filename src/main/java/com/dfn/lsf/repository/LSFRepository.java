@@ -1,5 +1,6 @@
 package com.dfn.lsf.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -385,7 +386,9 @@ public interface LSFRepository {
     List<OrderProfit> getLastEntryForApplication(String applicationID, String orderID);
 
     String updateProfit(OrderProfit orderProfit, double lsfTypeCashBalance);
-
+    String updateProfit_withDate(OrderProfit orderProfit, double lsfTypeCashBalance);
+    boolean isProfitEntryExistsForDate(String applicationID, String orderID, LocalDate date);
+    OrderProfit getProfitEntryForDate(String applicationID, String orderID, LocalDate date);
     List<NotificationMsgConfiguration> getNotificationMsgConfigurationForSettlement(int applicationCurrentLevel, String applicationCurrentStatus);
 
     String  addLiquidationLog(int liquidationReference, String cashFromAccount, String cashToAccount, double transferAmount, String applicationID, int status, String poID);

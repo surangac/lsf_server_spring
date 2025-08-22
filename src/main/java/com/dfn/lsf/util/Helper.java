@@ -543,6 +543,7 @@ public class Helper {
                 symbol.setSymbolCode(symbolObj.get("symbolCode").toString());
                 symbol.setExchange(symbolObj.get("exchange").toString());
                 symbol.setShortDescription((String) symbolObj.getOrDefault("shortDescription", ""));
+                symbol.setShortDescriptionAR((String) symbolObj.getOrDefault("shortDescriptionAR", symbolObj.getOrDefault("shortDescription", "" )));
                 symbol.setPreviousClosed(Double.parseDouble(symbolObj.get("previousClosed").toString()));
                 symbol.setLastTradePrice(Double.parseDouble(symbolObj.get("lastTradePrice").toString()));
 
@@ -556,7 +557,7 @@ public class Helper {
 
                 int pendingSettle = Math.round(Float.parseFloat(symbolObj.getOrDefault("pendingSettle", "0").toString()));
                 int sellPending = Math.round(Float.parseFloat(symbolObj.getOrDefault("sellPending", "0").toString()));
-                symbol.setAvailableQty(Math.round(Float.parseFloat(symbolObj.get("availableQty").toString())) - pendingSettle + sellPending);
+                symbol.setAvailableQty(Math.round(Float.parseFloat(symbolObj.get("availableQty").toString())) + sellPending);
                 //symbol.setAvailableQty(Math.round(Float.parseFloat(symbolObj.get("availableQty").toString())));
                 double marketPrice = symbol.getLastTradePrice() > 0 ? symbol.getLastTradePrice(): symbol.getPreviousClosed();
                 symbol.setMarketValue(symbol.getAvailableQty() * marketPrice);

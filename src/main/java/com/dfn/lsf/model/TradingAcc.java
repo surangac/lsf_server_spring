@@ -64,7 +64,7 @@ public class TradingAcc {
         if(this.symbolsForColleteral==null){
             this.symbolsForColleteral=new ArrayList<>();
         }
-        for(Symbol smb:this.symbolsForColleteral){
+        for(Symbol smb:this.symbolsForColleteral) {
             if((smb.getSymbolCode().equals(symbol)) && (smb.getExchange().equals(exchange))){
                 return  smb;
             }

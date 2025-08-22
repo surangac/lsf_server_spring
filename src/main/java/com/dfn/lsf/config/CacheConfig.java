@@ -1,5 +1,7 @@
 package com.dfn.lsf.config;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -7,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -37,5 +40,13 @@ public class CacheConfig {
                                                            .expireAfterWrite(1, TimeUnit.HOURS)
                                                            .maximumSize(500));
         return configurations;
+    }
+
+    @Bean
+    public Gson gson() {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
+                .create();
+        return  gson;
     }
 }

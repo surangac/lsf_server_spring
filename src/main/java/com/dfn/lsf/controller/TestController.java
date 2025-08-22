@@ -1,11 +1,15 @@
 package com.dfn.lsf.controller;
 
+import com.dfn.lsf.model.MurabahApplication;
+import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.impl.AuditLogProcessor;
 import com.dfn.lsf.service.impl.InvestorAccountCreationProcessor;
 import com.dfn.lsf.service.scheduler.SetAuthAbicToSellOrderProcessor;
 import com.dfn.lsf.service.scheduler.SettlementCalculationProcessor;
 import com.dfn.lsf.util.Helper;
+import com.dfn.lsf.util.ProfitCalculationNew;
+import com.dfn.lsf.util.ProfitCalculationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,19 +23,28 @@ public class TestController {
     private Helper helper;
 
     @Autowired
+    private LsfCoreService lsfCore;
+
+    @Autowired
+    private LSFRepository lsfRepository;
+
+    @Autowired
     private InvestorAccountCreationProcessor investorAccountCreationProcessor;
 
     @Autowired
     private SettlementCalculationProcessor settlementCalculationProcessor;
-
-    @Autowired
-    private LsfCoreService lsfCoreService;
-
-    @Autowired
-    private SetAuthAbicToSellOrderProcessor setAuthAbicToSellOrderProcessor;
+//
+//    @Autowired
+//    private LsfCoreService lsfCoreService;
+//
+//    @Autowired
+//    private SetAuthAbicToSellOrderProcessor setAuthAbicToSellOrderProcessor;
 
     @Autowired
     private AuditLogProcessor auditLogProcessor;
+
+    @Autowired
+    private ProfitCalculationNew profitCalculationUtils;
 
     // This is a placeholder for the TestController class.
     // You can add methods here to handle specific requests or perform tests.
@@ -42,7 +55,10 @@ public class TestController {
     public ResponseEntity<String> testEndpoint() {
         //List<CashAcc> cashAccounts = helper.getLsfTypeCashAccounts("11140210", "16840");
         //lsfCoreService.initialValuation("19420");
-        setAuthAbicToSellOrderProcessor.setAuthAbicToSellOrderProcessor();
+        //setAuthAbicToSellOrderProcessor.setAuthAbicToSellOrderProcessor();
+        String masterCashAccount = lsfCore.getMasterCashAccount();
+        MurabahApplication application = lsfRepository.getMurabahApplication("19480");
+        profitCalculationUtils.runCalculationForTheCurrentDay(application, masterCashAccount);
         return ResponseEntity.ok("Test endpoint is working!");
     }
 
@@ -54,8 +70,19 @@ public class TestController {
 
     @GetMapping("/calculateSettlement")
     public ResponseEntity<String> calculateSettlement() {
-       // settlementCalculationProcessor.runSettlementCalculation();
-        auditLogProcessor.process("{\"messageType\":\"12\",\"subMessageType\":\"getCustomerList\",\"corellationID\":\"17485104497910212134107\",\"channelId\":\"2\",\"ipAddress\":\"10.212.134.107\"}");
+        settlementCalculationProcessor.runSettlementCalculation();
+       // auditLogProcessor.process("{\"messageType\":\"12\",\"subMessageType\":\"getCustomerList\",\"corellationID\":\"17485104497910212134107\",\"channelId\":\"2\",\"ipAddress\":\"10.212.134.107\"}");
         return ResponseEntity.ok("Done, settlement calculation initiated.");
+    }
+
+    @GetMapping("/testapp")
+    public ResponseEntity<String> testEndpoint(@RequestParam String appId) {
+        //List<CashAcc> cashAccounts = helper.getLsfTypeCashAccounts("11140210", "16840");
+        //lsfCoreService.initialValuation("19420");
+        //setAuthAbicToSellOrderProcessor.setAuthAbicToSellOrderProcessor();
+        String masterCashAccount = lsfCore.getMasterCashAccount();
+        MurabahApplication application = lsfRepository.getMurabahApplication(appId);
+        profitCalculationUtils.runCalculationForTheCurrentDay(application, masterCashAccount);
+        return ResponseEntity.ok("Test app endpoint is working!");
     }
 }

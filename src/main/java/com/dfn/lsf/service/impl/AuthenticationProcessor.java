@@ -3,15 +3,12 @@ package com.dfn.lsf.service.impl;
 import java.util.List;
 import java.util.Map;
 
+import com.dfn.lsf.model.*;
 import com.dfn.lsf.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.dfn.lsf.model.CommonResponse;
-import com.dfn.lsf.model.GlobalParameters;
-import com.dfn.lsf.model.MurabahApplication;
-import com.dfn.lsf.model.Status;
 import com.dfn.lsf.model.requestMsg.CommonInqueryMessage;
 import com.dfn.lsf.model.responseMsg.AuthResponse;
 import com.dfn.lsf.repository.LSFRepository;
@@ -305,7 +302,7 @@ public class AuthenticationProcessor implements MessageProcessor {
                 try {
                     applicationList = lsfRepository.getMurabahAppicationApplicationID(objMap.get("id").toString());
                     if (!applicationList.isEmpty()) {
-                        MurabahApplication fromDB = applicationList.get(0);
+                        MurabahApplication fromDB = applicationList.getFirst();
                         if (fromDB != null) {
                             int appStatus = Integer.parseInt(objMap.get("approvalStatus").toString());
                             int currentLevel=Integer.parseInt(objMap.get("currentLevel").toString());
@@ -340,7 +337,13 @@ public class AuthenticationProcessor implements MessageProcessor {
                                 logger.info("===========LSF : Sending Black List Request to OMS:" + gson.toJson(blackListRequest));
                                 String omsResponse = helper.omsCommonRequests(gson.toJson(blackListRequest));
                                 logger.info("===========LSF : OMS Response to  Black List Request :" + omsResponse);
-
+                                if (fromDB.isRollOverApp()) {
+                                    MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(fromDB.getId());
+                                    if(collaterals != null) {
+                                        CommonResponse collateralReleaseResponse = (CommonResponse) lsfCore.releaseCollaterals(collaterals);
+                                        logger.info("===========LSF : Collateral Release Responsed for Roll Over at rejection: " + fromDB.getId());
+                                    }
+                                }
                             }
 
                             notificationManager.sendNotification(fromDB);

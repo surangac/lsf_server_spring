@@ -287,6 +287,7 @@ public class Symbol {
 
     public void mapFromOms(Symbol sourceSymbol) {
         this.setShortDescription(sourceSymbol.getShortDescription());
+        this.setShortDescriptionAR(sourceSymbol.getShortDescriptionAR());
         this.setOpenBuyQty(sourceSymbol.getOpenBuyQty());
         this.setPreviousClosed(sourceSymbol.getPreviousClosed());
         this.setLastTradePrice(sourceSymbol.getLastTradePrice());

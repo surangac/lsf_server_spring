@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.dfn.lsf.util.ProfitCalculationNew;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +32,8 @@ public class ProfitCalculationMasterInquiryProcessor implements MessageProcessor
 
     private final Gson gson;
     private final LSFRepository lsfRepository;
-    private final ProfitCalculationUtils profitCalculationUtils;
+    //private final ProfitCalculationUtils profitCalculationUtils;
+    private final ProfitCalculationNew profitCalculationUtils;
     private final LsfCoreService lsfCore;
     private final AuditLogProcessor auditLogProcessor;
 
@@ -84,7 +86,6 @@ public class ProfitCalculationMasterInquiryProcessor implements MessageProcessor
                     response.setErrorCode(LsfConstants.ERROR_NOT_ALLOW_TO_RUN_MANUAL_PROFIT_CYCLE_FOR_FUTURE_DATE);
                 } else { // run the calculation for today
                     profitCalculationUtils.runCalculationForTheCurrentDay(murabahApplication, masterCashAccount);
-
                 }
             }
         } else if (startDate.compareTo(new Date()) == 1) { // if the issueDate after current day --> reject the request

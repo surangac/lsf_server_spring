@@ -297,6 +297,9 @@ public class DBConstants {
     public static final String L01_GET_ODRCNTCT_SINGED_APP = "l01_get_odrcntct_singed_app";
     public static final String L23_GET_LSTONE = "l23_get_lstone";
     public static final String L23_ADD = "l23_add";
+    public static final String L23_ADD_WITH_DATE = "l23_add_with_date";
+    public static final String L23_GET_PROFIT_ENTRY_FOR_DATE = "l23_get_entry_by_date_order";
+    public static final String L23_CHECK_ENTRY_EXISTS = "l23_check_entry_exists";
     public static final String N03_GET_STTLEMENT_MSG_TMPLT = "n03_get_sttlement_msg_tmplt";
     public static final String L24_ADD_LIQUIDATION_ENTRY = "l24_add_liquidation_entry";
     public static final String L24_GET_LIQUIDATION_LOG = "l24_get_liquidation_log";

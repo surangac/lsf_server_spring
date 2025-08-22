@@ -1,6 +1,8 @@
 package com.dfn.lsf.repository;
 
+import java.sql.Date;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1468,10 +1470,6 @@ public class OracleUnifiedRepository implements LSFRepository {
             // saving Cash accounts in Collaterals
             if (mApplicationCollaterals.getCashAccForColleterals() != null) {
                 for (CashAcc cashAcc : mApplicationCollaterals.getCashAccForColleterals()) {
-                /*if(cashAcc.getAmountAsColletarals()>0){
-                    cashAcc.setCollateralId(collateralId);
-                    this.updateCashAccount(cashAcc);
-                }*/
                     cashAcc.setCollateralId(collateralId);
                     this.updateCashAccount(cashAcc);
 
@@ -1510,7 +1508,19 @@ public class OracleUnifiedRepository implements LSFRepository {
                 for (TradingAcc tradingAcc : mApplicationCollaterals.getLsfTypeTradingAccounts()) {
                     tradingAcc.setCollateralId(collateralId);
                     this.updateTradingAccount(tradingAcc);
+                    if (tradingAcc.getSymbolsForColleteral() != null) {
+                        if (tradingAcc.getSymbolsForColleteral().size() > 0) {
+                            for (Symbol symbol : tradingAcc.getSymbolsForColleteral()) {
+                                if ((symbol.getColleteralQty() > 0) || (symbol.getTransferedQty() > 0)) {
+                                    this.updateTradingAccountSymbols(tradingAcc, symbol);
+                                    totalPFValue = totalPFValue + symbol.getContibutionTocollateral();
+                                }
+                            }
+                        }
+                    }
                 }
+                mApplicationCollaterals.setTotalPFColleteral(totalPFValue);
+                this.addEditCollaterals(mApplicationCollaterals);
             }
 
         }
@@ -1661,7 +1671,11 @@ public class OracleUnifiedRepository implements LSFRepository {
             }
 
             purchaseOrder.setCommodityList(this.getPurchaseOrderCommodities(purchaseOrder.getId()));
-            purchaseOrder.setRemainTimeToSell(LSFUtils.getRemainTimeForGracePrd(apprvDate,GlobalParameters.getInstance().getGracePeriodforCommoditySell()));
+            if (purchaseOrder.getCustomerApproveStatus() == 1) {
+                purchaseOrder.setRemainTimeToSell(LSFUtils.getRemainTimeForGracePrd(apprvDate,GlobalParameters.getInstance().getGracePeriodforCommoditySell()));
+            } else {
+                purchaseOrder.setRemainTimeToSell(null);
+            }
         }
         return purchaseOrderList;
     }
@@ -2365,9 +2379,44 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl23_profit_amt", orderProfit.getProfitAmount());
         parameterMap.put("pl23_cum_profit_amt", orderProfit.getCumulativeProfitAmount());
         parameterMap.put("pl23_cum_profit_amt", orderProfit.getCumulativeProfitAmount());
-        parameterMap.put("pl23_lsf_cash_acc_balance", lsfTypeCashBalance);
         return oracleRepository.executeProc(DBConstants.PKG_L23_ORDER_PROFIT_LOG, DBConstants.L23_ADD, parameterMap);
 
+    }
+
+    @Override
+    public String updateProfit_withDate(OrderProfit orderProfit, double lsfTypeCashBalance) {
+        Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("pl23_application_id", orderProfit.getApplicationID());
+        parameterMap.put("pl23_order_id", orderProfit.getOrderID());
+        parameterMap.put("pl23_profit_amt", orderProfit.getProfitAmount());
+        parameterMap.put("pl23_cum_profit_amt", orderProfit.getCumulativeProfitAmount());
+        parameterMap.put("pl23_cum_profit_amt", orderProfit.getCumulativeProfitAmount());
+        parameterMap.put("pl23_lsf_cash_acc_balance", lsfTypeCashBalance);
+        parameterMap.put("pl23_lsf_cash_acc_balance", lsfTypeCashBalance);
+        parameterMap.put("pl23_date", orderProfit.getCreatedDate());
+        return oracleRepository.executeProc(DBConstants.PKG_L23_ORDER_PROFIT_LOG, DBConstants.L23_ADD_WITH_DATE, parameterMap);
+
+    }
+
+    @Override
+    public boolean isProfitEntryExistsForDate(String applicationID, String orderID, LocalDate date) {
+        Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("pl23_application_id", Integer.parseInt(applicationID));
+        parameterMap.put("pl23_order_id", Integer.parseInt(orderID));
+        parameterMap.put("pl23_date", Date.valueOf(date));
+        String result = oracleRepository.executeProc(DBConstants.PKG_L23_ORDER_PROFIT_LOG, DBConstants.L23_CHECK_ENTRY_EXISTS, parameterMap);
+        Integer exists = Integer.parseInt(result);
+        return exists > 0;
+    }
+
+    @Override
+    public OrderProfit getProfitEntryForDate(String applicationID, String orderID, LocalDate date) {
+        Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("pl23_application_id", Integer.parseInt(applicationID));
+        parameterMap.put("pl23_order_id", Integer.parseInt(orderID));
+        parameterMap.put("pl23_date", Date.valueOf(date));
+        var results = oracleRepository.getProcResult(DBConstants.PKG_L23_ORDER_PROFIT_LOG, DBConstants.L23_GET_PROFIT_ENTRY_FOR_DATE, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.ORDER_PROFIT));
+        return results.isEmpty() ? null : (OrderProfit) results.getFirst();
     }
 
     @Override

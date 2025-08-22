@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.dfn.lsf.util.LsfConstants.DEPOSIT_SUCCESS_RESPONSE;
 import static com.dfn.lsf.util.LsfConstants.WITHDRAW_SUCCESS_RESPONSE;
 
 @Service

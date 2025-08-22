@@ -2,14 +2,10 @@ package com.dfn.lsf.service.impl;
 
 import java.util.Map;
 
+import com.dfn.lsf.model.*;
 import com.dfn.lsf.util.MessageType;
 import org.springframework.stereotype.Service;
 
-import com.dfn.lsf.model.CashAcc;
-import com.dfn.lsf.model.CommonResponse;
-import com.dfn.lsf.model.MurabahApplication;
-import com.dfn.lsf.model.PurchaseOrder;
-import com.dfn.lsf.model.TradingAcc;
 import com.dfn.lsf.model.responseMsg.AccountDeletionRequestState;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
@@ -79,16 +75,15 @@ public class SettlementProcessor implements MessageProcessor {
         String masterCashAccount = null;
         MurabahApplication application = lsfRepository.getMurabahApplication(applicationID);
 
-        if(application.getCurrentLevel() >= 17){
+        if(!application.getFinanceMethod().equals("1")) {
+            return performEarlySettlementCommodity(applicationID, userID, settlementAmount, orderID);
+        }
+        if(application.getCurrentLevel() >= 17) {
             responseCode = 500;
             responseMessage = "Application is already in settlement process";
             commonResponse.setResponseCode(responseCode);
             commonResponse.setResponseMessage(responseMessage);
             return gson.toJson(commonResponse);
-        }
-
-        if(!application.getFinanceMethod().equals("1")) {
-            return performEarlySettlementCommodity(applicationID, userID, settlementAmount, orderID);
         }
         log.info("===========LSF : (performEarlySettlement)-REQUEST  : , ApplicationID:" + applicationID + ",Order ID:" + orderID + ", Amount:" + settlementAmount);
         TradingAcc lsfTradingAcc = lsfCoreService.getLsfTypeTradinAccountForUser(userID,applicationID);
@@ -104,17 +99,16 @@ public class SettlementProcessor implements MessageProcessor {
             masterCashAccount = lsfCoreService.getMasterCashAccount();//getting ABIC master cash account
             application.setCurrentLevel(17);
             application.setOverallStatus(String.valueOf(16));
-            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), masterCashAccount, settlementAmount, applicationID)) {
+            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(),lsfTradingAcc.getAccountId(), masterCashAccount, settlementAmount, applicationID, "1")) {
                 lsfRepository.updatePOToSettledState(Integer.parseInt(orderID));
                 log.info("===========LSF :(performEarlySettlement)- Cash Transfer Succeed , From(Customer Cash Account):" + lsfCashAccount.getAccountId() + ", To:(Master Cash Account)" + masterCashAccount + ", Amount :" + settlementAmount);
                 responseMessage = "Successfully Deducted Outstanding Amount.";
                 //Todo -- After Sending the Account Closure Request to OMS LSF is not waiting to the OMS Response
-                application.setCurrentLevel(18);
-                application.setOverallStatus(String.valueOf(17));
                 AccountDeletionRequestState accountDeletionRequestState = new AccountDeletionRequestState();
                 accountDeletionRequestState = lsfCoreService.closeLSFAccount(applicationID, lsfTradingAcc.getAccountId(), application.getTradingAcc(), lsfCashAccount.getAccountId(), application.getCashAccount());
                 if (accountDeletionRequestState.isSent()) {
-                
+                    application.setCurrentLevel(18);
+                    application.setOverallStatus(String.valueOf(17));
                     log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Sent to OMS, Application ID :" + applicationID);
 
                     try {
@@ -124,7 +118,7 @@ public class SettlementProcessor implements MessageProcessor {
                         commonResponse.setResponseMessage(responseMessage + " , failed to send the notification.");
                         e.printStackTrace();
                     }
-                }else{
+                } else {
                     log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Rejected from OMS, Application ID :" + applicationID + ", Reason :" +  accountDeletionRequestState.getFailureReason());
                     responseCode = 200; // since cash transfer is success response code is set to 200
                     commonResponse.setErrorCode(accountDeletionRequestState.getErrorCode()); // "-1" error code is set since cash transfer is success and account closure is failed
@@ -134,7 +128,7 @@ public class SettlementProcessor implements MessageProcessor {
                 responseCode = 500;
                 responseMessage = "Failed to deduct outstanding due to Cash Transfer failure.";
             }
-        }else{
+        } else {
             responseCode = 500;
             responseMessage = "Already settled or,You have pending orders in the LSF Trading Account :" + lsfTradingAcc.getAccountId() + ", Can't perform settlement";
         }
@@ -171,33 +165,40 @@ public class SettlementProcessor implements MessageProcessor {
             }
             toCashAccount = originalApplication.getCashAccount();
             toTradingAccount = originalApplication.getTradingAcc();
+        } else {
+            toCashAccount = application.getCashAccount();
+            toTradingAccount = application.getTradingAcc();
         }
 
-        String masterCashAccount = lsfCoreService.getMasterCashAccount();
-        application.setCurrentLevel(17);
-        application.setOverallStatus(String.valueOf(16));
+        String masterCashAccount = GlobalParameters.getInstance().getInstitutionInvestAccount();
 
-        CashAcc lsfCashAccount = lsfCoreService.getLsfTypeCashAccountForUser(userID,applicationID);
+        String originalApplicationID = application.isRollOverApp() ? application.getRollOverAppId() : applicationID;
+
+        CashAcc lsfCashAccount = lsfCoreService.getLsfTypeCashAccountForUser(userID,originalApplicationID);
+        TradingAcc lsfTradingAcc = lsfCoreService.getLsfTypeTradinAccountForUser(userID,originalApplicationID);
         PurchaseOrder purchaseOrder= lsfRepository.getSinglePurchaseOrder(orderID);
-        if (purchaseOrder.getIsPhysicalDelivery() == 1 || purchaseOrder.getSellButNotSettle() ==1) {
-            responseCode = 500;
-            responseMessage = "Cannot perform early settlement for physical delivery orders or orders in sell but not settle state.";
-            commonResponse.setResponseCode(responseCode);
-            commonResponse.setResponseMessage(responseMessage);
-            return gson.toJson(commonResponse);
-        }
+//        if (purchaseOrder.getIsPhysicalDelivery() == 1 || purchaseOrder.getSellButNotSettle() ==1) {
+//            responseCode = 500;
+//            responseMessage = "Cannot perform early settlement for physical delivery orders or orders in sell but not settle state.";
+//            commonResponse.setResponseCode(responseCode);
+//            commonResponse.setResponseMessage(responseMessage);
+//            return gson.toJson(commonResponse);
+//        }
 
         if (((lsfCashAccount.getCashBalance()-lsfCashAccount.getNetReceivable())>settlementAmount) && purchaseOrder.getSettlementStatus()!=1) {
-            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), masterCashAccount, settlementAmount, applicationID)) {
+            application.setCurrentLevel(17);
+            application.setOverallStatus(String.valueOf(16));
+
+            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), lsfTradingAcc.getAccountId(), masterCashAccount, settlementAmount, applicationID, "0")) {
                 lsfRepository.updatePOToSettledState(Integer.parseInt(orderID));
                 log.info("===========LSF :(performEarlySettlementCommodity)- Cash Transfer Succeed , From(Customer Cash Account):" + lsfCashAccount.getAccountId() + ", To:(Master Cash Account)" + masterCashAccount + ", Amount :" + settlementAmount);
-                application.setCurrentLevel(18);
-                application.setOverallStatus(String.valueOf(17));
 
                 if(application.isRollOverApp() || !hasRolloverApplication(application)) {
                     AccountDeletionRequestState accountDeletionRequestState = new AccountDeletionRequestState();
-                    accountDeletionRequestState = lsfCoreService.closeLSFAccount(applicationID, application.getTradingAcc(), toTradingAccount, lsfCashAccount.getAccountId(), toCashAccount);
+                    accountDeletionRequestState = lsfCoreService.closeLSFAccount(applicationID, lsfTradingAcc.getAccountId(), toTradingAccount, lsfCashAccount.getAccountId(), toCashAccount);
                     if (accountDeletionRequestState.isSent()) {
+                        application.setCurrentLevel(18);
+                        application.setOverallStatus(String.valueOf(17));
                         log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Sent to OMS, Application ID :" + applicationID);
 
                         try {
@@ -206,12 +207,15 @@ public class SettlementProcessor implements MessageProcessor {
                             commonResponse.setResponseCode(responseCode);
                             commonResponse.setResponseMessage(responseMessage + " , failed to send the notification.");
                         }
-                    } else{
+                    } else {
                         log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Rejected from OMS, Application ID :" + applicationID + ", Reason :" +  accountDeletionRequestState.getFailureReason());
                         responseCode = 200; // since cash transfer is success response code is set to 200
                         commonResponse.setErrorCode(accountDeletionRequestState.getErrorCode()); // error code is set since cash transfer is success and account closure is failed
                         responseMessage = accountDeletionRequestState.getFailureReason();
                     }
+                } else {
+                    application.setCurrentLevel(18);
+                    application.setOverallStatus(String.valueOf(17));
                 }
                 try {
                     notificationManager.sendEarlySettlementNotification(application);
@@ -227,6 +231,7 @@ public class SettlementProcessor implements MessageProcessor {
             responseCode = 500;
             responseMessage = "Already settled or,You have pending orders in the LSF Cash Account :" + lsfCashAccount.getAccountId() + ", Can't perform settlement";
         }
+        log.info("===========LSF :(performEarlySettlementCommodity)- Updating Customer:" + applicationID + ", OverRall Status:" + application.getOverallStatus() + ", Current Level:" + application.getCurrentLevel());
         lsfRepository.updateMurabahApplication(application);
         commonResponse.setResponseCode(responseCode);
         commonResponse.setResponseMessage(responseMessage);
@@ -260,7 +265,7 @@ public class SettlementProcessor implements MessageProcessor {
                 ) {
             MurabahApplication application = lsfRepository.getMurabahApplication(applicationID);
 
-            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), masterCashAccount, settlementAmount, applicationID)) {
+            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), lsfTradingAcc.getAccountId(), masterCashAccount, settlementAmount, applicationID, "1")) {
                 log.info("===========LSF :(performManualSettlement)- Cash Transfer Succeed , From:" + lsfCashAccount.getAccountId() + ", To:" + masterCashAccount + ", Amount :" + settlementAmount);
                 responseMessage = "Successfully Deducted Outstanding Amount.";
                 lsfRepository.updatePOToSettledState(Integer.parseInt(orderID));

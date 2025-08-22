@@ -86,3 +86,5 @@ l14_purchase_order_pkg
 
 -- 4th Aug
 l01_application_pkg
+-- 16th Aug
+L08_SYMBOL.sql

@@ -128,7 +128,6 @@ public class LsfCoreProcessor implements MessageProcessor {
                 List<PurchaseOrder> purchaseOrderList = lsfRepository.getPurchaseOrderForApplication(applicationId);
                 if (purchaseOrderList != null && purchaseOrderList.size() > 0 ) {
                     PurchaseOrder purchaseOrder = purchaseOrderList.get(0);
-
                     OrderProfit orderProfit = lsfCore.calculateConditionalProfit(collaterals, purchaseOrder, murabahApplication.getDiscountOnProfit());
                     boardData.setOrderProfit(orderProfit);
                 }
@@ -994,9 +993,10 @@ public class LsfCoreProcessor implements MessageProcessor {
         String appId = murabahApplication.isRollOverApp() ? murabahApplication.getRollOverAppId() : murabahApplication.getId();
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount)-REQUEST  : , ApplicationID:" + appId + ",Order ID:" + poId + ", Amount:" + soldAmount);
         CashAcc lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(), appId);
+        var lsfTypeTradingAccount = lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(), appId);
         String masterCashAccount =  GlobalParameters.getInstance().getInstitutionInvestAccount();//.  lsfCore.getMasterCashAccount();
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + soldAmount);
-        var isTransferred = lsfCore.cashTransfer(masterCashAccount, lsfCashAccount.getAccountId(), soldAmount, murabahApplication.getId());
+        var isTransferred = lsfCore.cashTransfer(masterCashAccount, lsfCashAccount.getAccountId(), soldAmount, murabahApplication.getId(), lsfTypeTradingAccount.getAccountId());
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + soldAmount);
         if (isTransferred) {
             lsfRepository.updateFacilityTransferStatus(murabahApplication.getId(), LsfConstants.STATUS_COMMODITY_VALUE_TRANSFERRED_TO_LSF_CASH_ACCOUNT);
@@ -1050,8 +1050,8 @@ public class LsfCoreProcessor implements MessageProcessor {
             if (po.getCustomerApproveStatus() == 1 && !(application.getLsfAccountDeletionState() == LsfConstants.REQUEST_SENT_TO_OMS || application.getLsfAccountDeletionState() == LsfConstants.ACCOUNT_DELETION_SUCCESS || application.getLsfAccountDeletionState() == LsfConstants.EXCHANGE_ACCOUNT_DELETION_FAILED_FROM_EXCHANGE || application.getLsfAccountDeletionState() == LsfConstants.SHARE_TRANSFER_FAILED_WITH_EXCHANGE)) {
                 if (application != null) {
                     MApplicationCollaterals response = application.isRollOverApp()
-                                                       ? lsfCore.reValuationProcess_RollOverApp(application, true)
-                                                       : lsfCore.reValuationProcess(application,true);
+                                                       ? lsfCore.reValuationProcess_RollOverApp(application, false)
+                                                       : lsfCore.reValuationProcess(application,false);
                     log.info("===========LSF : (reqDashBoardPFSummary)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
                     getBPDetails(response, application);
                     return gson.toJson(response);
@@ -1065,15 +1065,24 @@ public class LsfCoreProcessor implements MessageProcessor {
     }
 
     private MApplicationCollaterals getBPDetails(final MApplicationCollaterals collaterals, final MurabahApplication application) { // calculating buyingPower for each marginability
-        //MarginabilityGroup marginabilityGroup = helper.getMarginabilityGroup(application.getMarginabilityGroup());
-        List<MarginabilityGroup> marginabilityGroups = lsfRepository.getMarginabilityGroups("1");
+        var customerMgtGrp = helper.getMarginabilityGroup(application.getMarginabilityGroup());
+        Set<Integer> uniquePercentages = new HashSet<>();
+        if (customerMgtGrp != null) {
+            log.info("Found Marginability Group for Application: " + application.getId() + ", Group ID: " + customerMgtGrp.getId());
+            uniquePercentages.add((int)customerMgtGrp.getGlobalMarginablePercentage());
+            if(customerMgtGrp.getMarginableSymbols() != null) {
+                for (SymbolMarginabilityPercentage marginabilityPercentage: customerMgtGrp.getMarginableSymbols()) {
+                    uniquePercentages.add((int)marginabilityPercentage.getMarginabilityPercentage());
+                }
+            }
+        }
 
         List<BPSummary> bpList = new ArrayList<>();
-        for(MarginabilityGroup marginabilityGroup : marginabilityGroups) {
+        for(Integer marginabilityGroup : uniquePercentages) {
             var liquidityType = new LiquidityType();
-            liquidityType.setLiquidName(String.valueOf(marginabilityGroup.getGlobalMarginablePercentage()) + "%");
-            liquidityType.setMarginabilityPercent(marginabilityGroup.getGlobalMarginablePercentage());
-            liquidityType.setStockConcentrationPercent(marginabilityGroup.getGlobalMarginablePercentage());
+            liquidityType.setLiquidName(marginabilityGroup.toString());
+            liquidityType.setMarginabilityPercent(Double.valueOf(marginabilityGroup));
+            liquidityType.setStockConcentrationPercent(Double.valueOf(marginabilityGroup));
             BPSummary bfSummary = calculateBP(liquidityType, collaterals.getTotalCashColleteral(), collaterals.getTotalPFColleteral(), collaterals.getOutstandingAmount());
             bpList.add(bfSummary);
         }
@@ -1091,38 +1100,78 @@ public class LsfCoreProcessor implements MessageProcessor {
         return collaterals;
     }
 
-    private static BPSummary calculateBP(LiquidityType liquidityType, double totalCash, double totalPF, double totalOutstanding) {
-        BPSummary BPSummary = new BPSummary();
-        BPSummary.setMarginabilityType(liquidityType.getLiquidName());
-        double marginabilityDifference = (liquidityType.getMarginabilityPercent() / 100);
-        marginabilityDifference = marginabilityDifference == 0 ? 1 : marginabilityDifference; // to avoid division by zero
-        if (marginabilityDifference == 1.0) {
-            double bf = (totalPF + totalCash) - (GlobalParameters.getInstance().getFirstMarginCall() / 100) * totalOutstanding;
-            if (bf > totalCash) {
-                BPSummary.setBuyingPower(BigDecimal.valueOf(totalCash));
-            } else {
-                BPSummary.setBuyingPower(bf > 0 ? BigDecimal.valueOf(bf) : BigDecimal.ZERO);
-            }
+    private static BPSummary calculateBP(
+            LiquidityType liquidityType,
+            double totalCash,
+            double totalPF,
+            double totalOutstanding) {
 
+        BPSummary bpSummary = new BPSummary();
+        bpSummary.setMarginabilityType(liquidityType.getLiquidName());
+
+        double marginabilityPercent = liquidityType.getMarginabilityPercent();
+        double firstMarginCallRatio = GlobalParameters.getInstance().getFirstMarginCall() / 100.0; // e.g., 160% = 1.6
+
+        // If fully marginable: BP = cash
+        if (marginabilityPercent >= 100.0) {
+            bpSummary.setBuyingPower(BigDecimal.valueOf(totalCash));
         } else {
-            double sum = totalCash + totalPF;
-            double buyingPower = (sum - (GlobalParameters.getInstance().getFirstMarginCall() / 100) * totalOutstanding) * marginabilityDifference;
-            if (buyingPower > 0) {
-                if (buyingPower > totalCash) {
-                    BPSummary.setBuyingPower(BigDecimal.valueOf(totalCash));
+            double availableFunds = totalCash + totalPF;
+            double requiredEquity = firstMarginCallRatio * totalOutstanding;
 
-                } else {
-                    BPSummary.setBuyingPower(buyingPower > 0 ? BigDecimal.valueOf(buyingPower) : BigDecimal.ZERO);
-                }
-            } else {
-                BPSummary.setBuyingPower(BigDecimal.ZERO);
-            }
+            // Funds that can actually be used (after FMC limit)
+            double usableFunds = availableFunds - requiredEquity;
+            double mfactor = 1 - (liquidityType.getMarginabilityPercent() / 100);
 
+            // Apply marginability factor
+            double rawBP = mfactor<= 0 ? totalCash : usableFunds / mfactor;
+
+            // BP can't exceed totalCash or be less than zero
+            double finalBP = Math.max(0, Math.min(rawBP, totalCash));
+
+            bpSummary.setBuyingPower(BigDecimal.valueOf(finalBP));
         }
-        log.info("===========LSF : Calculating Buying Power, Total Cash :" + totalCash + " , Total PF :" + totalCash + " , OutStanding :" + totalOutstanding + ", Margin Type :" + liquidityType.getLiquidName() + " , percentage :" + liquidityType.getMarginabilityPercent() + " BP:" + BPSummary.getBuyingPower());
 
-        return BPSummary;
+        log.info(String.format(
+                "LSF: Calculating Buying Power, Cash: %.2f, PF: %.2f, Outstanding: %.2f, Margin Type: %s, Margin%%: %.2f, BP: %.2f",
+                totalCash, totalPF, totalOutstanding, liquidityType.getLiquidName(), marginabilityPercent, bpSummary.getBuyingPower().doubleValue()
+        ));
+
+        return bpSummary;
     }
+
+//    private static BPSummary calculateBP(LiquidityType liquidityType, double totalCash, double totalPF, double totalOutstanding) {
+//        BPSummary BPSummary = new BPSummary();
+//        BPSummary.setMarginabilityType(liquidityType.getLiquidName());
+//        double marginabilityDifference = 1 - (liquidityType.getMarginabilityPercent() / 100);
+//        //double marginabilityDifference = (liquidityType.getMarginabilityPercent() / 100);
+//        //marginabilityDifference = marginabilityDifference == 0 ? 1 : marginabilityDifference; // to avoid division by zero
+//        if (marginabilityDifference == 1.0) {
+//            double bf = (totalPF + totalCash) - (GlobalParameters.getInstance().getFirstMarginCall() / 100) * totalOutstanding;
+//            if (bf > totalCash) {
+//                BPSummary.setBuyingPower(BigDecimal.valueOf(totalCash));
+//            } else {
+//                BPSummary.setBuyingPower(bf > 0 ? BigDecimal.valueOf(bf) : BigDecimal.ZERO);
+//            }
+//
+//        } else {
+//            double sum = totalCash + totalPF;
+//            double buyingPower = (sum - (GlobalParameters.getInstance().getFirstMarginCall() / 100) * totalOutstanding) / marginabilityDifference;
+//            if (buyingPower > 0) {
+//                if (buyingPower > totalCash) {
+//                    BPSummary.setBuyingPower(BigDecimal.valueOf(totalCash));
+//
+//                } else {
+//                    BPSummary.setBuyingPower(buyingPower > 0 ? BigDecimal.valueOf(buyingPower) : BigDecimal.ZERO);
+//                }
+//            } else {
+//                BPSummary.setBuyingPower(BigDecimal.ZERO);
+//            }
+//        }
+//        log.info("===========LSF : Calculating Buying Power, Total Cash :" + totalCash + " , Total PF :" + totalCash + " , OutStanding :" + totalOutstanding + ", Margin Type :" + liquidityType.getLiquidName() + " , percentage :" + liquidityType.getMarginabilityPercent() + " BP:" + BPSummary.getBuyingPower());
+//
+//        return BPSummary;
+//    }
 
     private String updateSoldAmount(Map<String, Object> map) {
         String poId = map.get("id").toString();
