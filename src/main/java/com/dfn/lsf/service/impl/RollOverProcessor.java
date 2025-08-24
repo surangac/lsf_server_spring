@@ -214,6 +214,13 @@ public class RollOverProcessor implements MessageProcessor {
                 newApplication.setCurrentLevel(1);
                 lsfRepository.updateMurabahApplication(newApplication);
 
+                Map<String, Object> reqMap = gson.fromJson(reqQuest, Map.class);
+                String approvedbyId = reqMap.get("customerId").toString();
+                String approvedbyName = reqMap.get("customerName").toString();
+                String statusChangedIP = reqMap.get("ipAddress").toString();
+                String statusMessage = "Application has been rollovered";
+                lsfRepository.commodityAppStatus(newRollOverApp.getOriginalAppId(), newRollOverApp.getCurrentLevel(), statusMessage, approvedbyId, approvedbyName, statusChangedIP);
+
                 cmnResponse.setResponseCode(200);
                 cmnResponse.setResponseMessage("Roll Over application created successfully.");
                 cmnResponse.setResponseObject(newApplication);
