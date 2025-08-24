@@ -27,7 +27,7 @@ public class AppStatusSummaryMapper implements RowMapper<ApplicationStatus> {
         applicationStatus.setLiquidatedStatus(resultSet.getString("l14_liquidation_status") != null ? resultSet.getString("l14_liquidation_status") : "");
         applicationStatus.setCustomerActivityID(resultSet.getObject("l01_acc_activity_id") != null ? resultSet.getInt("l01_acc_activity_id") : 0);
         applicationStatus.setPortfolioNo(resultSet.getString("l06_trading_acc_id") != null ? resultSet.getString("l06_trading_acc_id") : "");
-        applicationStatus.setDisplayApplicationID(resultSet.getString("l01_app_id") != null ? resultSet.getString("l01_app_id") : "");
+        applicationStatus.setDisplayApplicationID(resultSet.getString("l01_display_application_id") != null ? resultSet.getString("l01_display_application_id") : "");
         return applicationStatus;
     }
 }
