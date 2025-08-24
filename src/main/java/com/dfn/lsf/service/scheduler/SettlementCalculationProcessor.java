@@ -7,6 +7,7 @@ import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.util.Helper;
 import com.dfn.lsf.util.LsfConstants;
+import com.dfn.lsf.util.ProfitCalculationNew;
 import com.dfn.lsf.util.ProfitCalculationUtils;
 import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,8 @@ public class SettlementCalculationProcessor implements MessageProcessor {
 
     private final Helper helper;
 
-    private final ProfitCalculationUtils profitCalculationUtils;
+    //private final ProfitCalculationUtils profitCalculationUtils;
+    private final ProfitCalculationNew profitCalculationUtils;
 
     @Override
     public String process(final String request) {
@@ -91,9 +93,11 @@ public class SettlementCalculationProcessor implements MessageProcessor {
                     + " , Performing Cash Transfer.");
         LiquidationLog liquidationLog = lsfRepository.getLiquidationLog(Integer.parseInt(correlationId)).get(0);
         if (lsfCore.cashTransferToMasterAccount(liquidationLog.getFromAccount(),
+                                                liquidationLog.getFromAccount(),
                                                 liquidationLog.getToAccount(),
                                                 liquidationLog.getAmountToBeSettled(),
-                                                liquidationLog.getApplicationID())) { // if cash transfer is succeed.
+                                                liquidationLog.getApplicationID(),
+                                                "1")) { // if cash transfer is succeed.
             logger.info("===========LSF : Cash Transfer Success ,From Account :"
                         + liquidationLog.getFromAccount()
                         + " , To Account :"

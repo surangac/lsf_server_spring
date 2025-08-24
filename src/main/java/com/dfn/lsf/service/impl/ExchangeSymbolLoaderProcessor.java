@@ -61,7 +61,23 @@ public class ExchangeSymbolLoaderProcessor implements MessageProcessor {
                 result = result.toString().replace("responseObject", "symbolsList");
                 symbolListResponse = gson.fromJson(result, SymbolListResponse.class);
                 returnMap = symbolListResponse.getSymbolsList();
-                for (Symbol map : returnMap) {
+//                var filteredSymbols = returnMap.stream()
+//                                               .filter(symbol -> !symbol.getSecurityType().equals("OPT") && !symbol.getSecurityType().equals("FUT"))
+//                                               .toList();
+
+                var filteredSymbols = returnMap.stream()
+                                               .filter(symbol -> !symbol.getSecurityType().equals("OPT")
+                                                                 && !symbol.getSecurityType().equals("FUT")
+                                                                 && !symbol.getSymbolCode().endsWith(".C")
+                                                                 && !symbol.getSymbolCode().endsWith(".B")
+                                                                 && !symbol.getSymbolCode().endsWith(".O")
+                                                                 && !symbol.getSymbolCode().endsWith("`B")
+                                                                 && !symbol.getSymbolCode().endsWith("`O")
+                                                                 && !symbol.getSymbolCode().endsWith("`C")
+                                                                 && symbol.getInstrumentType() != 68)
+                                               .toList();
+
+                for (Symbol map : filteredSymbols) {
                     lsfRepository.updateSymbol(map);// Updating L08_SYMBOL
                 }
             }

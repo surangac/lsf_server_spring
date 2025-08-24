@@ -315,6 +315,10 @@ public class RollOverProcessor implements MessageProcessor {
             if (smbFromDb != null) {
                 double price = smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed();
                 double contribToColletaral = ((smbFromDb.getColleteralQty() * price) / 100.0) * smb.getMarginabilityPercentage();
+                smbFromDb.setMarginabilityPercentage(smb.getMarginabilityPercentage());
+                smbFromDb.setContibutionTocollateral(contribToColletaral);
+                smbFromDb.setLastTradePrice(smb.getLastTradePrice());
+                smbFromDb.setPreviousClosed(smb.getPreviousClosed());
 
                 totalPFValue += contribToColletaral;
             }
@@ -385,6 +389,8 @@ public class RollOverProcessor implements MessageProcessor {
                                                                                                         symbol.setColleteralQty(symbol.getAvailableQty());
                                                                                                         symbol.setLastTradePrice(Symbol.getLastTradePrice());
                                                                                                         symbol.setPreviousClosed(Symbol.getPreviousClosed());
+                                                                                                        double contribToColletaral = ((symbol.getAvailableQty() * (symbol.getLastTradePrice() > 0 ? symbol.getLastTradePrice() : symbol.getPreviousClosed())) / 100) * symbol.getMarginabilityPercentage();
+                                                                                                        symbol.setContibutionTocollateral(contribToColletaral);
                                                                                                         symbol.setMarginabilityPercentage(Symbol.getMarginabilityPercentage());
                                                                                                         tradingAcc.getSymbolsForColleteral().add(symbol);
                                                                                                     }));

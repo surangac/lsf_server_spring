@@ -189,6 +189,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
                     }
                     List<Installments> installmentsList =
                             lsfRepository.getPurchaseOrderInstallments(purchaseOrder.getId());
+                    installmentsList.forEach(installments -> installments.setInstallmentDateString(settlementSummary.getSettlementDate()));
                     settlementSummary.setInstallmentsList(installmentsList);
                     if (murabahApplication.getFinanceMethod() != null && murabahApplication.getFinanceMethod()
                                                                                            .equalsIgnoreCase("2")) {
@@ -310,7 +311,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
     private String formatSettlementDate(String settlementDate) {
         String formattedDate = "";
         DateFormat df = new SimpleDateFormat("ddMMyyyy");
-        SimpleDateFormat sm = new SimpleDateFormat("MM/dd/yyyy");
+        SimpleDateFormat sm = new SimpleDateFormat("dd/MM/yyyy");
         int difference = 0;
         try {
             Date settlement = df.parse(settlementDate);
@@ -389,7 +390,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
 
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
             SimpleDateFormat sdf2 = new SimpleDateFormat("ddMMyyyy");
-            MApplicationCollaterals response = lsfCore.reValuationProcess(oldApplication, true);
+            MApplicationCollaterals response = lsfCore.reValuationProcess(oldApplication, false);
             var po = purchaseOrders.getFirst();
 
             if(po.getIsPhysicalDelivery() == 1) {

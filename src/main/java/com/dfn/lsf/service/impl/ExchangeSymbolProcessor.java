@@ -117,9 +117,9 @@ public class ExchangeSymbolProcessor implements MessageProcessor {
         SymbolListResponse response = gson.fromJson(respString, SymbolListResponse.class);
         List<Symbol> updateList = response.getSymbolsList();
         for (Symbol smb : updateList) {
-            if (smb.getLiquidityType() != null) {
+            //if (smb.getLiquidityType() != null) {
                 lsfRepository.updateLiquidType(smb);
-            }
+            //}
         }
         cmr.setResponseCode(200);
         cmr.setResponseMessage("updated");
@@ -244,6 +244,29 @@ public class ExchangeSymbolProcessor implements MessageProcessor {
             }
             if (application != null) {
                 // send Consentration group for display purpose to the customer
+                MarginabilityGroup marginabilityGroup = null;
+                List<SymbolMarginabilityPercentage> symbolMarginabilityPercentages = null;
+                String marginabilityGroupId = application.getMarginabilityGroup();
+                if (marginabilityGroupId != null) {
+                    marginabilityGroup = helper.getMarginabilityGroup(marginabilityGroupId);
+                    if(marginabilityGroup != null) {
+                        symbolMarginabilityPercentages = marginabilityGroup.getMarginableSymbols();
+                    }
+                }
+                for(Symbol symbol: sResponse.getSymbolsList()) {
+                    if (marginabilityGroup != null) {
+                        symbol.setMarginabilityPercentage(marginabilityGroup.getGlobalMarginablePercentage());
+                    }
+
+                    if(symbolMarginabilityPercentages != null) {
+                        for(SymbolMarginabilityPercentage smp :symbolMarginabilityPercentages) {
+                            if(smp.getSymbolCode().equals(symbol.getSymbolCode()) && smp.getExchange().equals(symbol.getExchange())){
+                                symbol.setMarginabilityPercentage(smp.getMarginabilityPercentage());
+                            }
+                        }
+                    }
+                }
+
                 StockConcentrationGroup group = new StockConcentrationGroup();
                 List<LiquidityType> gropLiqTypes =
                         lsfRepository.getStockConcentrationGroupLiquidTypes(application.getStockConcentrationGroup());

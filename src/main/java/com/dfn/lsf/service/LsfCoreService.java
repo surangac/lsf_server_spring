@@ -473,7 +473,7 @@ public class LsfCoreService {
                 var rollOverApplications = appList.stream().filter(MurabahApplication::isRollOverApp).toList();
                 log.debug("===========LSF : (reValuationProcess) - mainApplications size: {}, rollOverApplications size: {}", mainApplications.size(), rollOverApplications.size());
                 mainApplications.forEach(application -> reValuationProcess(application, false));
-                rollOverApplications.forEach(application -> reValuationProcess_RollOverApp(application, true));
+                rollOverApplications.forEach(application -> reValuationProcess_RollOverApp(application, false));
             }
             response.setResponseCode(200);
             response.setResponseMessage("recalculation process completed");
@@ -491,7 +491,7 @@ public class LsfCoreService {
         CommonResponse response = new CommonResponse();
         try {
             MurabahApplication application = lsfRepository.getMurabahApplication(applicationId);
-            reValuationProcess(application,true);
+            reValuationProcess(application,false);
 
             response.setResponseCode(200);
             response.setResponseMessage("recalculation process completed");
@@ -1148,10 +1148,14 @@ public class LsfCoreService {
         return cashAccount;
     }
 
-    public boolean cashTransferToMasterAccount(String fromAccount, String toAccount, double transferAmount, String applicationID) {
+    public boolean cashTransferToMasterAccount(String fromAccount, String fromTradingAcc, String toAccount, double transferAmount, String applicationID, String isTnansferType) {
         boolean isTransferred = false;
+        if (transferAmount <= 0) {
+            log.info("===========LSF : (cashTransferToMasterAccount) Transfer Amount is Zero or Negative, From Account: {}, To Account: {}, Transfer Amount: {}", fromAccount, toAccount, transferAmount);
+            return false;
+        }
         BigDecimal bigDecimal = BigDecimal.valueOf(transferAmount);
-        String narration = "Cash Proceeds - ["+ applicationID +"] - ["+toAccount +"]";
+        String narration = "ML Settlement Cash Proceeds - ["+ applicationID +"] from - ["+ fromTradingAcc +"] to - ["+toAccount +"]";
         // Fix: Set scale with proper rounding mode and store in a variable
         BigDecimal roundedValue = bigDecimal.setScale(2, RoundingMode.HALF_UP);
         
@@ -1162,7 +1166,7 @@ public class LsfCoreService {
         cashTransferRequest.setFromCashAccountId(fromAccount);
         cashTransferRequest.setAmount(roundedValue.doubleValue()); // Use the rounded value
         cashTransferRequest.setToCashAccountId(toAccount);
-        cashTransferRequest.setParams("1"); // identify the cash transfer to Master Account
+        cashTransferRequest.setParams(isTnansferType); // identify the cash transfer to Master Account
         cashTransferRequest.setNarration(narration);
         String result = (String) helper.sendSettlementRelatedOMSRequest(gson.toJson(cashTransferRequest), LsfConstants.HTTP_PRODUCER_OMS_CASH_TRANSFER_MASTER_CASH_ACCOUNT);
         if (result != null && !result.equalsIgnoreCase("")) {
@@ -1183,10 +1187,10 @@ public class LsfCoreService {
         return isTransferred;
     }
 
-    public boolean cashTransfer(String fromAccount, String toAccount, double transferAmount, String applicationID) {
+    public boolean cashTransfer(String fromAccount, String toAccount, double transferAmount, String applicationID, String investorAccountNo) {
         boolean isTransferred;
         BigDecimal bigDecimal = BigDecimal.valueOf(transferAmount);
-        String narration = "Commodity Margin Sale Proceeds - ["+ applicationID +"] - ["+toAccount +"]";
+        String narration = "Commodity Margin Sale Proceeds - ["+ applicationID +"] - ["+investorAccountNo +"]";
         // Fix: Set scale with proper rounding mode and store in a variable
         BigDecimal roundedValue = bigDecimal.setScale(2, RoundingMode.HALF_UP);
 
@@ -1484,16 +1488,22 @@ public class LsfCoreService {
         profit.setApplicationID(purchaseOrder.getApplicationId());
 
         double totalCommissionOMS = 0;
+        double targetCommission = 0;
+        int tenor = Integer.parseInt(purchaseOrder.getTenorId());
+        int loanPeriodInDays = 30 * tenor;
+        double orderValue = purchaseOrder.getOrderCompletedValue() / (1 + (purchaseOrder.getProfitPercentage() * loanPeriodInDays) / 36000);
+        targetCommission = purchaseOrder.getOrderCompletedValue() - orderValue;
+
         if(collaterals.getLsfTypeTradingAccounts().size() > 0) {
             totalCommissionOMS =  getTotalCommissionFromOMS(collaterals.getLsfTypeTradingAccounts().get(0).getAccountId());
 
         }
 
         int dayCount = 0;
-        if(isFullProfit==1){
-            profit.setTargetCommission(purchaseOrder.getProfitAmount());
+        if(isFullProfit==1) {
+            profit.setTargetCommission(targetCommission);
             profit.setTradedCommission(totalCommissionOMS);
-            if( (totalCommissionOMS - purchaseOrder.getProfitAmount())>0 ){
+            if( (totalCommissionOMS - purchaseOrder.getProfitAmount())>0 ) {
                 profit.setChargeCommission(false);
                 profit.setChargeCommissionAmt(0);
                 profit.setCumulativeProfitAmount(0);
@@ -1502,11 +1512,12 @@ public class LsfCoreService {
                 profit.setChargeCommissionAmt(purchaseOrder.getProfitAmount());
                 profit.setCumulativeProfitAmount(purchaseOrder.getProfitAmount());
             }
-        }else {
-
-           dayCount =  LSFUtils.getDaysTillNowAfterSigned(purchaseOrder.getCustomerApprovedDate());
+        } else {
+            dayCount =  LSFUtils.getDaysTillNowAfterSigned(purchaseOrder.getCustomerApprovedDate());
             double targetComm = (purchaseOrder.getProfitAmount()/(Integer.valueOf(purchaseOrder.getTenorId()) * 30)) * dayCount;
+
             profit.setTargetCommission(targetComm);
+
             profit.setTradedCommission(totalCommissionOMS);
             if(totalCommissionOMS > targetComm){
                 profit.setChargeCommission(false);

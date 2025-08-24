@@ -119,7 +119,7 @@ public class AuditInquiryProcessor implements MessageProcessor {
         String applicationID = map.get("applicationID").toString();
         MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(applicationID);
         CustomerDetailedInfo customerDetailedInfo = new CustomerDetailedInfo();
-        if(murabahApplication != null){
+        if(murabahApplication != null) {
             customerDetailedInfo.setCustomerID(murabahApplication.getCustomerId());
             customerDetailedInfo.setApplicationID(murabahApplication.getId());
             customerDetailedInfo.setFullName(murabahApplication.getFullName());
@@ -140,7 +140,7 @@ public class AuditInquiryProcessor implements MessageProcessor {
             customerDetailedInfo.setCashCollateralList(mApplicationCollaterals.getCashAccForColleterals());
             customerDetailedInfo.setTotalCollateralValue(mApplicationCollaterals.getInitialCashCollaterals() + mApplicationCollaterals.getInitialPFCollaterals());
             List<PurchaseOrder> orders = lsfRepository.getAllPurchaseOrder(murabahApplication.getId());
-            for(PurchaseOrder purchaseOrder : orders){
+            for(PurchaseOrder purchaseOrder : orders) {
                 if(purchaseOrder.getApplicationId().equalsIgnoreCase(mApplicationCollaterals.getApplicationId()) ){
                     purchaseOrder.setTotalOutStandingBalance(mApplicationCollaterals.getOutstandingAmount());
                 }

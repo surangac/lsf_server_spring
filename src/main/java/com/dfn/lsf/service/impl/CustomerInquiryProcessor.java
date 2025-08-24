@@ -820,6 +820,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
         String applicationID = map.get("applicationID").toString();
         MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(applicationID);
         MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(applicationID);
+        String originalApplicationID = murabahApplication.isRollOverApp() ? murabahApplication.getRollOverAppId() : applicationID;
         boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
         logger.info("===========LSF(getCustomerDetailsOrderContract): REQUEST , appID" + applicationID);
         OrderContractCustomerInfo contractCustomerInfo = lsfRepository.getOrderContractCustomerInfo(applicationID);
@@ -843,7 +844,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
             }*/
             CashAcc lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(
                     contractCustomerInfo.getCustomerID(),
-                    applicationID);
+                    originalApplicationID);
             if (lsfCashAccount != null) {
                 contractCustomerInfo.setInvestmentAccountNumber(lsfCashAccount.getInvestmentAccountNumber() == null
                                                                 ? lsfCashAccount.getAccountId()
@@ -852,7 +853,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
 
             TradingAcc lsfTradingAccount = lsfCore.getLsfTypeTradinAccountForUser(
                     contractCustomerInfo.getCustomerID(),
-                    applicationID);
+                    originalApplicationID);
             if (lsfTradingAccount != null) {
                 contractCustomerInfo.setMurabahaPFNumber(lsfTradingAccount.getAccountId());
             }

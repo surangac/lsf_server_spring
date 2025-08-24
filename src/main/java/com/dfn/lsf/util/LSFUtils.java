@@ -198,7 +198,7 @@ public class LSFUtils {
         return getDateDiff(settlementDate,sm.format(date));
     }
 
-    public static int getDateDiff(String sdate1,String sdate2){
+    public static int getDateDiff(String sdate1,String sdate2) {
         DateFormat df = new SimpleDateFormat("ddMMyyyy");
         SimpleDateFormat sm = new SimpleDateFormat("ddMMyyyy");
         int difference = 0;

@@ -48,6 +48,7 @@ public class PendingActivityAdminProcessor implements MessageProcessor {
         auditLogProcessor.process(request);
         PendingActivityRequest pendingActivityRequest = gson.fromJson((String) request, PendingActivityRequest.class);
         logger.debug("===========LSF : Pending Activity Request Received from Admin , Request :" + request);
+        preProcessPendingActivityRequest(pendingActivityRequest);
         switch (pendingActivityRequest.getActivityID()) {
             case (LsfConstants.STATUS_INVESTOR_ACCOUNT_CREATION_FAILED): {
                 return resendInvestorAccountCreation(pendingActivityRequest);
@@ -79,9 +80,6 @@ public class PendingActivityAdminProcessor implements MessageProcessor {
             case (LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_FAILED_TO_OMS): {
                 return resendCollateralTransfer(pendingActivityRequest);
             }
-           /* case (LsfConstants.STATUS_BASKET_SHARE_TRANSFER_FAILED_FROM_EXCHANGE):{
-                return resendBasketShareTransfer(pendingActivityRequest);
-            }*/
             case (LsfConstants.STATUS_BASKET_SHARE_TRANSFER_REQUEST_FAILED_TO_SEND_OMS): {
                 return resendBasketShareTransfer(pendingActivityRequest);
             }
@@ -95,6 +93,27 @@ public class PendingActivityAdminProcessor implements MessageProcessor {
                 commonResponse.setErrorMessage("Invalid Pending Activity");
                 return null;
             }
+        }
+    }
+
+    private void preProcessPendingActivityRequest(PendingActivityRequest pendingActivity) {
+        MurabahApplication application = lsfRepository.getMurabahAppicationApplicationID(
+                pendingActivity.getApplicationID()).getFirst();
+        if (application != null && application.isRollOverApp()) {
+            String OriginalApplicationID = application.isRollOverApp() ? application.getRollOverAppId() : application.getId();
+            MurabahApplication originalApplication = lsfRepository.getMurabahAppicationApplicationID(OriginalApplicationID).getFirst();
+            String toCashAccount = originalApplication.getCashAccount();
+            String toTradingAccount = originalApplication.getTradingAcc();
+            pendingActivity.setNonLSFCashAccount(toCashAccount);
+            pendingActivity.setNonLSFTradingAccount(toTradingAccount);
+            logger.info("===========LSF : Preprocessing Pending Activity Request for Roll Over Application ID: "
+                        + application.getId()
+                        + " , Original Application ID: "
+                        + OriginalApplicationID
+                        + " , Non LSF Cash Account: "
+                        + toCashAccount
+                        + " , Non LSF Trading Account: "
+                        + toTradingAccount);
         }
     }
 
@@ -220,8 +239,13 @@ public class PendingActivityAdminProcessor implements MessageProcessor {
                 pendingActivity.getNonLSFCashAccount());
         CommonResponse commonResponse = new CommonResponse();
         if (accountDeletionRequestState.isSent()) {
+            MurabahApplication application = lsfRepository.getMurabahAppicationApplicationID(
+                    pendingActivity.getApplicationID()).getFirst();
             //  lsfRepository.updateActivity(pendingActivity.getApplicationID(), LsfConstants
             //  .STATUS_ACCOUNT_DELETION_REQUEST_SENT_TO_OMS);
+            application.setCurrentLevel(18);
+            application.setOverallStatus(String.valueOf(17));
+            lsfRepository.updateMurabahApplication(application);
             commonResponse.setResponseCode(200);
             commonResponse.setResponseMessage("Account Deletion Request Sent.");
         } else {

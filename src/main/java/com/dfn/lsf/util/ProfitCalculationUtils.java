@@ -144,7 +144,7 @@ public class ProfitCalculationUtils {
                 }
 
                 lsfTradingAccount = lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(),
-                                                                           murabahApplication.getId());
+                                                                           originalAppId);
                 decideSettlementAction(settlementDate,
                                        murabahApplication,
                                        purchaseOrder,
@@ -281,14 +281,20 @@ public class ProfitCalculationUtils {
                     && ((lsfTypeCashAccount.getCashBalance() - lsfTypeCashAccount.getNetReceivable())
                         >= amountToBeSettled)) {
                     if (masterCashAccount != null) { // if master cash account is recieved from OMS
-
+                        String isTransferType = "1";
+                        if (murabahApplication.isRollOverApp()) {
+                            masterCashAccount = GlobalParameters.getInstance().getInstitutionInvestAccount();
+                            isTransferType = "0";
+                        }
+                        var applicationId = murabahApplication.isRollOverApp() ? murabahApplication.getRollOverAppId() : murabahApplication.getId();
                         TradingAcc lsfTradingAcc =
-                                lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(),
-                                                                                          murabahApplication.getId());
+                                lsfCore.getLsfTypeTradinAccountForUser(applicationId, murabahApplication.getId());
                         boolean cashTransferredToMasterAcc = lsfCore.cashTransferToMasterAccount(lsfTypeCashAccount.getAccountId(),
+                                                                                                 lsfTradingAcc.getAccountId(),
                                                                                                  masterCashAccount,
                                                                                                  amountToBeSettled,
-                                                                                                 murabahApplication.getId());
+                                                                                                 murabahApplication.getId(),
+                                                                                                 isTransferType);
                         if (cashTransferredToMasterAcc) { // if cash transfer is
                             // succeed.
                             logger.info("===========LSF : Cash Transfer Success ,From Account :"
@@ -302,30 +308,26 @@ public class ProfitCalculationUtils {
                                         + murabahApplication.getId());
                             logger.info("Updating PO " + purchaseOrder.getId() + " to settled state");
                             lsfRepository.updatePOToSettledState(Integer.parseInt(purchaseOrder.getId()));
-                            // TODO: need to check whether Rollover applications are available for this application
-                            // if not proceed with account deletion request
-                            AccountDeletionRequestState accountDeletionRequestState = lsfCore.closeLSFAccount(
-                                    murabahApplication.getId(),
-                                    lsfTradingAcc.getAccountId(),
-                                    murabahApplication.getTradingAcc(),
-                                    lsfTypeCashAccount.getAccountId(),
-                                    murabahApplication.getCashAccount());
-                            if (accountDeletionRequestState.isSent()) {
-                                logger.info("===========LSF :- Moving Application to close state, Application ID :"
-                                            + murabahApplication.getId());
-                                // lsfCore.moveToCashTransferredClosedState(murabahApplication.getId(), "Early
-                                // Settlement", purchaseOrder.getId());//updating application
-                            } else {
-                                logger.info(
-                                        "===========LSF :(performAutoSettlement)- Account Deletion Request Rejected "
-                                        + "from OMS, Application ID :"
-                                        + murabahApplication.getId()
-                                        + ", Reason :"
-                                        + accountDeletionRequestState.getFailureReason());
+                            if (murabahApplication.isRollOverApp() || !hasRolloverApplication(murabahApplication)) {
+                                AccountDeletionRequestState accountDeletionRequestState = lsfCore.closeLSFAccount(
+                                        murabahApplication.getId(),
+                                        lsfTradingAcc.getAccountId(),
+                                        murabahApplication.getTradingAcc(),
+                                        lsfTypeCashAccount.getAccountId(),
+                                        murabahApplication.getCashAccount());
+                                if (accountDeletionRequestState.isSent()) {
+                                    logger.info("===========LSF :- Moving Application to close state, Application ID :"
+                                                + murabahApplication.getId());
+                                     lsfCore.moveToCashTransferredClosedState(murabahApplication.getId(), "Early Settlement", purchaseOrder.getId());
+                                } else {
+                                    logger.info(
+                                            "===========LSF :(performAutoSettlement)- Account Deletion Request Rejected "
+                                            + "from OMS, Application ID :"
+                                            + murabahApplication.getId()
+                                            + ", Reason :"
+                                            + accountDeletionRequestState.getFailureReason());
+                                }
                             }
-                            //     lsfDaoI.updateAccountDeletionState(murabahApplication.getId(), LsfConstants
-                            //     .REQUEST_SENT_TO_OMS);
-
                         } else {
                             logger.error("===========LSF : Cash Transfer Failure(Transfer Failed) , From Account:"
                                          + lsfTypeCashAccount
@@ -360,5 +362,10 @@ public class ProfitCalculationUtils {
                             + e.getMessage());
             }
         }
+    }
+
+    private boolean hasRolloverApplication(MurabahApplication application) {
+        int rollOverCount = lsfRepository.hasRollOver(application.getId());
+        return rollOverCount >0 ? true : false;
     }
 }
