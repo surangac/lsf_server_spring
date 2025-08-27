@@ -37,6 +37,8 @@ public class ProfitCalculationUtils {
             CashAcc lsfCashAccount = null;
             TradingAcc lsfTradingAccount = null;
             PurchaseOrder purchaseOrder = null;
+            String approvedBy = "";
+            int approvedById = 0;
             List<PurchaseOrder> orderList = lsfRepository.getAllPurchaseOrder(murabahApplication.getId());
 
             logger.debug("===========LSF : Received Order List for ApplicationID :"
@@ -126,7 +128,7 @@ public class ProfitCalculationUtils {
                                 + applicationCollaterals.getOutstandingAmount());
                     applicationCollaterals.setOutstandingAmount(purchaseOrderValue
                                                                 + newOrderProfit.getCumulativeProfitAmount());
-                    lsfRepository.addEditCollaterals(applicationCollaterals);
+                    lsfRepository.addEditCollaterals(applicationCollaterals, approvedBy, approvedById);
                     logger.info("===========LSF :  Application :"
                                 + applicationID
                                 + " , New Outstanding :"

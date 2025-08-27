@@ -233,6 +233,9 @@ public class LsfCoreProcessor implements MessageProcessor {
 
         CommonResponse commonResponse = new CommonResponse();
         PurchaseOrder po = parsePo(map, msgString);
+        if (map.containsKey("customerName")) {
+            po.setCustomerName(map.get("customerName").toString());
+        }
         int financeMethod = 1;
         if (map.containsKey("financeMethod")) {
             financeMethod = Integer.parseInt(map.get("financeMethod").toString());
@@ -244,6 +247,9 @@ public class LsfCoreProcessor implements MessageProcessor {
                 return createPurchaseOrderRollOver(po, murabahApplication);
             }
             MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(po.getApplicationId());
+            if (map.containsKey("ipAddress")) {
+                collaterals.setIpAddress(map.get("ipAddress").toString());
+            }
             if (Integer.parseInt(murabahApplication.getOverallStatus()) < 0 || murabahApplication.getCurrentLevel() == GlobalParameters.getInstance().getGetAppCloseLevel()) {
                 commonResponse.setResponseCode(500);
                 commonResponse.setErrorMessage("Invalid Details");
@@ -315,6 +321,7 @@ public class LsfCoreProcessor implements MessageProcessor {
         CommonResponse commonResponse = new CommonResponse();
         String approvedbyId = "SYSTEM";
         String approvedbyName = "SYSTEM";
+        String ipAddress = murabahApplication.getIpAddress();
         int approvalStatus = 1;
 
         if (Integer.parseInt(murabahApplication.getOverallStatus()) < 0 || murabahApplication.getCurrentLevel() == GlobalParameters.getInstance().getGetAppCloseLevel()) {
@@ -341,12 +348,12 @@ public class LsfCoreProcessor implements MessageProcessor {
             lsfCore.calculateFTV(collaterals);
             lsfCore.calculateRemainingOperativeLimit(collaterals);
             lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_PO_CREATED_WAITING_TO_ORDER_FILL);
-            lsfRepository.addPurchaseOrder(po);
-            lsfRepository.addEditCollaterals(collaterals);
+            lsfRepository.addPurchaseOrder(po, ipAddress);
+            lsfRepository.addEditCollaterals(collaterals, approvedbyName, Integer.parseInt(approvedbyId));
             po.setApprovalStatus(approvalStatus);
             po.setApprovedById(approvedbyId);
             po.setApprovedByName(approvedbyName);
-            lsfRepository.approveRejectOrder(po);
+            lsfRepository.approveRejectOrder(po, ipAddress);
 
             notificationManager.sendNotification(murabahApplication);
             lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_SENT_INVESTOR_ACCOUNT_CREATION);
@@ -364,13 +371,15 @@ public class LsfCoreProcessor implements MessageProcessor {
 
     public String approvePurchaseOrderABIC(PurchaseOrder purchaseOrder, MApplicationCollaterals completeCollateral, CommonResponse cmr, int financeMethod) {
         String applicationId = "";
+        String ipAddress = "";
         boolean isLsfTypeCashAccExist = false;
         boolean isLsfTypeTradingAccExist = false;
         try {
             String poId = purchaseOrder.getId();
             applicationId = purchaseOrder.getApplicationId();
+            ipAddress = completeCollateral.getIpAddress();
 
-            String approvedbyId = "SYSTEM";
+            int approvedbyId = 0;  //"SYSTEM";
             String approvedbyName = "SYSTEM";
             int approvalStatus = 1;
             log.info("===========LSF : (approvePurchaseOrder)-REQUEST, poID :" + poId + " , applicationID:" + applicationId + " ,approvedById: " + approvedbyId + ", approvedbyName" + approvedbyName + " ,approvalStatus:" + approvalStatus);
@@ -445,7 +454,7 @@ public class LsfCoreProcessor implements MessageProcessor {
 //                isLsfTypeCashAccExist = true;
 //            }
 
-            lsfRepository.addEditCompleteCollateral(completeCollateral); /*----Update LSF Type Cash & Trading Accounts------*/
+            lsfRepository.addEditCompleteCollateral(completeCollateral, approvedbyName, approvedbyId); /*----Update LSF Type Cash & Trading Accounts------*/
 
             /*----- creating investor account for LSF type cash account----*/
             if (isLsfTypeCashAccExist && isLsfTypeTradingAccExist) {
@@ -460,12 +469,12 @@ public class LsfCoreProcessor implements MessageProcessor {
                                                                             applicationId);
                 // send order to OMS if Exchagne account created successfully
                 if (isInvestorAccountCreated && isExchangeAccountCreated) {
-                    lsfRepository.addPurchaseOrder(purchaseOrder);
-                    lsfRepository.addEditCollaterals(completeCollateral);
+                    lsfRepository.addPurchaseOrder(purchaseOrder, ipAddress);
+                    lsfRepository.addEditCollaterals(completeCollateral, approvedbyName, approvedbyId);
                     purchaseOrder.setApprovalStatus(approvalStatus);
-                    purchaseOrder.setApprovedById(approvedbyId);
+                    purchaseOrder.setApprovedById("SYSTEM");
                     purchaseOrder.setApprovedByName(approvedbyName);
-                    lsfRepository.approveRejectOrder(purchaseOrder);
+                    lsfRepository.approveRejectOrder(purchaseOrder, ipAddress);
                     if (financeMethod == 1) {
                         setPOInstructionToOMS(orderBasket, applicationId);
                     }
@@ -603,6 +612,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             applicationId = map.get("applicationId").toString();
             String approvedbyId = map.get("approvedById").toString();
             String approvedbyName = map.get("approvedByName").toString();
+            String ipAddress = map.get("ipAddress").toString();
             int approvalStatus = Integer.parseInt(map.get("approvalStatus").toString());
             log.info("===========LSF : (approvePurchaseOrder)-REQUEST, poID :" + poId + " , applicationID:" + applicationId + " ,approvedById: " + approvedbyId + ", approvedbyName" + approvedbyName + " ,approvalStatus:" + approvalStatus);
 
@@ -614,7 +624,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             if (approvalStatus > 0) {
                 OrderBasket orderBasket = createPOInstruction(po);
                 if (setPOInstructionToOMS(orderBasket, po.getApplicationId())) {
-                    lsfRepository.approveRejectOrder(po);
+                    lsfRepository.approveRejectOrder(po, ipAddress);
                     cmr.setResponseCode(200);
                     cmr.setResponseMessage("Order Approved and send to OMS");
                 } else {
@@ -623,7 +633,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                     cmr.setErrorCode(LsfConstants.ERROR_ORDER_SEND_TO_OMS_FAILED);
                 }
             } else {
-                if (lsfRepository.approveRejectOrder(po).equalsIgnoreCase("1")) {
+                if (lsfRepository.approveRejectOrder(po, ipAddress).equalsIgnoreCase("1")) {
                     MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(applicationId);
                     CommonResponse commonResponse = (CommonResponse) lsfCore.releaseCollaterals(collaterals);
                     if (commonResponse.getResponseCode() == 200) {
@@ -830,6 +840,8 @@ public class LsfCoreProcessor implements MessageProcessor {
     protected String processOrderAgreement(Map<String, Object> map) { /*---Approve Order Contract---*/
         CommonResponse response = new CommonResponse();
         String applicationID = null;
+        String approvedBy = map.get("userName").toString();
+        int approvedById = Integer.parseInt(map.get("customerId").toString());
         if (map.containsKey("id")) {
             applicationID = map.get("id").toString();
         }
@@ -917,15 +929,15 @@ public class LsfCoreProcessor implements MessageProcessor {
                         lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARG_FAILED);
                         log.info("===========LSF : Admin Fee Request Failed, ApplicationID :" + murabahApplication.getId() + ", Account ID :" + murabahApplication.getCashAccount());
                     }
-                    lsfRepository.updateCustomerOrderStatus(purchaseOrder.getId(), "1", statusComment, statusChangedIP);
+                    lsfRepository.updateCustomerOrderStatus(purchaseOrder.getId(), "1", statusComment, statusChangedIP, approvedBy, approvedById);
                     log.debug("===========LSF : Order and Application  Status Changed Successfully, Order ID :" + purchaseOrder.getId() + " , Application ID :" + murabahApplication.getId());
                 }
 
             } else if (approveStatus !=null && approveStatus.equalsIgnoreCase("-1")) { /*---If Client Reject the Agreement---*/
                 log.debug("===========LSF :Order Contract Rejected, Order Contract Rejected, Release Collateral from OMS :" + orderId + " , Application ID :" + applicationID + "Status :" + response.getResponseCode());
                 response = (CommonResponse) lsfCore.releaseCollaterals(collaterals);
-                lsfRepository.updateCustomerOrderStatus(orderId, "-1", statusComment, statusChangedIP);
-                liquidateOrder(orderId, murabahApplication, approveStatus, statusComment, statusChangedIP, collaterals);
+                lsfRepository.updateCustomerOrderStatus(orderId, "-1", statusComment, statusChangedIP, approvedBy, approvedById);
+                liquidateOrder(orderId, murabahApplication, approveStatus, statusComment, statusChangedIP, collaterals, approvedBy, approvedById);
             }
             response.setResponseCode(responseCode);
             response.setResponseMessage(responseMessage);
@@ -941,7 +953,7 @@ public class LsfCoreProcessor implements MessageProcessor {
         }
     }
 
-    private void liquidateOrder(String orderId, MurabahApplication murabahApplication, String approveStatus, String statusComment, String statusChangedIP, MApplicationCollaterals collaterals) {
+    private void liquidateOrder(String orderId, MurabahApplication murabahApplication, String approveStatus, String statusComment, String statusChangedIP, MApplicationCollaterals collaterals, String approvedBy, int approvedById) {
         String applicationID = murabahApplication.getId();
         if (!murabahApplication.getFinanceMethod().equalsIgnoreCase("1")) {
             //if(collaterals.isExchangeAccountCreated()) {
@@ -963,7 +975,7 @@ public class LsfCoreProcessor implements MessageProcessor {
         CommonResponse liquidateResponse = (CommonResponse) lsfCore.liquidate(orderId);
         if (liquidateResponse.getResponseCode() == 1) {
             log.debug("===========LSF : Symbol Liquidation Successful , Order ID :" + orderId + " , Application ID :" + applicationID);
-            String orderStatusChangeResponse = lsfRepository.updateCustomerOrderStatus(orderId, approveStatus, statusComment, statusChangedIP);//updating user & order status
+            String orderStatusChangeResponse = lsfRepository.updateCustomerOrderStatus(orderId, approveStatus, statusComment, statusChangedIP, approvedBy, approvedById);
             if (orderStatusChangeResponse.equalsIgnoreCase("1")) {
                 log.debug("===========LSF : Order and Application  Status Changed Successfully, Order ID :" + orderId + " , Application ID :" + applicationID + " Approve State :" + approveStatus);
                 lsfRepository.updateActivity(applicationID, LsfConstants.STATUS_ORDER_CONTRACT_REJECTED);
@@ -1253,7 +1265,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                  cmr.setErrorMessage("Purchase order is already Submitted");
                  return gson.toJson(cmr);
              }
-            updateCommodityPODetails(po, map);
+            updateCommodityPODetails(po, map, Integer.parseInt(approvedbyId), approvedbyName);
 
 // down below moved to PO update final method
 //            ProfitResponse profitResponse = lsfCore.calculateProfit(
@@ -1314,7 +1326,7 @@ public class LsfCoreProcessor implements MessageProcessor {
         return gson.toJson(cmr);
     }
 
-    private void updateCommodityPODetails(PurchaseOrder po, Map<String, Object> map) {
+    private void updateCommodityPODetails(PurchaseOrder po, Map<String, Object> map, int approvedbyId, String approvedbyName) {
         if(map.containsKey("sellButNotSettle")) {
             po.setSellButNotSettle((int) Double.parseDouble(map.get("sellButNotSettle").toString()));
         }
@@ -1358,7 +1370,7 @@ public class LsfCoreProcessor implements MessageProcessor {
         MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(po.getApplicationId());
 
         collaterals.setOutstandingAmount(LSFUtils.ceilTwoDecimals(totalSoldAmount));
-        lsfRepository.addEditCollaterals(collaterals);
+        lsfRepository.addEditCollaterals(collaterals, approvedbyName, approvedbyId);
         lsfRepository.updatePurchaseOrderByAdmin(po);
     }
 
@@ -1380,7 +1392,7 @@ public class LsfCoreProcessor implements MessageProcessor {
 //                cmr.setErrorMessage("Purchase order is already Approved for L1");
 //                return gson.toJson(cmr);
 //            }
-            updateCommodityPODetails(po, map);
+            updateCommodityPODetails(po, map, Integer.parseInt(approvedbyId), approvedbyName);
             po.setApprovedById(approvedbyId);
             po.setApprovedByName(approvedbyName);
             if (approvalStatus == 1) {
@@ -1447,7 +1459,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             return gson.toJson(cmr);
         }
 
-        updateCommodityPODetails(po, map);
+        updateCommodityPODetails(po, map, Integer.parseInt(approvedbyId), approvedbyName);
         double totalBoutAmount = po.getCommodityList().stream()
                 .mapToDouble(Commodity::getBoughtAmnt)
                 .sum();
@@ -1467,7 +1479,7 @@ public class LsfCoreProcessor implements MessageProcessor {
 
         String statusMessage = "PO Bought Amount Approved by Admin";
 
-        String responseMessage = lsfRepository.approveApplication(1, fromDB.getId(), statusMessage, approvedbyId, approvedbyName, statusChangedIP);
+        String responseMessage = ""; // lsfRepository.approveApplication(1, fromDB.getId(), statusMessage, approvedbyId, approvedbyName, statusChangedIP);
 
         String response = lsfRepository.upadateOrderStatus(
                 po.getId(),
@@ -1475,7 +1487,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                 totalBoutAmount,
                 profitResponse.getProfitAmount(),
                 profitResponse.getProfitPercent(),
-                0);
+                0, statusChangedIP);
 
         if (response.equalsIgnoreCase("1")) {
             lsfRepository.updateActivity(

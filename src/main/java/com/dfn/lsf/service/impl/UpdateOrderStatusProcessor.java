@@ -46,13 +46,16 @@ public class UpdateOrderStatusProcessor {
                 lsfRepository.getSinglePurchaseOrder(Integer.toString(statusResponse.getOrderId()));
         String response = "-1";
 
+        String approvedBy = "";
+        int approvedById = 0;
+
         if (statusResponse.getCompletedOrderValue() > 0) { /*---Update Order Completed Details---*/
             MurabahApplication application = lsfRepository.getMurabahApplication(purchaseOrder.getApplicationId());
 
             /*---Updating OutStanding Amount-----*/
             MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(application.getId());
             collaterals.setOutstandingAmount(LSFUtils.ceilTwoDecimals(omsRequest.getFilledValue()));
-            lsfRepository.addEditCollaterals(collaterals);
+            lsfRepository.addEditCollaterals(collaterals, approvedBy, approvedById);
             /*--------*/
 
             ProfitResponse profitResponse = lsfCore.calculateProfit(
@@ -71,7 +74,7 @@ public class UpdateOrderStatusProcessor {
                     statusResponse.getCompletedOrderValue(),
                     profitResponse.getTotalProfit(),
                     profitResponse.getProfitPercent(),
-                    statusResponse.getVatAmount());
+                    statusResponse.getVatAmount(), application.getIpAddress());
             if (response.equalsIgnoreCase("1")) {
                 try {
                     if (/*statusResponse.getOrderStatus() == 2*/statusResponse.getCompletedOrderValue() > 0) {

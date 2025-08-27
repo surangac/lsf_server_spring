@@ -345,6 +345,9 @@ public class RollOverProcessor implements MessageProcessor {
 
     private void createCollaterals(final MurabahApplication application,final RollOverSummeryResponse rollOverSummeryResponse) throws Exception {
 
+        String approvedBy = "";
+        int approvedById = 0;
+
         log.info("=========LSF: creating Collaterals for OriginalAppId: {}, Roll Over : {}",application.getRollOverAppId(), application.getId());
         java.text.DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 
@@ -415,7 +418,7 @@ public class RollOverProcessor implements MessageProcessor {
             collaterals.setStatusChangedBy("SYSTEM");
             collaterals.setIpAddress("127.0.0.1");
             collaterals.setStatusMessage("AUTOMATIC APPROVED");
-            String collateralId = lsfRepository.addEditCompleteCollateral(collaterals);
+            String collateralId = lsfRepository.addEditCompleteCollateral(collaterals, approvedBy, approvedById);
             collaterals.setId(collateralId);
             lsfRepository.changeStatusCollateral(collaterals);
             lsfRepository.updateActivity(application.getId(), LsfConstants.STATUS_COLLATERLS_SUBMITTED);

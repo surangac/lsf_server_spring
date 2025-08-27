@@ -1426,7 +1426,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
-    public String addEditCollaterals(MApplicationCollaterals mApplicationCollaterals) {
+    public String addEditCollaterals(MApplicationCollaterals mApplicationCollaterals, String approvedBy, int approvedById) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pL05_L01_APP_ID", mApplicationCollaterals.getApplicationId());
         parameterMap.put("pl05_collateral_id", mApplicationCollaterals.getId());
@@ -1448,6 +1448,9 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl05_block_amount", mApplicationCollaterals.getBlockAmount());
         parameterMap.put("pl05_margine_call_date", mApplicationCollaterals.getMargineCallDate());
         parameterMap.put("pl05_liquidate_call_date", mApplicationCollaterals.getLiquidateCallDate());
+        parameterMap.put("pl05_customer_id", approvedById);
+        parameterMap.put("pl05_customer_name", approvedBy);
+        parameterMap.put("pl05_ip_address", mApplicationCollaterals.getIpAddress());
         return oracleRepository.executeProc(DBConstants.PKG_L05_COLLATERALS, DBConstants.PROC_GET_ADD_UPDATE_COLLATERALS, parameterMap);
     }
 
@@ -1462,8 +1465,9 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
-    public String addEditCompleteCollateral(MApplicationCollaterals mApplicationCollaterals) {
-        String collateralId = this.addEditCollaterals(mApplicationCollaterals);
+    public String addEditCompleteCollateral(MApplicationCollaterals mApplicationCollaterals, String approvedBy, int approvedById) {
+
+        String collateralId = this.addEditCollaterals(mApplicationCollaterals, approvedBy, approvedById);
         double totalPFValue = 0.0;
         if (collateralId != null) {
             mApplicationCollaterals.setId(collateralId);
@@ -1500,7 +1504,7 @@ public class OracleUnifiedRepository implements LSFRepository {
                     }
                 }
                 mApplicationCollaterals.setTotalPFColleteral(totalPFValue);
-                this.addEditCollaterals(mApplicationCollaterals);
+                this.addEditCollaterals(mApplicationCollaterals, approvedBy, approvedById);
             }
 
             // save LSF Type Trading Accounts
@@ -1520,7 +1524,7 @@ public class OracleUnifiedRepository implements LSFRepository {
                     }
                 }
                 mApplicationCollaterals.setTotalPFColleteral(totalPFValue);
-                this.addEditCollaterals(mApplicationCollaterals);
+                this.addEditCollaterals(mApplicationCollaterals, approvedBy, approvedById);
             }
 
         }
@@ -1529,8 +1533,10 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     @Override
     public String updateCollateralWithCompleteTradingAcc(MApplicationCollaterals mApplicationCollaterals) {
+        String approvedBy = "";
+        int approvedById = 0;
 
-        String collateralId = this.addEditCollaterals(mApplicationCollaterals);
+        String collateralId = this.addEditCollaterals(mApplicationCollaterals, approvedBy, approvedById);
         if (collateralId != null) {
             // save LSF Type Trading Accounts
             if (mApplicationCollaterals.getLsfTypeTradingAccounts() != null) {
@@ -1582,12 +1588,13 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
-    public String addPurchaseOrder(PurchaseOrder purchaseOrder) {
+    public String addPurchaseOrder(PurchaseOrder purchaseOrder, String ipAddress) {
         Map<String, Object> parameterMap = new HashMap<>();
 
         parameterMap.put("pl14_purchase_ord_id", Integer.parseInt(purchaseOrder.getId()));
         parameterMap.put("pL14_APP_ID", Integer.parseInt(purchaseOrder.getApplicationId()));
         parameterMap.put("pL14_CUSTOMER_ID", purchaseOrder.getCustomerId());
+        parameterMap.put("pL14_CUSTOMER_NAME", purchaseOrder.getCustomerName());
         parameterMap.put("pL14_ORD_VALUE", purchaseOrder.getOrderValue());
         parameterMap.put("pL14_ORD_SETTLEMENT_AMOUNT", purchaseOrder.getOrderSettlementAmount());
         parameterMap.put("pL14_SETTLEMENT_DATE", purchaseOrder.getSettlementDate());
@@ -1602,6 +1609,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pL14_SIBOUR_AMOUNT", purchaseOrder.getSibourAmount());
         parameterMap.put("pL14_LIBOUR_AMOUNT", purchaseOrder.getLibourAmount());
         parameterMap.put("pL14_PROFIT_PERCENTAGE", purchaseOrder.getProfitPercentage());
+        parameterMap.put("pl14_accepted_client_ip", ipAddress);
         String key = oracleRepository.executeProc(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_ADD_ORDER, parameterMap);
         if (key != null) {
             //save Installments
@@ -1899,6 +1907,7 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     @Override
     public String updatePurchaseOrderByAdmin(PurchaseOrder po) {
+        String ipAddress = "127.0.0.1";
         String key = "";
         Map<String, Object> parameterMap = new HashMap<>();
         try {
@@ -1913,7 +1922,7 @@ public class OracleUnifiedRepository implements LSFRepository {
                 if (key != null && key.equalsIgnoreCase("999")){
                     po.setApprovalStatus(0);
                     po.setApprovedByName("SYSTEM");
-                    this.approveRejectOrder(po);
+                    this.approveRejectOrder(po, ipAddress);
                 }
             }
         }catch (Exception e){
@@ -1946,13 +1955,14 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
-    public String approveRejectOrder(PurchaseOrder purchaseOrder) {
+    public String approveRejectOrder(PurchaseOrder purchaseOrder, String ipAddress) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pL14_APP_ID", Integer.parseInt(purchaseOrder.getApplicationId()));
         parameterMap.put("pl14_purchase_ord_id", Integer.parseInt(purchaseOrder.getId()));
         //parameterMap.put("pL14_APPROVED_BY_ID",Integer.parseInt(purchaseOrder.getApprovedById()));
         parameterMap.put("pL14_APPROVED_BY_NAME", purchaseOrder.getApprovedByName());
         parameterMap.put("pL14_APPROVAL_STATUS", purchaseOrder.getApprovalStatus());
+        parameterMap.put("pl14_accepted_client_ip", ipAddress);
         return oracleRepository.executeProc(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_APPROVE_REJECT_ORDER, parameterMap);
     }
     @Override
@@ -1967,7 +1977,7 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
-    public String upadateOrderStatus(String orderId, int orderStatus, double complatedValue, double profit, double profitPercentage, double vatAmount) {
+    public String upadateOrderStatus(String orderId, int orderStatus, double complatedValue, double profit, double profitPercentage, double vatAmount, String statusChangedIP) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl14_purchase_ord_id", orderId);
         parameterMap.put("pl14_ordStatus", orderStatus);
@@ -1976,17 +1986,20 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl14_profit_amount", profit);
         parameterMap.put("pl14_profit_percentage", profitPercentage);
         parameterMap.put("pl14_vat_amount", vatAmount);
+        parameterMap.put("pl14_accepted_client_ip", statusChangedIP);
         return oracleRepository.executeProc(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_UPDATE_ORDER_STATUS, parameterMap);
 
     }
 
     @Override
-    public String updateCustomerOrderStatus(String orderId, String approveStatus, String approveComment, String ipAddress) {
+    public String updateCustomerOrderStatus(String orderId, String approveStatus, String approveComment, String ipAddress, String approvedBy, int approvedById) {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl14_purchase_ord_id", Integer.parseInt(orderId));
         parameterMap.put("pl14_customer_approve_state", Integer.parseInt(approveStatus));
         parameterMap.put("pl14_customer_comment", approveComment);
         parameterMap.put("pl14_accepted_client_ip", ipAddress);
+        parameterMap.put("pl14_approved_by_name", approvedBy);
+        parameterMap.put("pl14_approved_by_id", approvedById);
         return oracleRepository.executeProc(DBConstants.PKG_L14_PURCHASE_ORDER, DBConstants.PROC_UPDATE_CUST_ORD_STATUS, parameterMap);
 
     }

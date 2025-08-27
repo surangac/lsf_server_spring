@@ -216,12 +216,14 @@ public class ProfitCalculationNew {
         try {
             MApplicationCollaterals applicationCollaterals = lsfRepository.getApplicationCollateral(applicationID);
             double purchaseOrderValue = getPoValue(purchaseOrder, financeType); // You may need to pass the finance method
+            String approvedBy = "";
+            int approvedById = 0;
 
             log.info("===========LSF : Application: " + applicationID
                         + ", Current Outstanding: " + applicationCollaterals.getOutstandingAmount());
 
             applicationCollaterals.setOutstandingAmount(purchaseOrderValue + orderProfit.getCumulativeProfitAmount());
-            lsfRepository.addEditCollaterals(applicationCollaterals);
+            lsfRepository.addEditCollaterals(applicationCollaterals, approvedBy, approvedById);
 
             log.info("===========LSF : Application: " + applicationID
                         + ", New Outstanding: " + applicationCollaterals.getOutstandingAmount());

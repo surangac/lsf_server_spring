@@ -320,6 +320,10 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
 
         logger.debug("=========LSF: updatePortfolioCollaterals:" + jsonString);
 
+        Map<String, Object> reqMap = gson.fromJson(jsonString, Map.class);
+        String approvedBy = reqMap.get("userName").toString();
+        int approvedById = Integer.parseInt(reqMap.get("customerId").toString());
+
         double accountBalance = 0.0;
         double cashCollateralAmount = 0.0;
         CommonResponse cmr = new CommonResponse();
@@ -391,7 +395,7 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
                                     collaterals,
                                     application);
                             if (blockResponse.getResponseCode() == 200) {
-                                lsfRepository.addEditCompleteCollateral(collaterals);
+                                lsfRepository.addEditCompleteCollateral(collaterals, approvedBy, approvedById);
                             } else {
                                 cmr.setResponseCode(500);
                                 cmr.setResponseMessage("Error While Blocking Collaterals");
@@ -480,6 +484,7 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
     }
 
     private String changeStatusCollaterals(String jsonString) {
+        int approvedById = 0;
 
         CommonResponse cmr = new CommonResponse();
         try {
@@ -513,7 +518,7 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
 
                 lsfRepository.changeStatusCollateral(collaterals);
                 collaterals.setTotalExternalColleteral(externalCollateralsValue);
-                lsfRepository.addEditCollaterals(collaterals);
+                lsfRepository.addEditCollaterals(collaterals, statusChangedBy, approvedById);
             }
 
             MurabahApplication application = lsfRepository.getMurabahApplication(collaterals.getApplicationId());
@@ -534,6 +539,7 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
         MApplicationCollaterals collaterals = null;
         int appStatus = Integer.parseInt(map.get("status").toString());
         String statusChangedBy = "SYSTEM";
+        int approvedById = 0;
         String ipAddress = "127.0.0.1";
         String statusMessage = "AUTOMATIC APPROVED";
         String applicationId = map.get("applicationId").toString();
@@ -551,7 +557,7 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
                     }
                 } else { /*---As this is an automatic process will go to only else part---*/
                     lsfRepository.changeStatusCollateral(collaterals);
-                    lsfRepository.addEditCollaterals(collaterals);
+                    lsfRepository.addEditCollaterals(collaterals, statusChangedBy, approvedById);
                     lsfRepository.updateActivity(applicationId, LsfConstants.STATUS_COLLATERLS_SUBMITTED);
                 }
             }

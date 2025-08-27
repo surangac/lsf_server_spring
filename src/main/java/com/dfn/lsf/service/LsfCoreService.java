@@ -79,6 +79,8 @@ public class LsfCoreService {
 
     public CommonResponse transferCollaterals(MApplicationCollaterals collaterals) {
         CommonResponse commonResponse = new CommonResponse();
+        String approvedBy = "";
+        int approvedById = 0;
         try {
             if (collaterals != null) {
                 // initiating Share Transfer process
@@ -148,7 +150,7 @@ public class LsfCoreService {
                     }
                 }
                 // save whole collateral collection
-                lsfRepository.addEditCompleteCollateral(collaterals);
+                lsfRepository.addEditCompleteCollateral(collaterals, approvedBy, approvedById);
                 commonResponse.setResponseCode(200);
                 commonResponse.setResponseMessage("Collateral Transfered");
             }
@@ -330,6 +332,9 @@ public class LsfCoreService {
 
         MurabahApplication application = lsfRepository.getMurabahApplication(collaterals.getApplicationId());
 
+        String approvedBy = "";
+        int approvedById = 0;
+
         CommonResponse commonResponse = new CommonResponse();
         try {
             //MApplicationCollaterals collaterals=getApplicationCollateral(applicationId);
@@ -356,7 +361,7 @@ public class LsfCoreService {
                         }
                     }
                     if (isModified) {
-                        lsfRepository.addEditCompleteCollateral(collaterals);
+                        lsfRepository.addEditCompleteCollateral(collaterals, approvedBy, approvedById);
                     }
 
                 }
@@ -381,7 +386,7 @@ public class LsfCoreService {
                         }
                     }
                     if (isModified) {
-                        lsfRepository.addEditCompleteCollateral(collaterals);
+                        lsfRepository.addEditCompleteCollateral(collaterals, approvedBy, approvedById);
                     }
                 }
 
@@ -934,6 +939,8 @@ public class LsfCoreService {
         CommonResponse response = new CommonResponse();
         MApplicationCollaterals mApplicationCollaterals = null;
         MurabahApplication application = lsfRepository.getMurabahApplication(applicationId);
+        String approvedBy = "";
+        int approvedById = 0;
         try {
             if(application.isRollOverApp()) {
                 mApplicationCollaterals = lsfRepository.getApplicationCollateral(application.getId());
@@ -1028,7 +1035,7 @@ public class LsfCoreService {
             calculateOperativeLimit(mApplicationCollaterals);
             calculateRemainingOperativeLimit(mApplicationCollaterals);
             calculateFTV(mApplicationCollaterals);
-            lsfRepository.addEditCollaterals(mApplicationCollaterals);
+            lsfRepository.addEditCollaterals(mApplicationCollaterals, approvedBy, approvedById);
             mApplicationCollaterals.setInitialCashCollaterals(mApplicationCollaterals.getTotalCashColleteral());
             mApplicationCollaterals.setInitialPFCollaterals(mApplicationCollaterals.getTotalPFColleteral());
             lsfRepository.addInitialCollaterals(mApplicationCollaterals);

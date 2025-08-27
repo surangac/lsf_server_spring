@@ -189,7 +189,7 @@ public interface LSFRepository {
     String moveToCloseDeuToPONotAcceptance(String applicationID);
 
     //-----------Purchase Order Related ---------//
-    String addPurchaseOrder(PurchaseOrder purchaseOrder);
+    String addPurchaseOrder(PurchaseOrder purchaseOrder, String ipAddress);
 
     List<PurchaseOrder> getAllPurchaseOrder(String applicationId);
     List<PurchaseOrder> getAllPurchaseOrderforCommodity(String applicationId);
@@ -211,12 +211,12 @@ public interface LSFRepository {
     String updateCommodityPOExecution(PurchaseOrder po);
     List<Symbol> getPurchaseOrderSymbols(String orderId);
 
-    String approveRejectOrder(PurchaseOrder purchaseOrder);
+    String approveRejectOrder(PurchaseOrder purchaseOrder, String ipAddress);
     String approveRejectPOCommodity(PurchaseOrder purchaseOrder);
 
-    String upadateOrderStatus(String orderId, int orderStatus, double complatedValue, double profit,double profitPercentage,double vatAmount);
+    String upadateOrderStatus(String orderId, int orderStatus, double complatedValue, double profit,double profitPercentage,double vatAmount, String statusChangedIP);
 
-    String updateCustomerOrderStatus(String ordeID, String approveStatus, String approveComment, String ipAddress);
+    String updateCustomerOrderStatus(String ordeID, String approveStatus, String approveComment, String ipAddress, String approvedBy, int approvedById);
 
     List<Symbol> getWishListSymbols(String applicationId, String exchange);
 
@@ -284,11 +284,11 @@ public interface LSFRepository {
     MApplicationCollaterals getApplicationCompleteCollateralForRollOver(String originalAppId);
 
     MApplicationCollaterals getCollateralForRollOverCollaterelWindow(String applicationId, MApplicationCollaterals applicationCollaterals);
-    String addEditCollaterals(MApplicationCollaterals mApplicationCollaterals);
+    String addEditCollaterals(MApplicationCollaterals mApplicationCollaterals, String approvedBy, int approvedById);
 
     String addInitialCollaterals(MApplicationCollaterals mApplicationCollaterals);
 
-    String addEditCompleteCollateral(MApplicationCollaterals mApplicationCollaterals);
+    String addEditCompleteCollateral(MApplicationCollaterals mApplicationCollaterals, String approvedBy, int approvedById);
 
     String updateCollateralWithCompleteTradingAcc(MApplicationCollaterals mApplicationCollaterals);
 
