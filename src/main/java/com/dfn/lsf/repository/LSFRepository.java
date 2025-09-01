@@ -23,6 +23,8 @@ import com.dfn.lsf.model.responseMsg.OrderContractCustomerInfo;
 import com.dfn.lsf.model.responseMsg.PendingActivity;
 import com.dfn.lsf.model.responseMsg.RiskwavierQuestionConfig;
 import com.dfn.lsf.model.responseMsg.SettlementSummaryResponse;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Repository interface for LSF operations
@@ -514,4 +516,26 @@ public interface LSFRepository {
     List<Agreement> getAgreements();
     String updateAdditionalDetails(PhysicalDeliverOrder physicalDeliverOrder);
     int hasRollOver(String applicationId);
+
+//    @Query(value = "SELECT po.*, ca.L07_INVESTOR_ACCOUNT " +
+//                   "FROM l14_purchase_order po, l07_cash_account ca " +
+//                   "WHERE po.l14_app_id IN (:applicationIds) " +
+//                   "AND ca.l07_l01_app_id = po.l14_app_id " +
+//                   "AND ca.L07_IS_LSF_TYPE = 1",
+//           nativeQuery = true)
+    Map<String, List<PurchaseOrder>> getAllPurchaseOrdersForApplicationsBatch(@Param("applicationIds") List<String> applicationIds);
+
+//    @Query(value = "SELECT * FROM l14_installments " +
+//                   "WHERE l14_purchase_order_id IN (:purchaseOrderIds)",
+//           nativeQuery = true)
+    Map<String, List<Installments>> getPurchaseOrderInstallmentsBatch(@Param("purchaseOrderIds") List<String> purchaseOrderIds);
+
+//    @Query(value = "SELECT l34.*, m12.* " +
+//                   "FROM l34_purchase_order_commodities l34, m12_commodities m12 " +
+//                   "WHERE l34.l34_m12_commodity_code = m12.m12_commodity_code " +
+//                   "AND l34.l34_m12_exchange = m12.m12_exchange " +
+//                   "AND l34.l34_l16_purchase_ord_id IN (:purchaseOrderIds)",
+//           nativeQuery = true)
+    Map<String, List<Commodity>> getPurchaseOrderCommoditiesBatch(@Param("purchaseOrderIds") List<String> purchaseOrderIds);
+
 }

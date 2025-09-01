@@ -1603,11 +1603,11 @@ public class LsfCoreService {
                                 smb.setOpenBuyQty(Integer.parseInt(symbol.get("openBuyQty").toString().split("\\.")[0]));
                             }
                             if(symbol.containsKey("openSellQty")){
-                                smb.setOpenBuyQty(Integer.parseInt(symbol.get("openSellQty").toString().split("\\.")[0]));
+                                smb.setOpenSellQty(Integer.parseInt(symbol.get("openSellQty").toString().split("\\.")[0]));
                             }
                             smb.setAvailableQty(Math.round(Float.parseFloat(symbol.get("availableQty").toString())));
                             /*--Change for T+2 sell path--*/
-                            smb.setAvailableQty(smb.getAvailableQty() + Math.round(Float.parseFloat(symbol.get("sellPending").toString())));
+                            smb.setAvailableQty(smb.getAvailableQty() + Math.round(Float.parseFloat(symbol.get("sellPending").toString())) + smb.getOpenBuyQty());
                             /*--*/
                             smb.setPreviousClosed(Double.parseDouble(symbol.get("previousClosed").toString()));
                             smb.setLastTradePrice(Double.parseDouble(symbol.get("lastTradePrice").toString()));

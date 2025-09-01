@@ -551,13 +551,13 @@ public class Helper {
                     symbol.setOpenBuyQty(Integer.parseInt(symbolObj.get("openBuyQty").toString().split("\\.")[0]));
                 }
                 if(symbolObj.containsKey("openSellQty")) {
-                    symbol.setOpenBuyQty(Integer.parseInt(symbolObj.get("openSellQty").toString().split("\\.")[0]));
+                    symbol.setOpenSellQty(Integer.parseInt(symbolObj.get("openSellQty").toString().split("\\.")[0]));
                 }
 
 
                 int pendingSettle = Math.round(Float.parseFloat(symbolObj.getOrDefault("pendingSettle", "0").toString()));
                 int sellPending = Math.round(Float.parseFloat(symbolObj.getOrDefault("sellPending", "0").toString()));
-                symbol.setAvailableQty(Math.round(Float.parseFloat(symbolObj.get("availableQty").toString())) + sellPending);
+                symbol.setAvailableQty(Math.round(Float.parseFloat(symbolObj.get("availableQty").toString())) + sellPending + symbol.getOpenBuyQty());
                 //symbol.setAvailableQty(Math.round(Float.parseFloat(symbolObj.get("availableQty").toString())));
                 double marketPrice = symbol.getLastTradePrice() > 0 ? symbol.getLastTradePrice(): symbol.getPreviousClosed();
                 symbol.setMarketValue(symbol.getAvailableQty() * marketPrice);

@@ -12,6 +12,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.text.ParseException;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
@@ -19,6 +20,8 @@ import com.dfn.lsf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -3205,6 +3208,59 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pl01_app_id", applicationID);
         String  rolloverCount= oracleRepository.executeProc(DBConstants.PKG_L01_APPLICATION, DBConstants.PROC_L01_GET_ROLLOVER_COUNT, parameterMap);
         return Integer.parseInt(rolloverCount);
+    }
+
+    @Override
+    public Map<String, List<PurchaseOrder>> getAllPurchaseOrdersForApplicationsBatch(List<String> applicationIds) {
+        if (applicationIds.isEmpty()) return Collections.emptyMap();
+
+        String sql = "SELECT po.*, ca.L07_INVESTOR_ACCOUNT, ca.L07_L01_APP_ID as app_id " +
+                     "FROM l14_purchase_order po " +
+                     "LEFT JOIN l07_cash_account ca ON ca.l07_l01_app_id = po.l14_app_id AND ca.L07_IS_LSF_TYPE = 1 " +
+                     "WHERE po.l14_app_id IN (" +
+                     applicationIds.stream().map(id -> "?").collect(Collectors.joining(",")) + ")";
+
+        List<PurchaseOrder> allOrders = jdbcTemplate.query(sql,
+                                                           applicationIds.toArray(),
+                                                           rowMapperFactory.getRowMapper(RowMapperI.PURCHASE_ORDER));
+
+        // Group by application ID
+        return allOrders.stream()
+                        .collect(Collectors.groupingBy(PurchaseOrder::getApplicationId));
+    }
+
+    @Override
+    public Map<String, List<Installments>> getPurchaseOrderInstallmentsBatch(List<String> purchaseOrderIds) {
+        if (purchaseOrderIds.isEmpty()) return Collections.emptyMap();
+
+        String sql = "SELECT * FROM l22_installments WHERE l22_purchase_ord_id IN (" +
+                     purchaseOrderIds.stream().map(id -> "?").collect(Collectors.joining(",")) + ")";
+
+        List<Installments> allInstallments = jdbcTemplate.query(sql,
+                                                               purchaseOrderIds.toArray(),
+                                                               rowMapperFactory.getRowMapper(RowMapperI.ORDER_INSTALLMENTS));
+
+        return allInstallments.stream()
+                              .collect(Collectors.groupingBy(Installments::getOrderId));
+    }
+
+    @Override
+    public Map<String, List<Commodity>> getPurchaseOrderCommoditiesBatch(List<String> purchaseOrderIds) {
+        if (purchaseOrderIds.isEmpty()) return Collections.emptyMap();
+
+        String sql = "SELECT l34.*, m12.*, l34.l34_l16_purchase_ord_id as purchase_order_id " +
+                     "FROM l34_purchase_order_commodities l34 " +
+                     "INNER JOIN m12_commodities m12 ON l34.l34_m12_commodity_code = m12.m12_commodity_code " +
+                     "AND l34.l34_m12_exchange = m12.m12_exchange " +
+                     "WHERE l34.l34_l16_purchase_ord_id IN (" +
+                     purchaseOrderIds.stream().map(id -> "?").collect(Collectors.joining(",")) + ")";
+
+        List<Commodity> allCommodities = jdbcTemplate.query(sql,
+                                                            purchaseOrderIds.toArray(),
+                                                            rowMapperFactory.getRowMapper(RowMapperI.COMMODITY_LIST));
+
+        return allCommodities.stream()
+                             .collect(Collectors.groupingBy(Commodity::getId));
     }
 
     // private final RowMapper<MurabahApplication> murabahApplicationRowMapper = (rs, rowNum) -> {

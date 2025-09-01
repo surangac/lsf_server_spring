@@ -1,13 +1,18 @@
 package com.dfn.lsf.model;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @Getter
 @Setter
+@Slf4j
 public class PurchaseOrder {
     private String id;
     private String customerName;
@@ -63,4 +68,19 @@ public class PurchaseOrder {
     private String certificateNumber;
     private String displayApplicationId;
     private String acceptedDate;
+
+    @JsonIgnore
+    private Date approvedDateParsed;
+    public Date getApprovedDateParsed() {
+        if (approvedDateParsed == null && approvedDate != null) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                approvedDateParsed = sdf.parse(approvedDate);
+            } catch (ParseException e) {
+                log.error("Error parsing date: " + e.getMessage());
+                approvedDateParsed = new Date(); // fallback
+            }
+        }
+        return approvedDateParsed;
+    }
 }

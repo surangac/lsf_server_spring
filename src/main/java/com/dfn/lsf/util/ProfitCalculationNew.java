@@ -333,7 +333,7 @@ public class ProfitCalculationNew {
                         >= amountToBeSettled)) {
                     if (masterCashAccount != null) { // if master cash account is recieved from OMS
                         String isTransferType = "1";
-                        if (murabahApplication.isRollOverApp()) {
+                        if (murabahApplication.getFinanceMethod().equals("2")) {
                             masterCashAccount = GlobalParameters.getInstance().getInstitutionInvestAccount();
                             isTransferType = "0";
                         }

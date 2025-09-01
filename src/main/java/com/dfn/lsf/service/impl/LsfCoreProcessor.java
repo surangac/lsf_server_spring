@@ -904,7 +904,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                     double vatAmount=LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(adminFee));
                     adminChargeRequest.setAmount(adminFee + vatAmount);
                     adminChargeRequest.setBrokerVat(vatAmount);
-                    adminChargeRequest.setExchangeVat(vatAmount);
+                    //adminChargeRequest.setExchangeVat(vatAmount);
 
                     response = helper.processOMSCommonResponseAdminFee(helper.sendMessageToOms(gson.toJson(adminChargeRequest)).toString());
 
@@ -1014,6 +1014,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             lsfRepository.updateFacilityTransferStatus(murabahApplication.getId(), LsfConstants.STATUS_COMMODITY_VALUE_TRANSFERRED_TO_LSF_CASH_ACCOUNT);
         } else {
             lsfRepository.updateFacilityTransferStatus(murabahApplication.getId(), LsfConstants.STATUS_COMMODITY_VALUE_TRANSFERRED_TO_LSF_CASH_ACCOUNT_FAILED);
+            lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.CASH_TRANSFER_FAILED_FROM_OMS);
         }
     }
 

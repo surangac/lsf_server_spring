@@ -51,9 +51,9 @@ public class RollOverProcessor implements MessageProcessor {
         if (newApplication == null) {
             throw new IllegalArgumentException("Application not found for ID: " + appId);
         }
-        if (!newApplication.getFinanceMethod().equals("2")) {
-            throw new IllegalArgumentException("Application is not eligible for roll over: " + appId);
-        }
+//        if (!newApplication.getFinanceMethod().equals("2")) {
+//            throw new IllegalArgumentException("Application is not eligible for roll over: " + appId);
+//        }
         RollOverSummeryResponse rollOverSummery = new RollOverSummeryResponse();
         var murabahProduct = lsfRepository.getMurabahaProduct(newApplication.getProductType());
 
@@ -120,11 +120,23 @@ public class RollOverProcessor implements MessageProcessor {
         if (oldApplication == null) {
             throw new IllegalArgumentException("Application not found for ID: " + appId);
         }
-        if (!oldApplication.getFinanceMethod().equals("2")) {
-            throw new IllegalArgumentException("Application is not eligible for roll over: " + appId);
-        }
-        List<PurchaseOrder> purchaseOrders = lsfRepository.getAllPurchaseOrderforCommodity(appId);
+//        if (!oldApplication.getFinanceMethod().equals("2")) {
+//            throw new IllegalArgumentException("Application is not eligible for roll over: " + appId);
+//        }
+// enabling Roll over for all finance methods as per new requirement on 21-08-2025
+        List<PurchaseOrder> purchaseOrders = oldApplication.getFinanceMethod().equals("2") ?
+                lsfRepository.getAllPurchaseOrderforCommodity(appId) :
+                lsfRepository.getAllPurchaseOrder(oldApplication.getId());
         var po = purchaseOrders.getFirst();
+        double originalLoanAmount = 0.0;
+        double adminFee = 0.0;
+        if (oldApplication.getFinanceMethod().equals("2")) {
+            originalLoanAmount = calculateOriginalLoanAmount(po.getCommodityList());
+            adminFee = GlobalParameters.getInstance().getComodityAdminFee();
+        } else {
+            originalLoanAmount = po.getOrderCompletedValue();
+            adminFee = GlobalParameters.getInstance().getShareAdminFee();
+        }
 
         var tradingAccounts = helper.getLsfTypeTradingAccounts(oldApplication.getCustomerId(), appId, oldApplication.getMarginabilityGroup());
         if (tradingAccounts.isEmpty()) {
@@ -152,15 +164,15 @@ public class RollOverProcessor implements MessageProcessor {
         rollOverSummeryResponse.setTenor(oldApplication.getTenor());
 
         rollOverSummeryResponse.setOriginalSettlementAmount(po.getOrderSettlementAmount());
-        rollOverSummeryResponse.setOriginalLoanAmount(calculateOriginalLoanAmount(po.getCommodityList()));
+        rollOverSummeryResponse.setOriginalLoanAmount(originalLoanAmount);
         rollOverSummeryResponse.setOriginalProfitAmount(po.getProfitAmount());
         rollOverSummeryResponse.setMarginabilityGroup(oldApplication.getMarginabilityGroup());
-        rollOverSummeryResponse.setFinanceMethod(oldApplication.getFinanceMethod());
+        rollOverSummeryResponse.setFinanceMethod("2");  // all roll overs are commodity finance
         rollOverSummeryResponse.setProductType(oldApplication.getProductType());
         rollOverSummeryResponse.setProductName(murabahProduct.getProductName());
         rollOverSummeryResponse.setFacilityType(oldApplication.getFacilityType());
 
-        double adminFee = GlobalParameters.getInstance().getComodityAdminFee();
+
         double vatAmount = lsfCore.calculateVatAmt(adminFee);
 
         rollOverSummeryResponse.setAdminFee(adminFee);
@@ -366,7 +378,7 @@ public class RollOverProcessor implements MessageProcessor {
 
         collaterals.setNetTotalColleteral(cashCollateral + rollOverSummeryResponse.getTotalPfValue());
         if (rollOverSummeryResponse.getTotalCashBalance() > cashCollateral + rollOverSummeryResponse.getVatAmount() + rollOverSummeryResponse.getAdminFee()) {
-            collaterals.setInitialCashCollaterals(cashCollateral + rollOverSummeryResponse.getVatAmount() + GlobalParameters.getInstance().getComodityAdminFee());
+            collaterals.setInitialCashCollaterals(cashCollateral + rollOverSummeryResponse.getVatAmount() + rollOverSummeryResponse.getAdminFee());
         } else {
             collaterals.setInitialCashCollaterals(rollOverSummeryResponse.getTotalCashBalance());
         }

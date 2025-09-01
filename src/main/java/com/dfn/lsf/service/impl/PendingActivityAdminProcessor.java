@@ -15,7 +15,6 @@ import com.google.gson.Gson;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -86,6 +85,9 @@ public class PendingActivityAdminProcessor implements MessageProcessor {
             case (LsfConstants.STATUS_PO_CREATION_FAILED) :{
                 return resendPurchaseOrderCreation(pendingActivityRequest);
             }
+            case (LsfConstants.CASH_TRANSFER_FAILED_FROM_OMS) : {
+                return resendCashTransfer(pendingActivityRequest);
+            }
             default: {
                 CommonResponse commonResponse = new CommonResponse();
                 commonResponse.setResponseCode(500);
@@ -94,6 +96,10 @@ public class PendingActivityAdminProcessor implements MessageProcessor {
                 return null;
             }
         }
+    }
+
+    private String resendCashTransfer(PendingActivityRequest pendingActivityRequest) {
+            return "";
     }
 
     private void preProcessPendingActivityRequest(PendingActivityRequest pendingActivity) {

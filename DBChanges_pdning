@@ -88,3 +88,6 @@ l14_purchase_order_pkg
 l01_application_pkg
 -- 16th Aug
 L08_SYMBOL.sql
+
+-- 22 Aug
+index_optimize.sql
