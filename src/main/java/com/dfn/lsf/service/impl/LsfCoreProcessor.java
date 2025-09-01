@@ -1579,7 +1579,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             // if PO.sellButNotSettle is 0
             if (po.getSellButNotSettle() == 0 && application.isRollOverApp()) {
                 log.info("Po Sell But Not Settle is set to : {}", po.getSellButNotSettle());
-                performSettlementPreviousCommodity(application.getRollOverAppId(), statusChangedIP);
+                performSettlementPreviousCommodity(application.getRollOverAppId(),  statusChangedIP);
             } else {
                 log.info("===========LSF : (commodityPOExecution) PO Sell But Not Settle is set to 1, so not settling the Murabah Application");
             }
@@ -1603,10 +1603,18 @@ public class LsfCoreProcessor implements MessageProcessor {
 
     private void performSettlementPreviousCommodity(String originalApplicationId, String statusChangedIP) {
         var allPo = lsfRepository.getAllPurchaseOrder(originalApplicationId);
+        MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(originalApplicationId);
+        if ( collaterals == null) {
+            log.info("===========LSF : (commodityPOExecution) No Collateral found for the Application ID : {}", originalApplicationId);
+            return;
+        }
+        double settlementAmount = collaterals.getOutstandingAmount();
+
+         // check if there is any outstanding amount in the collateral, if yes then do not settle the application
         if (allPo != null && !allPo.isEmpty()) {
             PurchaseOrder po = allPo.getFirst();
-            log.info("===========LSF : (commodityPOExecution) PO Sell But Not Settle is set to 0, so settling the Murabah Application");
-            settlementProcessor.performEarlySettlementCommodity(po.getApplicationId(), po.getCustomerId(), po.getOrderSettlementAmount(), po.getId());
+            log.info("===========LSF : (commodityPOExecution) PO Sell But Not Settle is set to 0, so settling the Murabah Application: {}, Settlement Amount : {}", originalApplicationId, settlementAmount);
+            settlementProcessor.performEarlySettlementCommodity(originalApplicationId, po.getCustomerId(), settlementAmount, po.getId());
         }
     }
 

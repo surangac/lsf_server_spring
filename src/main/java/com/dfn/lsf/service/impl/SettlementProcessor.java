@@ -310,7 +310,14 @@ public class SettlementProcessor implements MessageProcessor {
         oldAppId = newApplication.getRollOverAppId();
         PurchaseOrder oldPO = lsfRepository.getSinglePurchaseOrder(oldAppId);
         PurchaseOrder newPO = lsfRepository.getSinglePurchaseOrder(newApplication.getId());
-        performEarlySettlement(oldAppId,customerId,oldPO.getOrderSettlementAmount(),oldPO.getId());
+
+        MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(oldAppId);
+        if ( collaterals == null) {
+            log.info("===========LSF : (commodityPOExecution) No Collateral found for the Application ID : {}", oldAppId);
+        }
+        double settlementAmount = collaterals.getOutstandingAmount();
+
+        performEarlySettlement(oldAppId,customerId, settlementAmount,oldPO.getId());
         newPO.setAuthAbicToSell("1");
         newPO.setIsPhysicalDelivery(0);
         lsfRepository.addAuthAbicToSellStatus(newPO);
