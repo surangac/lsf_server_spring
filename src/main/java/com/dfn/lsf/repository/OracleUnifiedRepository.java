@@ -995,18 +995,19 @@ public class OracleUnifiedRepository implements LSFRepository {
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("p15_duration", tenor.getDuration());
         parameterMap.put("p15_profit_percent", tenor.getProfitPercentage());
-        parameterMap.put("p15_tenor_id", 1);
+        parameterMap.put("p15_tenor_id", tenor.getTenorId());
         parameterMap.put("p15_created_by", tenor.getCreatedBy());
         return oracleRepository.executeProc(DBConstants.PKG_L15_TENOR_PKG, DBConstants.PROC_ADD_UPDATE_TENOR, parameterMap);
 
     }
     
     @Override
-    public String changeStatusTenor(int duration, String approvedBy, int status) {
+    public String changeStatusTenor(Tenor tenor) {
         Map<String, Object> parameterMap = new HashMap<>();
-        parameterMap.put("p15_duration", duration);
-        parameterMap.put("pL15_LVL1_APPROVED_BY", approvedBy);
-        parameterMap.put("pL15_STATUS", status);
+        parameterMap.put("p15_duration", tenor.getDuration());
+        parameterMap.put("pL15_LVL1_APPROVED_BY", tenor.getApprovedby());
+        parameterMap.put("pL15_STATUS", tenor.getStatus());
+        parameterMap.put("p15_tenor_id", tenor.getTenorId());
         return oracleRepository.executeProc(DBConstants.PKG_L15_TENOR_PKG, DBConstants.PROC_L15_CHANGE_STATUS, parameterMap);
     }
 
@@ -3261,6 +3262,21 @@ public class OracleUnifiedRepository implements LSFRepository {
 
         return allCommodities.stream()
                              .collect(Collectors.groupingBy(Commodity::getId));
+    }
+
+    @Override
+    public MurabahApplication getRolloverApplication(String applicationID) {
+        String sql = "SELECT * FROM L01_APPLICATION WHERE L01_ROLLOVER_APP_ID = ?";
+        List<MurabahApplication> murabahaApplications = jdbcTemplate.query(
+                sql,
+                new Object[]{applicationID},
+                rowMapperFactory.getRowMapper(RowMapperI.MURABAH_APPLICATION)
+        );
+        if (murabahaApplications != null && murabahaApplications.size() > 0) {
+            return murabahaApplications.get(0);
+        } else {
+            return null;
+        }
     }
 
     // private final RowMapper<MurabahApplication> murabahApplicationRowMapper = (rs, rowNum) -> {

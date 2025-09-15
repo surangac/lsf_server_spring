@@ -52,6 +52,9 @@ public class MApplicationCollaterals {
     private boolean isExchangeAccountCreated;
     private double adminFee;
     private double vatAmount;
+    private double totalPfValueDisplay;
+    private double totalPFMarketValueDashBoard;
+    private double totalWeightedPFValueDashBoard;
 
     public String getId() {
         return id;

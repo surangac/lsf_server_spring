@@ -63,7 +63,18 @@ public class LsfOmsValidatorAbicProcessor {
 
     private void validateFtvForFirstMargineCall(OMSQueueRequest request, OMSQueueResponse response) {
         //List<MurabahApplication> applicationList = lsfRepository.geMurabahAppicationUserID(request.getCustomerId());
-        MurabahApplication application = lsfRepository.getMurabahApplication(request.getContractId());
+        MurabahApplication application = null;
+//        List<PurchaseOrder> purchaseOrderList = lsfRepository.getPurchaseOrderForApplication(request.getContractId());
+//        if (purchaseOrderList != null || !purchaseOrderList.isEmpty()) {
+//            PurchaseOrder po = purchaseOrderList.getFirst();
+//            if (po.getSettlementStatus() == 1) {
+//                application = lsfRepository.getRolloverApplication(request.getContractId());
+//                log.info("Considering rollover application for contract id : " + request.getContractId() + " as settlement done for purchase order id : " + po.getId() + " RollOver Id : " + application.getId());
+//            } else {
+//                application = lsfRepository.getMurabahApplication(request.getContractId());
+//            }
+//        }
+        application = lsfRepository.getMurabahApplication(request.getContractId());
         response.setParams(request.getPendingId());
         if (application == null) {
             response.setApproved(false);
@@ -71,7 +82,10 @@ public class LsfOmsValidatorAbicProcessor {
             log.debug("===========LSF : Application not found for contract id :" + request.getContractId());
             return;
         }
-        MApplicationCollaterals collaterals = lsfCoreService.reValuationProcess(application,false);
+        //MApplicationCollaterals collaterals = lsfCoreService.reValuationProcess(application,true);
+        MApplicationCollaterals collaterals = application.isRollOverApp()
+                                           ? lsfCoreService.reValuationProcess_RollOverApp(application, true, false)
+                                           : lsfCoreService.reValuationProcess(application,true, false);
         log.debug("===========LSF : applicationId: "+ application.getId() +" Current FTV :" + collaterals.getFtv() + " , Current Outstanding Balance :" + collaterals.getOutstandingAmount() + " , Order Value :" + request.getAmount());
         log.debug("===========LSF :Order Details  Symbol :" + request.getSymbol() + " , Price :" + request.getPrice() + " , Quantity :" + request.getQuantity() + " , Open Order value :" + request.getOpenOrderValues() + " , Amount :" + request.getAmount() + " , Contract ID :" + request.getContractId());
 
@@ -80,7 +94,7 @@ public class LsfOmsValidatorAbicProcessor {
             response.setApproved(false);
         } else {
             double weightedOrderValue = 0.0;
-            MarginabilityGroup marginabilityGroup = helper.getMarginabilityGroup(application.getMarginabilityGroup());
+            MarginabilityGroup marginabilityGroup = helper.getMarginabilityGroup (application.getMarginabilityGroup());
             double assignedMarginabilityPercentage = 0.0;
             List<SymbolMarginabilityPercentage> marginabilityPercentages = null;
             if (marginabilityGroup != null) {
@@ -98,16 +112,19 @@ public class LsfOmsValidatorAbicProcessor {
                     }
                 }
             }
-            weightedOrderValue = request.getAmount() * assignedMarginabilityPercentage / 100;
+            double amountWithoutCommision = request.getPrice() * request.getQuantity();
+            //weightedOrderValue = request.getAmount() * assignedMarginabilityPercentage / 100;
+            weightedOrderValue = amountWithoutCommision * assignedMarginabilityPercentage / 100;
 
             log.debug("===========LSF : Assigned Marginability Percentage :" + assignedMarginabilityPercentage + " for Symbol :" + request.getSymbol() + " Exchange :" + request.getExchange());
-            log.info("===========LSF : Weighted Order Value :" + weightedOrderValue + " for Symbol :" + request.getSymbol());
+            log.info("===========LSF : Weighted Order Value :" + weightedOrderValue + " for Symbol :" + request.getSymbol() + " Order Commision :" + request.getCommission());
 
             // changed by Suranga on 2020/09/23 based on CR RD-ABIC-2020006-159- ML multiple order projected coverage-V1 1
             // 1. avoid adding total block amount to Net Total Colleteral at colleteral calculation logic
             // 2. projected block amount will be calculated based on the available block amount values for each symbol
             String openOrderValues = request.getOpenOrderValues();
             double weightedOpenOrderValue = 0.0;
+            double totalOpenOrderValue = 0.0;
             if(!openOrderValues.isEmpty() && openOrderValues.length() > 0 ) {
                 log.debug("===========LSF : OpenOrder String :" + openOrderValues);
                 String[] openOrders = openOrderValues.split("\\|");
@@ -124,13 +141,14 @@ public class LsfOmsValidatorAbicProcessor {
                             }
                         }
                     }
-                    weightedOpenOrderValue = ordValue * openOrderMgtPercentage/ 100;
+                    totalOpenOrderValue += ordValue;
+                    weightedOpenOrderValue += ordValue * openOrderMgtPercentage/ 100;
                 }
-                log.debug("===========LSF : OpenOrder weightedOpenOrderValue :" + weightedOpenOrderValue);
+                log.debug("===========LSF : OpenOrder weightedOpenOrderValue :" + weightedOpenOrderValue + " Total Open Order Value :" + totalOpenOrderValue);
             }
             //collaterals.setNetTotalColleteral(collaterals.getNetTotalColleteral() - Math.abs(request.getAmount()) + weightedOrderValue);
             // removed - Math.abs(request.getAmount() as at this point cash balance already deducted the Order amount
-            collaterals.setNetTotalColleteral(collaterals.getNetTotalColleteral() + weightedOrderValue + weightedOpenOrderValue);
+            collaterals.setNetTotalColleteral(collaterals.getNetTotalColleteral() - Math.abs(request.getAmount()) - totalOpenOrderValue + weightedOrderValue + weightedOpenOrderValue);
             log.debug("===========LSF :Weighted Order Value:" + weightedOrderValue + " New Net Colletreal :" + collaterals.getNetTotalColleteral());
             lsfCoreService.calculateFTV(collaterals);  
             log.debug("===========LSF : Expected FTV :" + collaterals.getFtv() + " , First Margin Level :" + GlobalParameters.getInstance().getFirstMarginCall());
@@ -159,7 +177,10 @@ public class LsfOmsValidatorAbicProcessor {
         if (application == null) {
             response.setApproved(false);
         }
-        MApplicationCollaterals collaterals = lsfCoreService.reValuationProcess(application,false);
+        MApplicationCollaterals collaterals = application.isRollOverApp()
+                                              ? lsfCoreService.reValuationProcess_RollOverApp(application, true, false)
+                                              : lsfCoreService.reValuationProcess(application,true, false);
+
         log.debug("===========LSF : Current FTV :" + collaterals.getFtv() + " , Current Outstanding Balance :" + collaterals.getOutstandingAmount());
         collaterals.setNetTotalColleteral(collaterals.getNetTotalColleteral() - Math.abs(request.getAmount()));
         lsfCoreService.calculateFTV(collaterals);

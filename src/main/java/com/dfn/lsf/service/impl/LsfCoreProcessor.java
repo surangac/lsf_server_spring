@@ -349,7 +349,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             lsfCore.calculateRemainingOperativeLimit(collaterals);
             lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_PO_CREATED_WAITING_TO_ORDER_FILL);
             lsfRepository.addPurchaseOrder(po, ipAddress);
-            lsfRepository.addEditCollaterals(collaterals, approvedbyName, Integer.parseInt(approvedbyId));
+            lsfRepository.addEditCollaterals(collaterals, approvedbyName, Integer.parseInt(murabahApplication.getCustomerId()));
             po.setApprovalStatus(approvalStatus);
             po.setApprovedById(approvedbyId);
             po.setApprovedByName(approvedbyName);
@@ -1063,8 +1063,8 @@ public class LsfCoreProcessor implements MessageProcessor {
             if (po.getCustomerApproveStatus() == 1 && !(application.getLsfAccountDeletionState() == LsfConstants.REQUEST_SENT_TO_OMS || application.getLsfAccountDeletionState() == LsfConstants.ACCOUNT_DELETION_SUCCESS || application.getLsfAccountDeletionState() == LsfConstants.EXCHANGE_ACCOUNT_DELETION_FAILED_FROM_EXCHANGE || application.getLsfAccountDeletionState() == LsfConstants.SHARE_TRANSFER_FAILED_WITH_EXCHANGE)) {
                 if (application != null) {
                     MApplicationCollaterals response = application.isRollOverApp()
-                                                       ? lsfCore.reValuationProcess_RollOverApp(application, false)
-                                                       : lsfCore.reValuationProcess(application,false);
+                                                       ? lsfCore.reValuationProcess_RollOverApp(application, false,true)
+                                                       : lsfCore.reValuationProcess(application,false, true);
                     log.info("===========LSF : (reqDashBoardPFSummary)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
                     getBPDetails(response, application);
                     return gson.toJson(response);
@@ -1096,7 +1096,8 @@ public class LsfCoreProcessor implements MessageProcessor {
             liquidityType.setLiquidName(marginabilityGroup.toString());
             liquidityType.setMarginabilityPercent(Double.valueOf(marginabilityGroup));
             liquidityType.setStockConcentrationPercent(Double.valueOf(marginabilityGroup));
-            BPSummary bfSummary = calculateBP(liquidityType, collaterals.getTotalCashColleteral(), collaterals.getTotalPFColleteral(), collaterals.getOutstandingAmount());
+            double calculatedPfForBP = calculatePfForBP(collaterals);
+            BPSummary bfSummary = calculateBP(liquidityType, collaterals.getTotalCashColleteral(), calculatedPfForBP, collaterals.getOutstandingAmount());
             bpList.add(bfSummary);
         }
 
@@ -1152,6 +1153,27 @@ public class LsfCoreProcessor implements MessageProcessor {
 
         return bpSummary;
     }
+
+    private double calculatePfForBP(MApplicationCollaterals collaterals) {
+        var pfSecurityList = collaterals.getSecurityList();
+        double pfForBP = 0.0;
+        if ( pfSecurityList == null) {
+            return collaterals.getTotalPFColleteral();
+        }
+        if (!pfSecurityList.isEmpty()) {
+            for (Symbol symbol: pfSecurityList) {
+                int qtyForPf = symbol.getAvailableQty() + symbol.getSellPending() + symbol.getOpenBuyQty();
+                double symbolPf = ((qtyForPf * (symbol.getLastTradePrice() > 0 ? symbol.getLastTradePrice() : symbol.getPreviousClosed())) / 100) * symbol.getMarginabilityPercentage();
+                log.info("===========LSF : Calculating PF for BP, Symbol :" + symbol.getSymbolCode() + " , Qty for PF :" + qtyForPf + " , LTP :" + symbol.getLastTradePrice() + " , Marginability% :" + symbol.getMarginabilityPercentage() + " , PF for BP :" + symbolPf);
+                pfForBP += symbolPf;
+            }
+        } else {
+            pfForBP = collaterals.getTotalPFColleteral();
+        }
+        return pfForBP;
+    }
+
+
 
 //    private static BPSummary calculateBP(LiquidityType liquidityType, double totalCash, double totalPF, double totalOutstanding) {
 //        BPSummary BPSummary = new BPSummary();

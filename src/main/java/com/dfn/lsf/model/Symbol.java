@@ -29,7 +29,7 @@ public class Symbol {
     private String arabicName;
     private String englishName;
     private String shortDescriptionAR;
-    private String pendingSettle;
+    private int pendingSettle;
     private LiquidityType concentrationType;
     private int openBuyQty;
     private int openSellQty;
@@ -39,6 +39,7 @@ public class Symbol {
     private int instrumentType = -1;
     private String securityType;
     private int allowedForPo;
+    private int sellPending;
 
     public int getAllowedForPo() {
         return allowedForPo;
@@ -227,11 +228,11 @@ public class Symbol {
         this.shortDescriptionAR = shortDescriptionAR;
     }
 
-    public String getPendingSettle() {
+    public int getPendingSettle() {
         return pendingSettle;
     }
 
-    public void setPendingSettle(String pendingSettle) {
+    public void setPendingSettle(int pendingSettle) {
         this.pendingSettle = pendingSettle;
     }
 
@@ -299,5 +300,6 @@ public class Symbol {
         this.setTransferedQty(sourceSymbol.getTransferedQty());
         this.setLiquidityType(sourceSymbol.getLiquidityType());
         this.setMarginabilityPercentage(sourceSymbol.getMarginabilityPercentage());
+        this.setSellPending(sourceSymbol.getSellPending());
     }
 }

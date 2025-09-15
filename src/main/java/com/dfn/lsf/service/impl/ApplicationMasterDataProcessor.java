@@ -321,7 +321,7 @@ public class ApplicationMasterDataProcessor implements MessageProcessor {
         try {
             TenorDetails tenorDetails = gson.fromJson(msgString, TenorDetails.class);
             for (Tenor tenor : tenorDetails.getTenors()) {
-                lsfRepository.changeStatusTenor(tenor.getDuration(), tenor.getApprovedby(), tenor.getStatus());
+                lsfRepository.changeStatusTenor(tenor);
             }
             cmr.setResponseCode(200);
             cmr.setResponseMessage("Tenor Status Changed");

@@ -174,8 +174,8 @@ public class SettlementProcessor implements MessageProcessor {
 
         String originalApplicationID = application.isRollOverApp() ? application.getRollOverAppId() : applicationID;
 
-        CashAcc lsfCashAccount = lsfCoreService.getLsfTypeCashAccountForUser(userID,originalApplicationID);
-        TradingAcc lsfTradingAcc = lsfCoreService.getLsfTypeTradinAccountForUser(userID,originalApplicationID);
+        CashAcc lsfCashAccount = lsfCoreService.getLsfTypeCashAccountForUser(userID, originalApplicationID);
+        TradingAcc lsfTradingAcc = lsfCoreService.getLsfTypeTradinAccountForUser(userID, originalApplicationID);
         PurchaseOrder purchaseOrder= lsfRepository.getSinglePurchaseOrder(orderID);
 //        if (purchaseOrder.getIsPhysicalDelivery() == 1 || purchaseOrder.getSellButNotSettle() ==1) {
 //            responseCode = 500;

@@ -84,7 +84,7 @@ public class ProfitCalculationNew {
                 OrderProfit dailyProfit = calculateDailyProfit(murabahApplication, purchaseOrder,
                                                                lsfCashAccount, date, cumulativeProfit);
 
-                if (dailyProfit != null) {
+                if (dailyProfit != null && dailyProfit.getOrderID() != null) {
                     cumulativeProfit += dailyProfit.getProfitAmount();
                     dailyProfit.setCumulativeProfitAmount(cumulativeProfit);
 
@@ -362,12 +362,29 @@ public class ProfitCalculationNew {
                             log.info("Updating PO " + purchaseOrder.getId() + " to settled state");
                             lsfRepository.updatePOToSettledState(Integer.parseInt(purchaseOrder.getId()));
                             if (murabahApplication.isRollOverApp() || !hasRolloverApplication(murabahApplication)) {
-                                AccountDeletionRequestState accountDeletionRequestState = lsfCore.closeLSFAccount(
-                                        murabahApplication.getId(),
-                                        lsfTradinAccount.getAccountId(),
-                                        murabahApplication.getTradingAcc(),
-                                        lsfTypeCashAccount.getAccountId(),
-                                        murabahApplication.getCashAccount());
+                                String toCashAccount = null;
+                                String toTradingAccount = null;
+                                if (murabahApplication.isRollOverApp()) {
+                                    MurabahApplication originalApplication = lsfRepository.getMurabahApplication(murabahApplication.getRollOverAppId());
+                                    toCashAccount = originalApplication.getCashAccount();
+                                    toTradingAccount = originalApplication.getTradingAcc();
+                                } else {
+                                    toCashAccount = murabahApplication.getCashAccount();
+                                    toTradingAccount = murabahApplication.getTradingAcc();
+                                }
+
+                                log.info("===========LSF :- Deleting the Application, Application ID :"
+                                         + murabahApplication.getId());
+                                String originalApplicationID = murabahApplication.isRollOverApp() ? murabahApplication.getRollOverAppId() : murabahApplication.getId();
+                                CashAcc lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(), originalApplicationID);
+                                TradingAcc lsfTradingAcc = lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(), originalApplicationID);
+                                AccountDeletionRequestState accountDeletionRequestState = lsfCore.closeLSFAccount(murabahApplication.getId(), lsfTradingAcc.getAccountId(), toTradingAccount, lsfCashAccount.getAccountId(), toCashAccount);
+//                                AccountDeletionRequestState accountDeletionRequestState = lsfCore.closeLSFAccount(
+//                                        murabahApplication.getId(),
+//                                        lsfTradinAccount.getAccountId(),
+//                                        murabahApplication.getTradingAcc(),
+//                                        lsfTypeCashAccount.getAccountId(),
+//                                        murabahApplication.getCashAccount());
                                 if (accountDeletionRequestState.isSent()) {
                                     log.info("===========LSF :- Moving Application to close state, Application ID :"
                                                 + murabahApplication.getId());
@@ -380,6 +397,10 @@ public class ProfitCalculationNew {
                                             + ", Reason :"
                                             + accountDeletionRequestState.getFailureReason());
                                 }
+                            } else {
+                                log.info("===========LSF :- Moving Application to close state, Application ID :"
+                                         + murabahApplication.getId());
+                                lsfCore.moveToCashTransferredClosedState(murabahApplication.getId(), "Early Settlement", purchaseOrder.getId());
                             }
                         } else {
                             log.error("===========LSF : Cash Transfer Failure(Transfer Failed) , From Account:"

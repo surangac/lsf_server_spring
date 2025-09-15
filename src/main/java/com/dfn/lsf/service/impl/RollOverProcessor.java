@@ -88,13 +88,20 @@ public class RollOverProcessor implements MessageProcessor {
         }
         var totalPfValue = calculateTotalPfValue(tradingAccounts, collaterals.getTradingAccForColleterals());
 
+        var lsfTypeCashAccounts = helper.getLsfTypeCashAccounts(newApplication.getCustomerId(), newApplication.getRollOverAppId());
+        if (lsfTypeCashAccounts.isEmpty()) {
+            throw new IllegalArgumentException("No cash accounts found for application ID: " + newApplication.getRollOverAppId());
+        }
+        var totalCashBalanceInLsfCash = lsfTypeCashAccounts.getFirst().getCashBalance();
+
         var cashAccounts = collaterals.getCashAccForColleterals().getFirst();
         var totalCashBalance = cashAccounts.getAmountAsColletarals();
+        cashAccounts.setInvestmentAccountNumber(lsfTypeCashAccounts.getFirst().getInvestmentAccountNumber());
 
         rollOverSummery.setLsfTypeCashAccounts(collaterals.getCashAccForColleterals());
         rollOverSummery.setLsfTypeTradingAccounts(collaterals.getTradingAccForColleterals());
         rollOverSummery.setTotalPfValue(totalPfValue);
-        rollOverSummery.setTotalCashBalance(totalCashBalance);
+        rollOverSummery.setTotalCashBalance(totalCashBalanceInLsfCash);
         rollOverSummery.setTotalCollateralValue(totalPfValue + totalCashBalance);
 
         rollOverSummery.setCashAccountId(newApplication.getCashAccount());
@@ -109,6 +116,10 @@ public class RollOverProcessor implements MessageProcessor {
         rollOverSummery.setApprovedLimit(collaterals.getApprovedLimitAmount());
         rollOverSummery.setEmail(newApplication.getEmail());
         rollOverSummery.setMobile(newApplication.getMobileNo());
+
+        var profit = rollOverSummery.getRequiredAmount() * rollOverSummery.getProfitPercentage() * (Integer.parseInt(rollOverSummery.getTenor()) * 30) / 36000;
+
+        rollOverSummery.setNewProfitAmount(profit);
 
         log.info("RollOver summery application processed with ID: {}", rollOverSummery.getAppId());
         return gson.toJson(rollOverSummery);
@@ -132,12 +143,10 @@ public class RollOverProcessor implements MessageProcessor {
         double adminFee = 0.0;
         if (oldApplication.getFinanceMethod().equals("2")) {
             originalLoanAmount = calculateOriginalLoanAmount(po.getCommodityList());
-            adminFee = GlobalParameters.getInstance().getComodityAdminFee();
         } else {
             originalLoanAmount = po.getOrderCompletedValue();
-            adminFee = GlobalParameters.getInstance().getShareAdminFee();
         }
-
+        adminFee = GlobalParameters.getInstance().getComodityAdminFee();
         var tradingAccounts = helper.getLsfTypeTradingAccounts(oldApplication.getCustomerId(), appId, oldApplication.getMarginabilityGroup());
         if (tradingAccounts.isEmpty()) {
             throw new IllegalArgumentException("No trading accounts found for application ID: " + appId);
@@ -371,7 +380,9 @@ public class RollOverProcessor implements MessageProcessor {
 
         double cashCollateral = application.getFinanceRequiredAmt() - rollOverSummeryResponse.getTotalPfValue() <= 0 ? 0 : application.getFinanceRequiredAmt() - rollOverSummeryResponse.getTotalPfValue();
         // add a complete log with financeRequiredAmt, totalPfValue, cashCollateral
-        log.info("Finance Required Amount: {}, Total PF Value: {}, Cash Collateral: {}",
+        log.info("For Rollover of OriginalApplication: {}, RollOverAppId: {}, Finance Required Amount: {}, Total PF Value: {}, Cash Collateral: {}",
+                 application.getRollOverAppId(),
+                 application.getId(),
                  application.getFinanceRequiredAmt(),
                  rollOverSummeryResponse.getTotalPfValue(),
                  cashCollateral);

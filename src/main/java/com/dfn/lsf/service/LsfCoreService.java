@@ -451,8 +451,6 @@ public class LsfCoreService {
             cmr.setResponseCode(-1);
             return cmr;
         }
-
-
     }
 
     private boolean doTransfer(Object request) {
@@ -477,8 +475,8 @@ public class LsfCoreService {
                 var mainApplications = appList.stream().filter(application -> !application.isRollOverApp()).toList();
                 var rollOverApplications = appList.stream().filter(MurabahApplication::isRollOverApp).toList();
                 log.debug("===========LSF : (reValuationProcess) - mainApplications size: {}, rollOverApplications size: {}", mainApplications.size(), rollOverApplications.size());
-                mainApplications.forEach(application -> reValuationProcess(application, false));
-                rollOverApplications.forEach(application -> reValuationProcess_RollOverApp(application, false));
+                mainApplications.forEach(application -> reValuationProcess(application, false, true));
+                rollOverApplications.forEach(application -> reValuationProcess_RollOverApp(application, false,true));
             }
             response.setResponseCode(200);
             response.setResponseMessage("recalculation process completed");
@@ -496,8 +494,12 @@ public class LsfCoreService {
         CommonResponse response = new CommonResponse();
         try {
             MurabahApplication application = lsfRepository.getMurabahApplication(applicationId);
-            reValuationProcess(application,false);
-
+            //reValuationProcess(application,true);
+            if (application.isRollOverApp()) {
+                reValuationProcess_RollOverApp(application, false,true);
+            } else {
+                reValuationProcess(application,false, true);
+            }
             response.setResponseCode(200);
             response.setResponseMessage("recalculation process completed");
         } catch (Exception ex) {
@@ -509,7 +511,7 @@ public class LsfCoreService {
         return gson.toJson(response);
     }
 
-    public MApplicationCollaterals reValuationProcess_RollOverApp(MurabahApplication application,boolean considerBlockAmount) {
+    public MApplicationCollaterals reValuationProcess_RollOverApp(MurabahApplication application,boolean considerBlockAmount, boolean considerOpenBuyQty) {
         log.info("===========LSF : (reValuationProcess_RollOverApp) appId : {}", application.getId());
         if(!application.isRollOverApp() && !application.getFinanceMethod().equals("2")) {
             log.info("===========LSF : (reValuationProcess_RollOverApp) RollOver AppId : {} , not allowed this method" , application.getRollOverAppId());
@@ -520,6 +522,8 @@ public class LsfCoreService {
         double totalPFMarketValue = 0.0;
         double totalWeightedPFMarketValue = 0.0;
         double totalCashCollateral = 0.0;
+        double totalPfvalueDashBoard = 0;
+        double totalPfMarketValueDashBoard = 0;
         MApplicationCollaterals mApplicationCollaterals = lsfRepository.getApplicationCompleteCollateralForRollOver(application.getId());
         if( mApplicationCollaterals == null) {
             log.info("===========LSF : (reValuationProcess_RollOverApp) No Collaterals Found for AppId : {}", application.getId());
@@ -534,12 +538,16 @@ public class LsfCoreService {
             for (Symbol omsSymbol: tradingAccFromAoms.getSymbolList()) {
                 Symbol smb = tradingAcc.isSymbolExist(omsSymbol.getSymbolCode(), omsSymbol.getExchange());
                 smb.mapFromOms(omsSymbol);
-                double contribToColletaral = ((smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
+                double totalQtyForDashBoard = smb.getAvailableQty() + smb.getSellPending();
+                double totalQty = smb.getAvailableQty() + smb.getSellPending() + (considerOpenBuyQty ? smb.getOpenBuyQty() : 0);
+                double contribToColletaral = ((totalQty * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
                 smb.setContibutionTocollateral(contribToColletaral);
                 totalPFCollateral += contribToColletaral;
                 totalCollateral += contribToColletaral;
+                totalPfvalueDashBoard = totalPfvalueDashBoard + ((totalQtyForDashBoard * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
 
-                totalPFMarketValue = totalPFMarketValue + smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
+                totalPfMarketValueDashBoard = totalPfMarketValueDashBoard + totalQtyForDashBoard * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
+                totalPFMarketValue = totalPFMarketValue + totalQty * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
                 totalWeightedPFMarketValue = totalWeightedPFMarketValue + contribToColletaral;
                 if (mApplicationCollaterals.getSecurityList() == null) {
                     mApplicationCollaterals.setSecurityList(new ArrayList<>());
@@ -551,6 +559,8 @@ public class LsfCoreService {
         mApplicationCollaterals.setTotalPFMarketValue(totalPFMarketValue);
         mApplicationCollaterals.setTotalWeightedPFValue(totalPFCollateral);
         mApplicationCollaterals.setTotalPFColleteral(totalPFCollateral);
+        mApplicationCollaterals.setTotalPFMarketValueDashBoard(totalPfMarketValueDashBoard);
+        mApplicationCollaterals.setTotalWeightedPFValueDashBoard(totalPfvalueDashBoard);
 
         var lsfTypeCashAccounts = helper.getLsfTypeCashAccounts(application.getCustomerId(), application.getRollOverAppId());
         if (!lsfTypeCashAccounts.isEmpty()) {
@@ -623,7 +633,7 @@ public class LsfCoreService {
         return mApplicationCollaterals;
     }
 
-    public MApplicationCollaterals reValuationProcess(MurabahApplication application,boolean considerBlockAmount) {
+    public MApplicationCollaterals reValuationProcess(MurabahApplication application,boolean considerBlockAmount, boolean considerOpenBuyQty) {
         log.info("===========LSF : (reValuationProcess) appId : {}", application.getId());
         if(application.isRollOverApp()) {
             log.info("===========LSF : (reValuationProcess) RollOver AppId : {} , not allowed this method" , application.getRollOverAppId());
@@ -634,6 +644,8 @@ public class LsfCoreService {
         double totalPFMarketValue = 0.0;
         double totalWeightedPFMarketValue = 0.0;
         double totalCashCollateral = 0.0;
+        double totalPfvalueDashBoard = 0;
+        double totalPfMarketValueDashBoard = 0;
         MApplicationCollaterals mApplicationCollaterals = lsfRepository.getApplicationCompleteCollateral(application.getId());
         if( mApplicationCollaterals == null) {
             log.info("===========LSF : (reValuationProcess) No Collaterals Found for AppId : {}", application.getId());
@@ -648,12 +660,16 @@ public class LsfCoreService {
             for (Symbol omsSymbol: tradingAccFromAoms.getSymbolList()) {
                 Symbol smb = tradingAcc.isSymbolExist(omsSymbol.getSymbolCode(), omsSymbol.getExchange());
                 smb.mapFromOms(omsSymbol);
-                double contribToColletaral = ((smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
+                double totalQtyForDashBoard = smb.getAvailableQty() + smb.getSellPending();
+                double totalQty = smb.getAvailableQty() + smb.getSellPending() + (considerOpenBuyQty ? smb.getOpenBuyQty() : 0);
+                double contribToColletaral = ((totalQty * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
                 smb.setContibutionTocollateral(contribToColletaral);
                 totalPFCollateral += contribToColletaral;
                 totalCollateral += contribToColletaral;
+                totalPfvalueDashBoard = totalPfvalueDashBoard + ((totalQtyForDashBoard * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
 
-                totalPFMarketValue = totalPFMarketValue + smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
+                totalPfMarketValueDashBoard = totalPfMarketValueDashBoard + totalQtyForDashBoard * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
+                totalPFMarketValue = totalPFMarketValue + totalQty * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed());
                 totalWeightedPFMarketValue = totalWeightedPFMarketValue + contribToColletaral;
                 if (mApplicationCollaterals.getSecurityList() == null) {
                     mApplicationCollaterals.setSecurityList(new ArrayList<>());
@@ -665,6 +681,8 @@ public class LsfCoreService {
         mApplicationCollaterals.setTotalPFMarketValue(totalPFMarketValue);
         mApplicationCollaterals.setTotalWeightedPFValue(totalPFCollateral);
         mApplicationCollaterals.setTotalPFColleteral(totalPFCollateral);
+        mApplicationCollaterals.setTotalPFMarketValueDashBoard(totalPfMarketValueDashBoard);
+        mApplicationCollaterals.setTotalWeightedPFValueDashBoard(totalPfvalueDashBoard);
 
         var lsfTypeCashAccounts = helper.getLsfTypeCashAccounts(application.getCustomerId(), application.getId());
         if (!lsfTypeCashAccounts.isEmpty()) {
@@ -1607,7 +1625,7 @@ public class LsfCoreService {
                             }
                             smb.setAvailableQty(Math.round(Float.parseFloat(symbol.get("availableQty").toString())));
                             /*--Change for T+2 sell path--*/
-                            smb.setAvailableQty(smb.getAvailableQty() + Math.round(Float.parseFloat(symbol.get("sellPending").toString())) + smb.getOpenBuyQty());
+                            smb.setAvailableQty(smb.getAvailableQty() + Math.round(Float.parseFloat(symbol.get("sellPending").toString())));
                             /*--*/
                             smb.setPreviousClosed(Double.parseDouble(symbol.get("previousClosed").toString()));
                             smb.setLastTradePrice(Double.parseDouble(symbol.get("lastTradePrice").toString()));
@@ -1635,7 +1653,7 @@ public class LsfCoreService {
                                 }
                             }
 
-                            Double contribToColletaral = ((smb.getAvailableQty() * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
+                            Double contribToColletaral = (((smb.getAvailableQty() + smb.getOpenBuyQty()) * (smb.getLastTradePrice() > 0 ? smb.getLastTradePrice() : smb.getPreviousClosed())) / 100) * smb.getMarginabilityPercentage();
                             smb.setContibutionTocollateral(contribToColletaral);
                             totalPFCollateral += contribToColletaral;
                             totalCollateral += contribToColletaral;

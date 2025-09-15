@@ -252,7 +252,7 @@ public interface LSFRepository {
 
     String updateTenor(Tenor tenor);
 
-    String changeStatusTenor(int duration, String approvedBy, int status);
+    String changeStatusTenor(Tenor tenor);
 
 
     List<LiquidityType> getLiquidityTypes();
@@ -516,6 +516,7 @@ public interface LSFRepository {
     List<Agreement> getAgreements();
     String updateAdditionalDetails(PhysicalDeliverOrder physicalDeliverOrder);
     int hasRollOver(String applicationId);
+    MurabahApplication getRolloverApplication(String applicationID);
 
 //    @Query(value = "SELECT po.*, ca.L07_INVESTOR_ACCOUNT " +
 //                   "FROM l14_purchase_order po, l07_cash_account ca " +
