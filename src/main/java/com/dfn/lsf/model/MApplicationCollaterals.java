@@ -55,6 +55,7 @@ public class MApplicationCollaterals {
     private double totalPfValueDisplay;
     private double totalPFMarketValueDashBoard;
     private double totalWeightedPFValueDashBoard;
+    private double totalOutstandingForFtv;
 
     public String getId() {
         return id;

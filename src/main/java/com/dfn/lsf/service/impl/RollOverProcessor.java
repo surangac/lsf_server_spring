@@ -96,7 +96,6 @@ public class RollOverProcessor implements MessageProcessor {
 
         var cashAccounts = collaterals.getCashAccForColleterals().getFirst();
         var totalCashBalance = cashAccounts.getAmountAsColletarals();
-        cashAccounts.setInvestmentAccountNumber(lsfTypeCashAccounts.getFirst().getInvestmentAccountNumber());
 
         rollOverSummery.setLsfTypeCashAccounts(collaterals.getCashAccForColleterals());
         rollOverSummery.setLsfTypeTradingAccounts(collaterals.getTradingAccForColleterals());

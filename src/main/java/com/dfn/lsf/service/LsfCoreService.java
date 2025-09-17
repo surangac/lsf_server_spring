@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.dfn.lsf.model.CashAcc;
@@ -62,6 +63,9 @@ public class LsfCoreService {
     private final NotificationManager notificationManager;
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private Map<String, Map<String, Object>> orderContractSignedMap = new HashMap<>();
+
+    @Value("${lsf.combined.outstanding.limit:false}")
+    private boolean isCombinedOutstandingLimit;
 
     public MApplicationCollaterals getApplicationCollateral(String applicationId) {
         try {
@@ -587,7 +591,14 @@ public class LsfCoreService {
         mApplicationCollaterals.setNetTotalColleteral(totalCollateral);
         calculateOperativeLimit(mApplicationCollaterals);
         calculateRemainingOperativeLimit(mApplicationCollaterals);
-        calculateFTV(mApplicationCollaterals);
+        double totalOutstandingValue = getTotalOutstandingForOpenContracts(application.getRollOverAppId(), application.getId());
+        log.info("Total Outstanding Value for RollOver AppId {}, Original App Id {}, is : {}", application.getId(), application.getRollOverAppId(), totalOutstandingValue);
+        mApplicationCollaterals.setTotalOutstandingForFtv(totalOutstandingValue);
+        if(isCombinedOutstandingLimit) {
+            calculateFTVWithTotalOutstanding(mApplicationCollaterals);
+        } else {
+            calculateFTV(mApplicationCollaterals);
+        }
         log.debug("=========== reValuationProcess_RollOverApp, AppId {} : FTV Value : {}", application.getId(), mApplicationCollaterals.getFtv());
 
         if (violateFTVwithThirdMarginLimit(mApplicationCollaterals)) {
@@ -646,6 +657,7 @@ public class LsfCoreService {
         double totalCashCollateral = 0.0;
         double totalPfvalueDashBoard = 0;
         double totalPfMarketValueDashBoard = 0;
+        MurabahApplication rollOverApp = lsfRepository.getRolloverApplication(application.getId());
         MApplicationCollaterals mApplicationCollaterals = lsfRepository.getApplicationCompleteCollateral(application.getId());
         if( mApplicationCollaterals == null) {
             log.info("===========LSF : (reValuationProcess) No Collaterals Found for AppId : {}", application.getId());
@@ -709,7 +721,14 @@ public class LsfCoreService {
         mApplicationCollaterals.setNetTotalColleteral(totalCollateral);
         calculateOperativeLimit(mApplicationCollaterals);
         calculateRemainingOperativeLimit(mApplicationCollaterals);
-        calculateFTV(mApplicationCollaterals);
+        double totalOutstandingValue = getTotalOutstandingForOpenContracts(application.getId(), rollOverApp.getId());
+        log.info("Total Outstanding Value for RollOver AppId {}, Original App Id {}, is : {}", rollOverApp.getId(), application.getId(), totalOutstandingValue);
+        mApplicationCollaterals.setTotalOutstandingForFtv(totalOutstandingValue);
+        if(isCombinedOutstandingLimit) {
+            calculateFTVWithTotalOutstanding(mApplicationCollaterals);
+        } else {
+            calculateFTV(mApplicationCollaterals);
+        }
         log.debug("=========== reValuationProcess, AppId {} : FTV Value : {}", application.getId(), mApplicationCollaterals.getFtv());
 
         if (violateFTVwithThirdMarginLimit(mApplicationCollaterals)) {
@@ -755,6 +774,14 @@ public class LsfCoreService {
         return mApplicationCollaterals;
     }
 
+    private double getTotalOutstandingForOpenContracts(String mainAppId, String rollOverAppId) {
+        List<String> appIds = new ArrayList<>();
+        appIds.add(mainAppId);
+        appIds.add(rollOverAppId);
+        List<MApplicationCollaterals> collaterals = lsfRepository.getCollateralsForApplications(appIds);
+        return collaterals.stream().mapToDouble(MApplicationCollaterals::getOutstandingAmount).sum();
+    }
+
     protected void calculateOperativeLimit(MApplicationCollaterals applicationCollateral) { // TODO need to change
         double ftvForOperativeLimit = ((GlobalParameters.getInstance().getFtvForOperativeLimit()) / 100);
         double operativeLimit = (ftvForOperativeLimit * (applicationCollateral.getNetTotalColleteral() - applicationCollateral.getUtilizedLimitAmount())) / (1.0 - ftvForOperativeLimit);
@@ -783,6 +810,15 @@ public class LsfCoreService {
     public void calculateFTV(MApplicationCollaterals collaterals) { /*-----Calculate FTV for ABIC-----*/
         if (collaterals.getOutstandingAmount() > 0) {
             double ftv = (collaterals.getNetTotalColleteral()/collaterals.getOutstandingAmount()) * 100.0;
+            collaterals.setFtv(LSFUtils.ceilTwoDecimals(ftv));
+        }else{
+            collaterals.setFtv(0.0);
+        }
+    }
+
+    public void calculateFTVWithTotalOutstanding(MApplicationCollaterals collaterals) {
+        if (collaterals.getTotalOutstandingForFtv() > 0) {
+            double ftv = (collaterals.getNetTotalColleteral()/collaterals.getTotalOutstandingForFtv()) * 100.0;
             collaterals.setFtv(LSFUtils.ceilTwoDecimals(ftv));
         }else{
             collaterals.setFtv(0.0);

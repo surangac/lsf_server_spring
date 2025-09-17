@@ -297,7 +297,25 @@ public class OracleUnifiedRepository implements LSFRepository {
             return new MApplicationCollaterals();
         }
     }
-    
+
+    /**
+     * Get list of MApplicationCollaterals for two application IDs with settlement status 0.
+     * @param applicationIds List of application IDs
+     * @return List of MApplicationCollaterals
+     */
+    @Override
+    public List<MApplicationCollaterals> getCollateralsForApplications(List<String> applicationIds) {
+        if (applicationIds == null || applicationIds.isEmpty()) return Collections.emptyList();
+
+        String inClause = applicationIds.stream().map(id -> "?").collect(Collectors.joining(","));
+        String sql = "SELECT l05.* FROM MUBASHER_LSF.L05_COLLATERALS l05 " +
+                     "JOIN MUBASHER_LSF.L14_PURCHASE_ORDER l14 ON l05.L05_L01_APP_ID = l14.L14_APP_ID " +
+                     "WHERE l14.L14_SETTLEMENT_STATUS = 0 " +
+                     "AND l05.L05_L01_APP_ID IN (" + inClause + ")";
+
+        return jdbcTemplate.query(sql, applicationIds.toArray(), rowMapperFactory.getRowMapper(RowMapperI.COLLATERALS));
+    }
+
     @Override
     public List<CashAcc> getCashAccountsInCollateral(String applicationId, String collateralId, int isLsfType) {
         Map<String, Object> parameterMap = new HashMap<>();

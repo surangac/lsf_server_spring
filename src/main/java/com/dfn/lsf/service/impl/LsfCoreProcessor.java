@@ -1097,7 +1097,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             liquidityType.setMarginabilityPercent(Double.valueOf(marginabilityGroup));
             liquidityType.setStockConcentrationPercent(Double.valueOf(marginabilityGroup));
             double calculatedPfForBP = calculatePfForBP(collaterals);
-            BPSummary bfSummary = calculateBP(liquidityType, collaterals.getTotalCashColleteral(), calculatedPfForBP, collaterals.getOutstandingAmount());
+            BPSummary bfSummary = calculateBP(liquidityType, collaterals.getTotalCashColleteral(), calculatedPfForBP, collaterals.getTotalOutstandingForFtv());
             bpList.add(bfSummary);
         }
 

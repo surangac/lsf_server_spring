@@ -283,6 +283,7 @@ public interface LSFRepository {
 
     MApplicationCollaterals getApplicationCompleteCollateral(String applicationId);
 
+    List<MApplicationCollaterals> getCollateralsForApplications(List<String> applicationIds);
     MApplicationCollaterals getApplicationCompleteCollateralForRollOver(String originalAppId);
 
     MApplicationCollaterals getCollateralForRollOverCollaterelWindow(String applicationId, MApplicationCollaterals applicationCollaterals);

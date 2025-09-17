@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.dfn.lsf.model.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.dfn.lsf.model.requestMsg.OMSQueueRequest;
@@ -28,6 +29,8 @@ public class LsfOmsValidatorAbicProcessor {
     private final LSFRepository lsfRepository;
     private final Helper helper;
     private final LsfCoreService lsfCoreService;
+    @Value("${lsf.combined.outstanding.limit:false}")
+    private boolean isCombinedOutstandingLimit;
 
     public OMSQueueResponse process(OMSQueueRequest request) {
 
@@ -150,7 +153,11 @@ public class LsfOmsValidatorAbicProcessor {
             // removed - Math.abs(request.getAmount() as at this point cash balance already deducted the Order amount
             collaterals.setNetTotalColleteral(collaterals.getNetTotalColleteral() - Math.abs(request.getAmount()) - totalOpenOrderValue + weightedOrderValue + weightedOpenOrderValue);
             log.debug("===========LSF :Weighted Order Value:" + weightedOrderValue + " New Net Colletreal :" + collaterals.getNetTotalColleteral());
-            lsfCoreService.calculateFTV(collaterals);  
+            if(isCombinedOutstandingLimit) {
+                lsfCoreService.calculateFTVWithTotalOutstanding(collaterals);
+            } else {
+                lsfCoreService.calculateFTV(collaterals);
+            }
             log.debug("===========LSF : Expected FTV :" + collaterals.getFtv() + " , First Margin Level :" + GlobalParameters.getInstance().getFirstMarginCall());
             if (lsfCoreService.violateFTVwithFirstMarginLimit(collaterals)) {
                 response.setRejectCode(1);
@@ -183,7 +190,11 @@ public class LsfOmsValidatorAbicProcessor {
 
         log.debug("===========LSF : Current FTV :" + collaterals.getFtv() + " , Current Outstanding Balance :" + collaterals.getOutstandingAmount());
         collaterals.setNetTotalColleteral(collaterals.getNetTotalColleteral() - Math.abs(request.getAmount()));
-        lsfCoreService.calculateFTV(collaterals);
+        if(isCombinedOutstandingLimit) {
+            lsfCoreService.calculateFTVWithTotalOutstanding(collaterals);
+        } else {
+            lsfCoreService.calculateFTV(collaterals);
+        }
         log.debug("===========LSF : Expected FTV :" + collaterals.getFtv() + " , Agreed Limit :" + GlobalParameters.getInstance().getAgreedLimit());
         if (collaterals.getFtv() <= GlobalParameters.getInstance().getAgreedLimit()) {
             response.setApproved(false);
