@@ -67,21 +67,7 @@ public class LsfCoreService {
     @Value("${lsf.combined.outstanding.limit:false}")
     private boolean isCombinedOutstandingLimit;
 
-    public MApplicationCollaterals getApplicationCollateral(String applicationId) {
-        try {
-            return lsfRepository.getApplicationCompleteCollateral(applicationId);
-        } catch (Exception ex) {
-            log.error("Error getting application collateral: {}", ex.getMessage());
-            return null;
-        }
-    }
-
-    public CommonResponse transferCollaterals(String applicationId) {
-        MApplicationCollaterals collaterals = lsfRepository.getApplicationCompleteCollateral(applicationId);
-        return transferCollaterals(collaterals);
-    }
-
-    public CommonResponse transferCollaterals(MApplicationCollaterals collaterals) {
+    public CommonResponse transferCollaterals(MApplicationCollaterals collaterals, LsfConstants.ProductType productType) {
         CommonResponse commonResponse = new CommonResponse();
         String approvedBy = "";
         int approvedById = 0;
@@ -101,6 +87,7 @@ public class LsfCoreService {
                                 tranferObject.setFromExchange(fromAcc.getExchange());
                                 tranferObject.setToTradingAccountId(toAccount.getAccountId());
                                 tranferObject.setToExchange(toAccount.getExchange());
+                                tranferObject.setTxnCode(productType.getValue());
 
                                 tranferObject.setSymbol(symbol.getSymbolCode());
                                 tranferObject.setExchange(symbol.getExchange());
@@ -137,6 +124,7 @@ public class LsfCoreService {
                             cashTransferRequest.setApplicationid(collaterals.getApplicationId());
                             cashTransferRequest.setFromCashAccountId(cashAcc.getAccountId());
                             cashTransferRequest.setAmount(bigDecimal.doubleValue());
+                            cashTransferRequest.setTxnCode(productType.getValue());
                             //   cashAcc.setAmountTransfered(cashAcc.getAmountTransfered() + cashAcc.getAmountAsColletarals());
                             cashAcc.setAmountTransfered(/*cashAcc.getAmountTransfered() +*/ cashAcc.getAmountAsColletarals());
                             cashTransferRequest.setToCashAccountId(collaterals.getLsfTypeCashAccounts().getFirst().getAccountId());
@@ -575,6 +563,12 @@ public class LsfCoreService {
             totalCollateral += lsfTypeCashAcc.getCashBalance();
             cashAcc1.setAmountTransfered(lsfTypeCashAcc.getCashBalance());
 
+            if(lsfTypeCashAcc.getInvestmentAccountNumber()!=null && !lsfTypeCashAcc.getInvestmentAccountNumber().isEmpty()) {
+                cashAcc1.setInvestmentAccountNumber(lsfTypeCashAcc.getInvestmentAccountNumber());
+            } else {
+                cashAcc1.setInvestmentAccountNumber(lsfTypeCashAcc.getAccountId());
+            }
+
             if (lsfTypeCashAcc.getBlockedAmount() > 0 && considerBlockAmount) {
                 totalCollateral += lsfTypeCashAcc.getBlockedAmount();
             }
@@ -591,16 +585,16 @@ public class LsfCoreService {
         mApplicationCollaterals.setNetTotalColleteral(totalCollateral);
         calculateOperativeLimit(mApplicationCollaterals);
         calculateRemainingOperativeLimit(mApplicationCollaterals);
-        double totalOutstandingValue = getTotalOutstandingForOpenContracts(application.getRollOverAppId(), application.getId());
-        log.info("Total Outstanding Value for RollOver AppId {}, Original App Id {}, is : {}", application.getId(), application.getRollOverAppId(), totalOutstandingValue);
-        mApplicationCollaterals.setTotalOutstandingForFtv(totalOutstandingValue);
+
         if(isCombinedOutstandingLimit) {
+            double totalOutstandingValue = getTotalOutstandingForOpenContracts(application.getRollOverAppId(), application.getId());
+            log.info("Total Outstanding Value for RollOver AppId {}, Original App Id {}, is : {}", application.getId(), application.getRollOverAppId(), totalOutstandingValue);
+            mApplicationCollaterals.setTotalOutstandingForFtv(totalOutstandingValue);
             calculateFTVWithTotalOutstanding(mApplicationCollaterals);
         } else {
             calculateFTV(mApplicationCollaterals);
+            log.debug("=========== reValuationProcess_RollOverApp, AppId {} : FTV Value : {}", application.getId(), mApplicationCollaterals.getFtv());
         }
-        log.debug("=========== reValuationProcess_RollOverApp, AppId {} : FTV Value : {}", application.getId(), mApplicationCollaterals.getFtv());
-
         if (violateFTVwithThirdMarginLimit(mApplicationCollaterals)) {
             log.debug("=========== reValuationProcess_RollOverApp : Reached to Third  Margin Level, AppId {}, Last Margin Call Date : {}, Last Margine Call Date {}", application.getId(), mApplicationCollaterals.getMargineCallDate(), mApplicationCollaterals.getLiquidateCallDate());
             if (mApplicationCollaterals.getLiquidateCallDate() == null || mApplicationCollaterals.getLiquidateCallDate().isEmpty()) {
@@ -721,15 +715,16 @@ public class LsfCoreService {
         mApplicationCollaterals.setNetTotalColleteral(totalCollateral);
         calculateOperativeLimit(mApplicationCollaterals);
         calculateRemainingOperativeLimit(mApplicationCollaterals);
-        double totalOutstandingValue = getTotalOutstandingForOpenContracts(application.getId(), rollOverApp.getId());
-        log.info("Total Outstanding Value for RollOver AppId {}, Original App Id {}, is : {}", rollOverApp.getId(), application.getId(), totalOutstandingValue);
-        mApplicationCollaterals.setTotalOutstandingForFtv(totalOutstandingValue);
+
         if(isCombinedOutstandingLimit) {
+            double totalOutstandingValue = getTotalOutstandingForOpenContracts(application.getId(), rollOverApp != null ? rollOverApp.getId() : "-1");
+            log.info("Total Outstanding Value for RollOver AppId {}, Original App Id {}, is : {}",  rollOverApp != null ? rollOverApp.getId() : "-1", application.getId(), totalOutstandingValue);
+            mApplicationCollaterals.setTotalOutstandingForFtv(totalOutstandingValue);
             calculateFTVWithTotalOutstanding(mApplicationCollaterals);
         } else {
             calculateFTV(mApplicationCollaterals);
+            log.debug("=========== reValuationProcess, AppId {} : FTV Value : {}", application.getId(), mApplicationCollaterals.getFtv());
         }
-        log.debug("=========== reValuationProcess, AppId {} : FTV Value : {}", application.getId(), mApplicationCollaterals.getFtv());
 
         if (violateFTVwithThirdMarginLimit(mApplicationCollaterals)) {
             log.debug("=========== reValuationProcess : Reached to Third  Margin Level, AppId {}, Last Margin Call Date : {}, Last Margine Call Date {}", application.getId(), mApplicationCollaterals.getMargineCallDate(), mApplicationCollaterals.getLiquidateCallDate());
@@ -1209,7 +1204,7 @@ public class LsfCoreService {
         return cashAccount;
     }
 
-    public boolean cashTransferToMasterAccount(String fromAccount, String fromTradingAcc, String toAccount, double transferAmount, String applicationID, String isTnansferType) {
+    public boolean cashTransferToMasterAccount(String fromAccount, String fromTradingAcc, String toAccount, double transferAmount, String applicationID, String isTnansferType, LsfConstants.ProductType productType) {
         boolean isTransferred = false;
         if (transferAmount <= 0) {
             log.info("===========LSF : (cashTransferToMasterAccount) Transfer Amount is Zero or Negative, From Account: {}, To Account: {}, Transfer Amount: {}", fromAccount, toAccount, transferAmount);
@@ -1229,6 +1224,7 @@ public class LsfCoreService {
         cashTransferRequest.setToCashAccountId(toAccount);
         cashTransferRequest.setParams(isTnansferType); // identify the cash transfer to Master Account
         cashTransferRequest.setNarration(narration);
+        cashTransferRequest.setTxnCode(productType.getValue());
         String result = (String) helper.sendSettlementRelatedOMSRequest(gson.toJson(cashTransferRequest), LsfConstants.HTTP_PRODUCER_OMS_CASH_TRANSFER_MASTER_CASH_ACCOUNT);
         if (result != null && !result.equalsIgnoreCase("")) {
             Map<String, Object> resMap = new HashMap<>();
@@ -1248,7 +1244,7 @@ public class LsfCoreService {
         return isTransferred;
     }
 
-    public boolean cashTransfer(String fromAccount, String toAccount, double transferAmount, String applicationID, String investorAccountNo) {
+    public boolean cashTransfer(String fromAccount, String toAccount, double transferAmount, String applicationID, String investorAccountNo, LsfConstants.ProductType productType) {
         boolean isTransferred;
         BigDecimal bigDecimal = BigDecimal.valueOf(transferAmount);
         String narration = "Commodity Margin Sale Proceeds - ["+ applicationID +"] - ["+investorAccountNo +"]";
@@ -1263,6 +1259,7 @@ public class LsfCoreService {
         cashTransferRequest.setAmount(roundedValue.doubleValue());
         cashTransferRequest.setToCashAccountId(toAccount);
         cashTransferRequest.setNarration(narration);
+        cashTransferRequest.setTxnCode(productType.getValue());
         String result = (String) helper.sendMessageToOms(gson.toJson(cashTransferRequest));
         if (result != null && !result.equalsIgnoreCase("")) {
             Map<String, Object> resMap = new HashMap<>();

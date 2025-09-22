@@ -14,4 +14,5 @@ public class OMSQueueResponse {
     private boolean approved;
     private int rejectCode;
     private String messageParam;
+    private String code;
 }

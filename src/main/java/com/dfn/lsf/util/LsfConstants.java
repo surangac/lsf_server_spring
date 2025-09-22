@@ -4,8 +4,24 @@ package com.dfn.lsf.util;
  * Constants for LSF application
  * This replaces the original LsfConstants class
  */
+
 public class LsfConstants {
 
+    public enum ProductType {
+        SHARE(1),
+        COMMODITY(2),
+        ROLLOVER(3);
+
+        private final int value;
+
+        ProductType(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
     public static final int APP_LSF_CLIENT = 1;//"LSFCLIENT";
     public static final int APPLICATION_ID = 2;
 

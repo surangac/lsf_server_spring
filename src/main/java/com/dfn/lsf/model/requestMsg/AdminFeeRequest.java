@@ -10,6 +10,7 @@ public class AdminFeeRequest {
     private double amount;
     private double brokerVat;
     private double exchangeVat;
+    private int txnCode;
 
     public int getReqType() {
         return reqType;
@@ -57,5 +58,12 @@ public class AdminFeeRequest {
 
     public void setExchangeVat(double exchangeVat) {
         this.exchangeVat = exchangeVat;
+    }
+
+    public int getTxnCode() {
+        return txnCode;
+    }
+    public void setTxnCode(int txnCode) {
+        this.txnCode = txnCode;
     }
 }

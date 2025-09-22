@@ -2943,6 +2943,11 @@ public class OracleUnifiedRepository implements LSFRepository {
 
     @Override
     public String updateInvestorAcc(String cashAcc, String investorAcc, String applicationID) {
+        if (investorAcc.isEmpty() || investorAcc.equals("0")) {
+            log.info("Investor Account is empty or zero. Skip updating investor account for Cash Acc: {}, ApplicationID: {}", cashAcc, applicationID);
+            return "Missing required parameters";
+        }
+        log.info("Update Investor Account called for Cash Acc: {}, Investor Acc: {}, ApplicationID: {}", cashAcc, investorAcc, applicationID);
         Map<String, Object> parameterMap = new HashMap<>();
         parameterMap.put("pl07_cash_acc_id", cashAcc);
         parameterMap.put("pl07_investor_account", investorAcc);
@@ -3233,10 +3238,11 @@ public class OracleUnifiedRepository implements LSFRepository {
     public Map<String, List<PurchaseOrder>> getAllPurchaseOrdersForApplicationsBatch(List<String> applicationIds) {
         if (applicationIds.isEmpty()) return Collections.emptyMap();
 
-        String sql = "SELECT po.*, ca.L07_INVESTOR_ACCOUNT, ca.L07_L01_APP_ID as app_id " +
+        String sql = "SELECT po.*,lpoc.*, ca.L07_INVESTOR_ACCOUNT, ca.L07_L01_APP_ID as app_id " +
                      "FROM l14_purchase_order po " +
                      "LEFT JOIN l07_cash_account ca ON ca.l07_l01_app_id = po.l14_app_id AND ca.L07_IS_LSF_TYPE = 1 " +
-                     "WHERE po.l14_app_id IN (" +
+                     "LEFT JOIN L34_PURCHASE_ORDER_COMMODITIES lpoc ON lpoc.L34_L16_PURCHASE_ORD_ID = po.L14_PURCHASE_ORD_ID " +
+        "WHERE po.l14_app_id IN (" +
                      applicationIds.stream().map(id -> "?").collect(Collectors.joining(",")) + ")";
 
         List<PurchaseOrder> allOrders = jdbcTemplate.query(sql,
@@ -3279,7 +3285,50 @@ public class OracleUnifiedRepository implements LSFRepository {
                                                             rowMapperFactory.getRowMapper(RowMapperI.COMMODITY_LIST));
 
         return allCommodities.stream()
-                             .collect(Collectors.groupingBy(Commodity::getId));
+                             .collect(Collectors.groupingBy(Commodity::getPurchase_order_id));
+    }
+
+    @Override
+    public Map<String, List<Status>> getApplicationStatusBatch(List<String> applicationIds) {
+        if (applicationIds.isEmpty()) return Collections.emptyMap();
+
+        String sql = "SELECT st.*, st.L02_L01_APP_ID as app_id " +
+                     "FROM L02_APP_STATE st " +
+                     "WHERE st.L02_L01_APP_ID IN (" +
+                     applicationIds.stream().map(id -> "?").collect(Collectors.joining(",")) + ")";
+
+        List<Status> allStatuses = jdbcTemplate.query(sql,
+                                                      applicationIds.toArray(),
+                                                      rowMapperFactory.getRowMapper(RowMapperI.APPLICATION_STATUS));
+
+        return allStatuses.stream()
+                          .collect(Collectors.groupingBy(Status::getAppId));
+    }
+
+    @Override
+    public Map<String, List<Agreement>> getActiveAgreementsBatch(List<String> applicationIds) {
+        if (applicationIds.isEmpty()) return Collections.emptyMap();
+
+        String sql = "SELECT m11.M11_PRODUCT_TYPE, " +
+                     "       m11.M11_FINANCE_METHOD, " +
+                     "       m11.M11_AGREEMENT_TYPE, " +
+                     "       m11.M11_FILE_EXTENSION, " +
+                     "       m11.M11_FILE_NAME, " +
+                     "       m11.M11_VERSION, " +
+                     "       m11.M11_FILE_PATH, " +
+                     "       l32.L32_L01_APP_ID " +
+                     "FROM MUBASHER_LSF.L32_APPOVE_AGREEMENTS l32 " +
+                     "INNER JOIN MUBASHER_LSF.M11_AGREEMENTS m11 ON l32.L32_M11_ID = m11.M11_ID " +
+                     "WHERE l32.L32_L01_APP_ID IN (" +
+                     applicationIds.stream().map(id -> "?").collect(Collectors.joining(",")) + ")" +
+                     " AND l32.L32_AGREEMENT_STATUS = 1";
+
+        List<Agreement> allAgreements = jdbcTemplate.query(sql,
+                                                           applicationIds.toArray(),
+                                                           rowMapperFactory.getRowMapper(RowMapperI.AGREEMENT_LIST));
+
+        return allAgreements.stream()
+                            .collect(Collectors.groupingBy(agreement -> String.valueOf(agreement.getApplicationId())));
     }
 
     @Override

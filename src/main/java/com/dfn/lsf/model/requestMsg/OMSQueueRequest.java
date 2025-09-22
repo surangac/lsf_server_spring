@@ -32,4 +32,5 @@ public class OMSQueueRequest {
     private String contractId;
     private String openOrderValues;
     private String referenceNo;
+    private String code;
 }

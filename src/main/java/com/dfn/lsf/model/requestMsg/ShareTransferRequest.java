@@ -24,4 +24,5 @@ public class ShareTransferRequest {
     private int sendToExchange;
     private String params;
     private String basketReference;
+    private int txnCode;
 }

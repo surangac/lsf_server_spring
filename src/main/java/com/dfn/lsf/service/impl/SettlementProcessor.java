@@ -88,8 +88,17 @@ public class SettlementProcessor implements MessageProcessor {
         log.info("===========LSF : (performEarlySettlement)-REQUEST  : , ApplicationID:" + applicationID + ",Order ID:" + orderID + ", Amount:" + settlementAmount);
         TradingAcc lsfTradingAcc = lsfCoreService.getLsfTypeTradinAccountForUser(userID,applicationID);
         CashAcc lsfCashAccount = lsfCoreService.getLsfTypeCashAccountForUser(userID,applicationID);//get lsf type cash account details for user
-        PurchaseOrder purchaseOrder= lsfRepository.getSinglePurchaseOrder(orderID);        
-        
+        PurchaseOrder purchaseOrder= lsfRepository.getSinglePurchaseOrder(orderID);
+
+        boolean isCommodityApplication = application.getFinanceMethod().equalsIgnoreCase("2");
+        LsfConstants.ProductType productType = LsfConstants.ProductType.SHARE;
+        if (isCommodityApplication) {
+            productType = LsfConstants.ProductType.COMMODITY;
+        }
+        if (application.isRollOverApp()) {
+            productType = LsfConstants.ProductType.ROLLOVER;
+        }
+
         if((lsfCoreService.checkPendingOrdersForLSFTradingAccount(lsfTradingAcc.getAccountId(), lsfCashAccount.getAccountId())== 0)
                 &&
                 ((lsfCashAccount.getCashBalance()-lsfCashAccount.getNetReceivable())>settlementAmount)
@@ -99,7 +108,7 @@ public class SettlementProcessor implements MessageProcessor {
             masterCashAccount = lsfCoreService.getMasterCashAccount();//getting ABIC master cash account
             application.setCurrentLevel(17);
             application.setOverallStatus(String.valueOf(16));
-            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(),lsfTradingAcc.getAccountId(), masterCashAccount, settlementAmount, applicationID, "1")) {
+            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(),lsfTradingAcc.getAccountId(), masterCashAccount, settlementAmount, applicationID, "1", productType)) {
                 lsfRepository.updatePOToSettledState(Integer.parseInt(orderID));
                 log.info("===========LSF :(performEarlySettlement)- Cash Transfer Succeed , From(Customer Cash Account):" + lsfCashAccount.getAccountId() + ", To:(Master Cash Account)" + masterCashAccount + ", Amount :" + settlementAmount);
                 responseMessage = "Successfully Deducted Outstanding Amount.";
@@ -177,19 +186,21 @@ public class SettlementProcessor implements MessageProcessor {
         CashAcc lsfCashAccount = lsfCoreService.getLsfTypeCashAccountForUser(userID, originalApplicationID);
         TradingAcc lsfTradingAcc = lsfCoreService.getLsfTypeTradinAccountForUser(userID, originalApplicationID);
         PurchaseOrder purchaseOrder= lsfRepository.getSinglePurchaseOrder(orderID);
-//        if (purchaseOrder.getIsPhysicalDelivery() == 1 || purchaseOrder.getSellButNotSettle() ==1) {
-//            responseCode = 500;
-//            responseMessage = "Cannot perform early settlement for physical delivery orders or orders in sell but not settle state.";
-//            commonResponse.setResponseCode(responseCode);
-//            commonResponse.setResponseMessage(responseMessage);
-//            return gson.toJson(commonResponse);
-//        }
+
+        boolean isCommodityApplication = application.getFinanceMethod().equalsIgnoreCase("2");
+        LsfConstants.ProductType productType = LsfConstants.ProductType.SHARE;
+        if (isCommodityApplication) {
+            productType = LsfConstants.ProductType.COMMODITY;
+        }
+        if (application.isRollOverApp()) {
+            productType = LsfConstants.ProductType.ROLLOVER;
+        }
 
         if (((lsfCashAccount.getCashBalance()-lsfCashAccount.getNetReceivable())>settlementAmount) && purchaseOrder.getSettlementStatus()!=1) {
             application.setCurrentLevel(17);
             application.setOverallStatus(String.valueOf(16));
 
-            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), lsfTradingAcc.getAccountId(), masterCashAccount, settlementAmount, applicationID, "0")) {
+            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), lsfTradingAcc.getAccountId(), masterCashAccount, settlementAmount, applicationID, "0", productType)) {
                 lsfRepository.updatePOToSettledState(Integer.parseInt(orderID));
                 log.info("===========LSF :(performEarlySettlementCommodity)- Cash Transfer Succeed , From(Customer Cash Account):" + lsfCashAccount.getAccountId() + ", To:(Master Cash Account)" + masterCashAccount + ", Amount :" + settlementAmount);
 
@@ -264,8 +275,16 @@ public class SettlementProcessor implements MessageProcessor {
                 purchaseOrder.getSettlementStatus()!=1
                 ) {
             MurabahApplication application = lsfRepository.getMurabahApplication(applicationID);
+            boolean isCommodityApplication = application.getFinanceMethod().equalsIgnoreCase("2");
+            LsfConstants.ProductType productType = LsfConstants.ProductType.SHARE;
+            if (isCommodityApplication) {
+                productType = LsfConstants.ProductType.COMMODITY;
+            }
+            if (application.isRollOverApp()) {
+                productType = LsfConstants.ProductType.ROLLOVER;
+            }
 
-            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), lsfTradingAcc.getAccountId(), masterCashAccount, settlementAmount, applicationID, "1")) {
+            if (lsfCoreService.cashTransferToMasterAccount(lsfCashAccount.getAccountId(), lsfTradingAcc.getAccountId(), masterCashAccount, settlementAmount, applicationID, "1", productType)) {
                 log.info("===========LSF :(performManualSettlement)- Cash Transfer Succeed , From:" + lsfCashAccount.getAccountId() + ", To:" + masterCashAccount + ", Amount :" + settlementAmount);
                 responseMessage = "Successfully Deducted Outstanding Amount.";
                 lsfRepository.updatePOToSettledState(Integer.parseInt(orderID));

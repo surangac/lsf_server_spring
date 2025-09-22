@@ -181,6 +181,7 @@ public class LsfOmsValidatorAbicProcessor {
             log.error("Error occurs in getMurabahApplication for application id : " + request.getContractId());
         }
         response.setParams(request.getPendingId());
+        response.setCode(request.getCode());
         if (application == null) {
             response.setApproved(false);
         }

@@ -121,6 +121,9 @@ public class CustomerInquiryProcessor implements MessageProcessor {
             if (resMap.containsKey("fullAddress")) {
                 customerInfo.setAddress(resMap.get("fullAddress").toString());
             }
+            if(resMap.containsKey("nin")) {
+                customerInfo.setNin(resMap.get("nin").toString());
+            }
             if (resMap.containsKey("mobile")) {
                 customerInfo.setMobileNo(resMap.get("mobile").toString());
             }

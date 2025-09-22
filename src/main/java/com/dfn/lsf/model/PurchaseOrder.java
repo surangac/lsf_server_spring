@@ -56,7 +56,7 @@ public class PurchaseOrder {
     private Date customerApprovedDate;
     private List<Commodity> commodityList;
     private String authAbicToSell;
-    private int soldAmnt;
+    private double soldAmnt;
     private int cashTransferStatus = -1; //0-Cash blocked,1-Block release,2-transfered
     private String investorAcc;
     private int isPhysicalDelivery;

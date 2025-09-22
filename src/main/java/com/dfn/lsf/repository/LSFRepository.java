@@ -540,4 +540,8 @@ public interface LSFRepository {
 //           nativeQuery = true)
     Map<String, List<Commodity>> getPurchaseOrderCommoditiesBatch(@Param("purchaseOrderIds") List<String> purchaseOrderIds);
 
+    Map<String, List<Status>> getApplicationStatusBatch(@Param("applicationIds") List<String> applicationIds);
+
+    Map<String, List<Agreement>> getActiveAgreementsBatch(@Param("applicationIds") List<String> applicationIds);
+
 }

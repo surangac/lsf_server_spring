@@ -21,4 +21,5 @@ public class Commodity {
     private String englishName;
     private double boughtAmnt;
     private int allowedForPo;
+    private String purchase_order_id;
 }

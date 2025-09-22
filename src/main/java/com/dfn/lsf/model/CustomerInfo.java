@@ -35,4 +35,5 @@ public class CustomerInfo {
     private String riskAppetite;
     private String kycExpiryDate;
     private String homeTelephone;
+    private String nin;
 }

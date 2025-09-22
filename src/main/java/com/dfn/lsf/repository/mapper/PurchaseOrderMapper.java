@@ -130,6 +130,11 @@ public class PurchaseOrderMapper implements RowMapper<PurchaseOrder> {
         } catch (Exception e) {
             // Handle exception if necessary
         }
+        try {
+            obj.setSoldAmnt(rs.getDouble("l34_sold_amnt"));
+        }catch (Exception e){
+
+        }
         return obj;
     }
 }

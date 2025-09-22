@@ -562,32 +562,45 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
     }
 
     public List<MurabahApplication> getSnapshotCurrentLevel(int requestStatus) {
-        List<Status> statusList = null;
-        List<Comment> commentList = null;
-        List<MurabahApplication> murabahApplications = null;
-        List<Agreement> agreementList = null;
-        List<PurchaseOrder> purchaseOrderList = null;
+        // Single query to get all applications
+        List<MurabahApplication> murabahApplications = lsfRepository.getSnapshotCurrentLevel(requestStatus);
 
-        Map<String, Object> parameterMap = new HashMap<>();
-        parameterMap.put("pl01_request_status", requestStatus);
-        murabahApplications = lsfRepository.getSnapshotCurrentLevel(requestStatus);
-        if (murabahApplications.size() > 0) {
-            for (MurabahApplication murabahApplication : murabahApplications) {
-                murabahApplication.setDisplayApplicationId(murabahApplication.getDisplayApplicationId());
-                List<Comment> finalCommentList = new ArrayList<>();
-                if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
-                    statusList = lsfRepository.getApplicationStatus(murabahApplication.getId());
-                    murabahApplication.setAppStatus(statusList);
-                    murabahApplication.setInstitutionInvestAccount(GlobalParameters.getInstance().getInstitutionInvestAccount());
-                    agreementList = lsfRepository.getActiveAgreements(Integer.parseInt(murabahApplication.getId()));
-                    murabahApplication.setAgreementList(agreementList);
-
-                    purchaseOrderList = lsfRepository.getAllPurchaseOrderforCommodity(murabahApplication.getId());
-                    murabahApplication.setPurchaseOrderList(purchaseOrderList);
-                }
-
-            }
+        if (murabahApplications.isEmpty()) {
+            return murabahApplications;
         }
+
+        // Filter applications with overallStatus >= 0 and extract IDs for batch processing
+        List<String> applicationIds = murabahApplications.stream()
+            .filter(app -> Integer.parseInt(app.getOverallStatus()) >= 0)
+            .map(MurabahApplication::getId)
+            .collect(Collectors.toList());
+
+        if (applicationIds.isEmpty()) {
+            return murabahApplications;
+        }
+
+        // BATCH QUERIES: Get all related data in one call per entity type
+        Map<String, List<Status>> statusMap = lsfRepository.getApplicationStatusBatch(applicationIds);
+        Map<String, List<Agreement>> agreementMap = lsfRepository.getActiveAgreementsBatch(applicationIds);
+        Map<String, List<PurchaseOrder>> purchaseOrderMap =
+            lsfRepository.getAllPurchaseOrdersForApplicationsBatch(applicationIds);
+
+        // Get global parameters once
+        String institutionInvestAccount = GlobalParameters.getInstance().getInstitutionInvestAccount();
+
+        // Process data in memory using parallel streams (no more database calls)
+        murabahApplications.parallelStream().forEach(murabahApplication -> {
+            if (Integer.parseInt(murabahApplication.getOverallStatus()) >= 0) {
+                String appId = murabahApplication.getId();
+
+                // Set data from batch query results using O(1) map lookup
+                murabahApplication.setAppStatus(statusMap.get(appId));
+                murabahApplication.setInstitutionInvestAccount(institutionInvestAccount);
+                murabahApplication.setAgreementList(agreementMap.get(appId));
+                murabahApplication.setPurchaseOrderList(purchaseOrderMap.get(appId));
+            }
+        });
+
         return murabahApplications;
     }
 

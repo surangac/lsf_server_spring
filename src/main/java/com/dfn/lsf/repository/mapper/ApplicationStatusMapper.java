@@ -21,6 +21,11 @@ public class ApplicationStatusMapper implements RowMapper<Status> {
         obj.setStatusChangedUserName(rs.getString("l02_sts_changed_user_name"));
         obj.setStatusChangedDate(rs.getString("l02_sts_changed_date"));
         obj.setStatusChangedIPAddress(rs.getString("l02_status_changed_ip"));
+        try {
+            obj.setAppId(rs.getString("app_id"));
+        } catch (Exception ex) {
+            obj.setAppId("0");
+        }
         return obj;
     }
 }

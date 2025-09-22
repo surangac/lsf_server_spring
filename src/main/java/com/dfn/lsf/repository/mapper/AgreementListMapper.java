@@ -17,6 +17,15 @@ public class AgreementListMapper implements RowMapper<Agreement> {
         agreement.setFileName(resultSet.getString("m11_file_name"));
         agreement.setVersion(resultSet.getInt("m11_version"));
         agreement.setFilePath(resultSet.getString("m11_file_path"));
+
+        // Set application ID if available (for batch queries)
+        try {
+            agreement.setApplicationId(resultSet.getInt("l32_l01_app_id"));
+        } catch (SQLException e) {
+            // Column might not exist in some queries, set to 0 as default
+            agreement.setApplicationId(0);
+        }
+
         return agreement;
     }
 }

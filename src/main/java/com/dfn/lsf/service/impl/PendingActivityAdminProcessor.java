@@ -277,12 +277,25 @@ public class PendingActivityAdminProcessor implements MessageProcessor {
         logger.debug("=======LSF : Transferring Collateral Holdings.");
         MApplicationCollaterals collaterals =
                 lsfRepository.getApplicationCompleteCollateral(pendingActivity.getApplicationID());
+
+        MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(pendingActivity.getApplicationID());
+
+        boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
+        LsfConstants.ProductType productType = LsfConstants.ProductType.SHARE;
+        if (isCommodityApplication) {
+            productType = LsfConstants.ProductType.COMMODITY;
+        }
+        if (murabahApplication.isRollOverApp()) {
+            productType = LsfConstants.ProductType.ROLLOVER;
+        }
+
         CommonResponse commonResponse = new CommonResponse();
         if (collaterals != null) {
             lsfRepository.updateActivity(
                     pendingActivity.getApplicationID(),
                     LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_SENT);
-            CommonResponse response = (CommonResponse) lsfCoreService.transferCollaterals(collaterals);
+
+            CommonResponse response = lsfCoreService.transferCollaterals(collaterals, productType);
             if (response.getResponseCode() == 200) {
                 commonResponse.setResponseCode(200);
                 commonResponse.setResponseMessage("Request Resent.");

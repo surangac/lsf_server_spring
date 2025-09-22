@@ -13,6 +13,7 @@ public class Agreement {
     private int version;
     private int agreementType;
     private int productType;
+    private int applicationId;
 
     public int getFinanceMethod() {
         return financeMethod;
@@ -80,6 +81,7 @@ public class Agreement {
                 ", version=" + version +
                 ", agreementType=" + agreementType +
                 ", productType=" + productType +
+                ", applicationId=" + applicationId +
                 '}';
     }
 }

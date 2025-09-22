@@ -97,7 +97,7 @@ public class SettlementCalculationProcessor implements MessageProcessor {
                                                 liquidationLog.getToAccount(),
                                                 liquidationLog.getAmountToBeSettled(),
                                                 liquidationLog.getApplicationID(),
-                                                "1")) { // if cash transfer is succeed.
+                                                "1", LsfConstants.ProductType.SHARE)) { // if cash transfer is succeed.
             logger.info("===========LSF : Cash Transfer Success ,From Account :"
                         + liquidationLog.getFromAccount()
                         + " , To Account :"

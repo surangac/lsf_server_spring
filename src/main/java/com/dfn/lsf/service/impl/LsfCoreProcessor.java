@@ -896,6 +896,14 @@ public class LsfCoreProcessor implements MessageProcessor {
               //  }
 
                     double adminFee = isCommodityApplication ? GlobalParameters.getInstance().getComodityAdminFee() : GlobalParameters.getInstance().getShareAdminFee();
+                    LsfConstants.ProductType productType = LsfConstants.ProductType.SHARE;
+                    if (isCommodityApplication) {
+                        productType = LsfConstants.ProductType.COMMODITY;
+                    }
+                    if (murabahApplication.isRollOverApp()) {
+                        productType = LsfConstants.ProductType.ROLLOVER;
+                    }
+
                     AdminFeeRequest adminChargeRequest = new AdminFeeRequest();
                     adminChargeRequest.setReqType(LsfConstants.ADMIN_FEE_REQUEST);
                     // to Do in Roll Over Application, from Account should be the Main LSF cash account
@@ -904,6 +912,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                     double vatAmount=LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(adminFee));
                     adminChargeRequest.setAmount(adminFee + vatAmount);
                     adminChargeRequest.setBrokerVat(vatAmount);
+                    adminChargeRequest.setTxnCode(productType.getValue());
                     //adminChargeRequest.setExchangeVat(vatAmount);
 
                     response = helper.processOMSCommonResponseAdminFee(helper.sendMessageToOms(gson.toJson(adminChargeRequest)).toString());
@@ -1003,12 +1012,22 @@ public class LsfCoreProcessor implements MessageProcessor {
             return;
         }
         String appId = murabahApplication.isRollOverApp() ? murabahApplication.getRollOverAppId() : murabahApplication.getId();
+
+        boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
+        LsfConstants.ProductType productType = LsfConstants.ProductType.SHARE;
+        if (isCommodityApplication) {
+            productType = LsfConstants.ProductType.COMMODITY;
+        }
+        if (murabahApplication.isRollOverApp()) {
+            productType = LsfConstants.ProductType.ROLLOVER;
+        }
+
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount)-REQUEST  : , ApplicationID:" + appId + ",Order ID:" + poId + ", Amount:" + soldAmount);
         CashAcc lsfCashAccount = lsfCore.getLsfTypeCashAccountForUser(murabahApplication.getCustomerId(), appId);
         var lsfTypeTradingAccount = lsfCore.getLsfTypeTradinAccountForUser(murabahApplication.getCustomerId(), appId);
         String masterCashAccount =  GlobalParameters.getInstance().getInstitutionInvestAccount();//.  lsfCore.getMasterCashAccount();
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + soldAmount);
-        var isTransferred = lsfCore.cashTransfer(masterCashAccount, lsfCashAccount.getAccountId(), soldAmount, murabahApplication.getId(), lsfTypeTradingAccount.getAccountId());
+        var isTransferred = lsfCore.cashTransfer(masterCashAccount, lsfCashAccount.getAccountId(), soldAmount, murabahApplication.getId(), lsfTypeTradingAccount.getAccountId(), productType);
         log.info("===========LSF : (performtransferCommodityValuetoLsfCashAccount) RESPONSE : collaterals transferred to LSF accounts :" + appId + " ,total sold amount :" + soldAmount);
         if (isTransferred) {
             lsfRepository.updateFacilityTransferStatus(murabahApplication.getId(), LsfConstants.STATUS_COMMODITY_VALUE_TRANSFERRED_TO_LSF_CASH_ACCOUNT);
@@ -1021,7 +1040,15 @@ public class LsfCoreProcessor implements MessageProcessor {
     private void transferCollateralsToLSFAccount(MurabahApplication murabahApplication, PurchaseOrder purchaseOrder, MApplicationCollaterals collaterals) {
         log.debug("===========LSF : Transferring Collaterals  to LSF type Account :" + purchaseOrder.getId());
         lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_SENT);
-        CommonResponse response = lsfCore.transferCollaterals(collaterals);
+        boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
+        LsfConstants.ProductType productType = LsfConstants.ProductType.SHARE;
+        if (isCommodityApplication) {
+            productType = LsfConstants.ProductType.COMMODITY;
+        }
+        if (murabahApplication.isRollOverApp()) {
+            productType = LsfConstants.ProductType.ROLLOVER;
+        }
+        CommonResponse response = lsfCore.transferCollaterals(collaterals, productType);
 
         if (response.getResponseCode() == 200) {
             log.debug("===========LSF : Collateral transfer  to LSF type Account Request Sent to OMS :" + purchaseOrder.getId() + " , Application ID :" + murabahApplication.getId() + "Status :" + response);

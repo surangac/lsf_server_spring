@@ -35,6 +35,11 @@ public class CommodityListMapper implements RowMapper<Commodity> {
 
         }
         commodity.setAllowedForPo(resultSet.getInt("M12_ALLOWED_FOR_PO"));
+        try {
+            commodity.setPurchase_order_id(resultSet.getString("purchase_order_id"));
+        } catch (Exception e){
+
+        }
         return commodity;
     }
 }

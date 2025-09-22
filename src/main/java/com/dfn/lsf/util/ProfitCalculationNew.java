@@ -68,6 +68,8 @@ public class ProfitCalculationNew {
         // Determine the start date for calculations
         LocalDate startDate = getCalculationStartDate(purchaseOrder, lastEntry);
         LocalDate currentDate = LocalDate.now();
+        // Handle settlement if it's settlement date
+        String settlementDate = String.valueOf(purchaseOrder.getSettlementDate());
 
         log.info("===========LSF : Processing profit calculation from " + startDate + " to " + currentDate
                     + " for ApplicationID: " + applicationID);
@@ -80,6 +82,10 @@ public class ProfitCalculationNew {
         double cumulativeProfit = (lastEntry != null) ? lastEntry.getCumulativeProfitAmount() : 0.0;
 
         for (LocalDate date = startDate; !date.isAfter(currentDate); date = date.plusDays(1)) {
+            // Skip profit calculation if settlementDate < current date
+            if (date.isAfter(LocalDate.parse(settlementDate))) {
+                continue;
+            }
             if (!isProfitEntryExists(applicationID, orderID, date)) {
                 OrderProfit dailyProfit = calculateDailyProfit(murabahApplication, purchaseOrder,
                                                                lsfCashAccount, date, cumulativeProfit);
@@ -104,9 +110,6 @@ public class ProfitCalculationNew {
 
         // Update Last Profit Cycle Date
         lsfRepository.updateLastProfitCycleDate(applicationID);
-
-        // Handle settlement if it's settlement date
-        String settlementDate = String.valueOf(purchaseOrder.getSettlementDate());
         OrderProfit todaysProfit = getProfitEntryForDate(applicationID, orderID, currentDate);
 
         decideSettlementAction(settlementDate, murabahApplication, purchaseOrder, todaysProfit,
@@ -337,15 +340,22 @@ public class ProfitCalculationNew {
                             masterCashAccount = GlobalParameters.getInstance().getInstitutionInvestAccount();
                             isTransferType = "0";
                         }
- //                       var applicationId = murabahApplication.isRollOverApp() ? murabahApplication.getRollOverAppId() : murabahApplication.getId();
-//                        TradingAcc lsfTradingAcc =
-//                                lsfCore.getLsfTypeTradinAccountForUser(applicationId, murabahApplication.getId());
+                        boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
+                        LsfConstants.ProductType productType = LsfConstants.ProductType.SHARE;
+                        if (isCommodityApplication) {
+                            productType = LsfConstants.ProductType.COMMODITY;
+                        }
+                        if (murabahApplication.isRollOverApp()) {
+                            productType = LsfConstants.ProductType.ROLLOVER;
+                        }
+
                         boolean cashTransferredToMasterAcc = lsfCore.cashTransferToMasterAccount(lsfTypeCashAccount.getAccountId(),
                                                                                                  lsfTypeCashAccount.getAccountId(),
                                                                                                  masterCashAccount,
                                                                                                  amountToBeSettled,
                                                                                                  murabahApplication.getId(),
-                                                                                                 isTransferType);
+                                                                                                 isTransferType,
+                                                                                                 productType);
                         if (cashTransferredToMasterAcc) { // if cash transfer is
                             // succeed.
                             log.info("===========LSF : Cash Transfer Success ,From Account :"

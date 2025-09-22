@@ -289,6 +289,15 @@ public class ProfitCalculationUtils {
                             isTransferType = "0";
                         }
                         var applicationId = murabahApplication.isRollOverApp() ? murabahApplication.getRollOverAppId() : murabahApplication.getId();
+                        boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
+                        LsfConstants.ProductType productType = LsfConstants.ProductType.SHARE;
+                        if (isCommodityApplication) {
+                            productType = LsfConstants.ProductType.COMMODITY;
+                        }
+                        if (murabahApplication.isRollOverApp()) {
+                            productType = LsfConstants.ProductType.ROLLOVER;
+                        }
+
                         TradingAcc lsfTradingAcc =
                                 lsfCore.getLsfTypeTradinAccountForUser(applicationId, murabahApplication.getId());
                         boolean cashTransferredToMasterAcc = lsfCore.cashTransferToMasterAccount(lsfTypeCashAccount.getAccountId(),
@@ -296,7 +305,8 @@ public class ProfitCalculationUtils {
                                                                                                  masterCashAccount,
                                                                                                  amountToBeSettled,
                                                                                                  murabahApplication.getId(),
-                                                                                                 isTransferType);
+                                                                                                 isTransferType,
+                                                                                                 productType);
                         if (cashTransferredToMasterAcc) { // if cash transfer is
                             // succeed.
                             logger.info("===========LSF : Cash Transfer Success ,From Account :"
