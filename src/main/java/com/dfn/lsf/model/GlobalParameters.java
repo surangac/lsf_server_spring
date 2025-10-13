@@ -70,6 +70,7 @@ public class GlobalParameters {
     private int maxRolloverPeriod;
     private int gracePeriodforCommoditySell;
     private String institutionInvestAccount;
+    private double orderAcceptancelimit;
 
     public static void reset(GlobalParameters globalParameters) {
         _instance = globalParameters;

@@ -101,6 +101,7 @@ public class GlobalParametersMapper implements RowMapper<GlobalParameters> {
         _instant.setMinRolloverPeriod(rs.getInt("m01_min_rollover_period"));
         _instant.setMaxRolloverPeriod(rs.getInt("m01_max_rollover_period"));
         _instant.setMinRolloverRatio(rs.getInt("m01_min_rollover_ratio"));
+        _instant.setOrderAcceptancelimit(rs.getDouble("M01_ORDER_ACCEPTANCE_LIMIT"));
 
         return _instant;
     }

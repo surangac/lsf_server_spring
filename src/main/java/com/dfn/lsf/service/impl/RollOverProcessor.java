@@ -203,9 +203,11 @@ public class RollOverProcessor implements MessageProcessor {
             rollOverSummeryResponse.setRequiredAmount(po.getOrderCompletedValue() + profit.getCumulativeProfitAmount());
         }
         rollOverSummeryResponse.setRequiredAmount(Math.round((rollOverSummeryResponse.getRequiredAmount()) * 100.0) / 100.0);
-        var profit = rollOverSummeryResponse.getRequiredAmount() * oldApplication.getProfitPercentage() * (Integer.parseInt(oldApplication.getTenor()) * 30) / 36000;
+        var profitResponse = lsfCore.calculateProfit(Integer.parseInt(rollOverSummeryResponse.getTenor()), rollOverSummeryResponse.getRequiredAmount(), 0);
+                //rollOverSummeryResponse.getRequiredAmount() * oldApplication.getProfitPercentage() * (Integer.parseInt(oldApplication.getTenor()) * 30) / 36000;
 
-        rollOverSummeryResponse.setNewProfitAmount(profit);
+        rollOverSummeryResponse.setNewProfitAmount(profitResponse.getProfitAmount());
+        rollOverSummeryResponse.setProfitPercentage(profitResponse.getProfitPercent());
         rollOverSummeryResponse.setTotalCollateralValue(rollOverSummeryResponse.getTotalPfValue() + rollOverSummeryResponse.getTotalCashBalance());
 
         rollOverSummeryResponse.setApprovedLimit(rollOverSummeryResponse.getRequiredAmount());

@@ -215,6 +215,97 @@ public class CustomerInquiryProcessor implements MessageProcessor {
         }
     }
 
+    public CustomerInfo getCustomerDetails(String customerId) {
+        logger.info("===========LSF : (getCustomerDetails)REQUEST, customerID: {}", customerId);
+
+        CommonInqueryMessage customerInfoRequest = new CommonInqueryMessage();
+        customerInfoRequest.setReqType(LsfConstants.GET_CUSTOMER_INFO);
+        customerInfoRequest.setCustomerId(customerId);
+
+        String result = helper.getCustomerRelatedOMSData(gson.toJson(customerInfoRequest));
+        if (result == null || result.trim().equals("{}")) {
+            logger.warn("No information received for user ID: {} from OMS", customerId);
+            return null;
+        }
+
+        CustomerInfoResponse customerInfoResponse = gson.fromJson(result, CustomerInfoResponse.class);
+        CustomerInfo customerInfo = new CustomerInfo();
+        customerInfo.setCustomerId(customerId);
+
+        LinkedTreeMap<Object, Object> resMap = (LinkedTreeMap<Object, Object>) customerInfoResponse.getResponseObject();
+
+        if (resMap.containsKey("fullName")) {
+            customerInfo.setNameInFull(resMap.get("fullName").toString());
+        }
+        if (resMap.containsKey("fullAddress")) {
+            customerInfo.setAddress(resMap.get("fullAddress").toString());
+        }
+        if (resMap.containsKey("nin")) {
+            customerInfo.setNin(resMap.get("nin").toString());
+        }
+        if (resMap.containsKey("mobile")) {
+            customerInfo.setMobileNo(resMap.get("mobile").toString());
+        }
+        if (resMap.containsKey("email")) {
+            customerInfo.setEmail(resMap.get("email").toString());
+        }
+        if (resMap.containsKey("occupation")) {
+            customerInfo.setOccupation(resMap.get("occupation").toString());
+        }
+        if (resMap.containsKey("monthlySal")) {
+            customerInfo.setAvgMonthlyIncome(Double.parseDouble(resMap.get("monthlySal").toString()));
+        }
+        if (resMap.containsKey("homeTelephone")) {
+            customerInfo.setTelephoneNo(resMap.get("homeTelephone").toString());
+            customerInfo.setHomeTelephone(resMap.get("homeTelephone").toString());
+        }
+        if (resMap.containsKey("fax1")) {
+            customerInfo.setFax(resMap.get("fax1").toString());
+        }
+        if (resMap.containsKey("custRefenceNo")) {
+            customerInfo.setCustomerReferenceNumber(resMap.get("custRefenceNo").toString());
+        }
+        if (resMap.containsKey("zipCode")) {
+            customerInfo.setZipCode(resMap.get("zipCode").toString());
+        }
+        if (resMap.containsKey("bankBranchName")) {
+            customerInfo.setBankBranchName(resMap.get("bankBranchName").toString());
+        }
+        if (resMap.containsKey("city")) {
+            customerInfo.setCity(resMap.get("city").toString());
+        }
+        if (resMap.containsKey("poBox")) {
+            customerInfo.setPoBox(resMap.get("poBox").toString());
+        }
+        if (resMap.containsKey("employer")) {
+            customerInfo.setEmployeer(resMap.get("employer").toString());
+        }
+        if (resMap.containsKey("isArabic")) {
+            customerInfo.setPreferedLanguage(resMap.get("isArabic").toString().equals("true") ? "A" : "E");
+        }
+        if (resMap.containsKey("empAddress")) {
+            customerInfo.setEmployerAdrs(resMap.get("empAddress").toString());
+        }
+        if (resMap.containsKey("aproxNetWorth")) {
+            customerInfo.setNetWorth(resMap.get("aproxNetWorth").toString());
+        }
+        if (resMap.containsKey("investExprnc")) {
+            customerInfo.setInvestExprnc(resMap.get("investExprnc").toString());
+        }
+        if (resMap.containsKey("riskAppetite")) {
+            customerInfo.setRiskAppetite(resMap.get("riskAppetite").toString());
+        }
+        if (resMap.containsKey("kycExpiryDate")) {
+            customerInfo.setKycExpiryDate(resMap.get("kycExpiryDate").toString());
+        }
+        if(resMap.containsKey("nin")) {
+            customerInfo.setNin(resMap.get("nin").toString());
+        }
+
+        logger.info("===========LSF : (getCustomerDetails)LSF-SERVER RESPONSE for customerID: {}", customerId);
+        return customerInfo;
+    }
+
     private String getPFValuefromOMS(Map<String, Object> map) {
         logger.info("===========LSF : (reqPFvalue)-REQUEST, params: " + gson.toJson(map));
         CommonResponse cmr = new CommonResponse();

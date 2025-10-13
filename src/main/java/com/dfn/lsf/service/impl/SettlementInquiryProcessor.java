@@ -390,7 +390,7 @@ public class SettlementInquiryProcessor implements MessageProcessor {
 
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
             SimpleDateFormat sdf2 = new SimpleDateFormat("ddMMyyyy");
-            MApplicationCollaterals response = lsfCore.reValuationProcess(oldApplication, true, false);
+            MApplicationCollaterals response = lsfCore.reValuationProcess(oldApplication, true, false, false);
             var po = purchaseOrders.getFirst();
 
             if(po.getIsPhysicalDelivery() == 1) {

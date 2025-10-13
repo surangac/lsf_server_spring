@@ -18,6 +18,14 @@ import org.springframework.stereotype.Component;
 import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.integration.IntegrationService;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import java.lang.reflect.Type;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,10 +36,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class Helper {
     private static final transient Logger logger = LoggerFactory.getLogger(Helper.class);
-    private static final Gson gson = new Gson();
-
     private final LSFRepository lsfRepository;
     private final IntegrationService integrationService;
+    private final Gson gson;
 
     @Value("${integration.notification.third.party.sms.queue}")
     private String thirdPartySmsQueue;

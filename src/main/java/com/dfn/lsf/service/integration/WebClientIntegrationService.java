@@ -21,6 +21,13 @@ import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.util.IntegrationConstants;
 import com.dfn.lsf.util.LsfConstants;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import com.google.gson.reflect.TypeToken;
 import com.dfn.lsf.model.QueMsgDto;
 
@@ -57,7 +64,14 @@ public class WebClientIntegrationService implements IntegrationService {
     public WebClientIntegrationService(WebClient webClient, Executor virtualThreadExecutor, 
                                       LSFRepository lsfRepository) {
         this.webClient = webClient;
-        this.gson = new Gson();
+        this.gson = new GsonBuilder()
+                .registerTypeAdapter(LocalDateTime.class, new JsonSerializer<LocalDateTime>() {
+                    @Override
+                    public JsonElement serialize(LocalDateTime localDateTime, Type type, JsonSerializationContext context) {
+                        return new JsonPrimitive(localDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                    }
+                })
+                .create();
         this.virtualThreadExecutor = virtualThreadExecutor;
         this.lsfRepository = lsfRepository;
     }

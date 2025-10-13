@@ -20,4 +20,5 @@ public class CashTransferRequest {
     private String params;
     private int txnCode;
     private String narration;
+    private String appId;
 }

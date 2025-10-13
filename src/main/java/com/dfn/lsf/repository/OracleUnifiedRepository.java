@@ -20,8 +20,6 @@ import com.dfn.lsf.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -1358,6 +1356,7 @@ public class OracleUnifiedRepository implements LSFRepository {
         parameterMap.put("pm01_max_rollover_period",globalParameters.getMaxRolloverPeriod());
         parameterMap.put("pm01_grace_per_commodity_sell",globalParameters.getGracePeriodforCommoditySell());
         parameterMap.put("pm01_institution_invest_acc",globalParameters.getInstitutionInvestAccount());
+        parameterMap.put("pm01_order_acceptance_limit", globalParameters.getOrderAcceptancelimit());
 
         return oracleRepository.executeProc(DBConstants.PKG_M01_SYS_PARAS, DBConstants.PROC_ADD_UPDATE_SYS_PARAS, parameterMap);
     }

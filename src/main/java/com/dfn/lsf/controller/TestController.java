@@ -5,11 +5,10 @@ import com.dfn.lsf.repository.LSFRepository;
 import com.dfn.lsf.service.LsfCoreService;
 import com.dfn.lsf.service.impl.AuditLogProcessor;
 import com.dfn.lsf.service.impl.InvestorAccountCreationProcessor;
-import com.dfn.lsf.service.scheduler.SetAuthAbicToSellOrderProcessor;
+import com.dfn.lsf.service.scheduler.CustomerDataSyncService;
 import com.dfn.lsf.service.scheduler.SettlementCalculationProcessor;
 import com.dfn.lsf.util.Helper;
 import com.dfn.lsf.util.ProfitCalculationNew;
-import com.dfn.lsf.util.ProfitCalculationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,6 +45,9 @@ public class TestController {
     @Autowired
     private ProfitCalculationNew profitCalculationUtils;
 
+    @Autowired
+    CustomerDataSyncService dataSyncService;
+
     // This is a placeholder for the TestController class.
     // You can add methods here to handle specific requests or perform tests.
 
@@ -56,9 +58,10 @@ public class TestController {
         //List<CashAcc> cashAccounts = helper.getLsfTypeCashAccounts("11140210", "16840");
         //lsfCoreService.initialValuation("19420");
         //setAuthAbicToSellOrderProcessor.setAuthAbicToSellOrderProcessor();
-        String masterCashAccount = lsfCore.getMasterCashAccount();
-        MurabahApplication application = lsfRepository.getMurabahApplication("19480");
-        profitCalculationUtils.runCalculationForTheCurrentDay(application, masterCashAccount);
+//        String masterCashAccount = lsfCore.getMasterCashAccount();
+//        MurabahApplication application = lsfRepository.getMurabahApplication("19480");
+//        profitCalculationUtils.runCalculationForTheCurrentDay(application, masterCashAccount);
+        dataSyncService.syncCustomerData();
         return ResponseEntity.ok("Test endpoint is working!");
     }
 

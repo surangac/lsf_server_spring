@@ -1,7 +1,6 @@
 package com.dfn.lsf.service.impl;
 
 import java.util.List;
-import java.util.Map;
 
 import com.dfn.lsf.model.*;
 import org.springframework.beans.factory.annotation.Value;
@@ -64,7 +63,7 @@ public class LsfOmsValidatorAbicProcessor {
         return response;
     }
 
-    private void validateFtvForFirstMargineCall(OMSQueueRequest request, OMSQueueResponse response) {
+    private void  validateFtvForFirstMargineCall(OMSQueueRequest request, OMSQueueResponse response) {
         //List<MurabahApplication> applicationList = lsfRepository.geMurabahAppicationUserID(request.getCustomerId());
         MurabahApplication application = null;
 //        List<PurchaseOrder> purchaseOrderList = lsfRepository.getPurchaseOrderForApplication(request.getContractId());
@@ -87,8 +86,8 @@ public class LsfOmsValidatorAbicProcessor {
         }
         //MApplicationCollaterals collaterals = lsfCoreService.reValuationProcess(application,true);
         MApplicationCollaterals collaterals = application.isRollOverApp()
-                                           ? lsfCoreService.reValuationProcess_RollOverApp(application, true, false)
-                                           : lsfCoreService.reValuationProcess(application,true, false);
+                                           ? lsfCoreService.reValuationProcess_RollOverApp(application, true, false, true)
+                                           : lsfCoreService.reValuationProcess(application,true, false, true);
         log.debug("===========LSF : applicationId: "+ application.getId() +" Current FTV :" + collaterals.getFtv() + " , Current Outstanding Balance :" + collaterals.getOutstandingAmount() + " , Order Value :" + request.getAmount());
         log.debug("===========LSF :Order Details  Symbol :" + request.getSymbol() + " , Price :" + request.getPrice() + " , Quantity :" + request.getQuantity() + " , Open Order value :" + request.getOpenOrderValues() + " , Amount :" + request.getAmount() + " , Contract ID :" + request.getContractId());
 
@@ -158,8 +157,8 @@ public class LsfOmsValidatorAbicProcessor {
             } else {
                 lsfCoreService.calculateFTV(collaterals);
             }
-            log.debug("===========LSF : Expected FTV :" + collaterals.getFtv() + " , First Margin Level :" + GlobalParameters.getInstance().getFirstMarginCall());
-            if (lsfCoreService.violateFTVwithFirstMarginLimit(collaterals)) {
+            log.debug("===========LSF : Expected FTV :" + collaterals.getFtv() + " , Order Acceptance Limit :" + GlobalParameters.getInstance().getOrderAcceptancelimit());
+            if (lsfCoreService.violateFTVWithOrderAcceptanceLimit(collaterals)) {
                 response.setRejectCode(1);
                 response.setApproved(false);
             } else {
@@ -186,11 +185,11 @@ public class LsfOmsValidatorAbicProcessor {
             response.setApproved(false);
         }
         MApplicationCollaterals collaterals = application.isRollOverApp()
-                                              ? lsfCoreService.reValuationProcess_RollOverApp(application, true, false)
-                                              : lsfCoreService.reValuationProcess(application,true, false);
+                                              ? lsfCoreService.reValuationProcess_RollOverApp(application, false, false, false)
+                                              : lsfCoreService.reValuationProcess(application,false, false, false);
 
         log.debug("===========LSF : Current FTV :" + collaterals.getFtv() + " , Current Outstanding Balance :" + collaterals.getOutstandingAmount());
-        collaterals.setNetTotalColleteral(collaterals.getNetTotalColleteral() - Math.abs(request.getAmount()));
+        //collaterals.setNetTotalColleteral(collaterals.getNetTotalColleteral() - Math.abs(request.getAmount()));
         if(isCombinedOutstandingLimit) {
             lsfCoreService.calculateFTVWithTotalOutstanding(collaterals);
         } else {

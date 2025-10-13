@@ -819,6 +819,21 @@ public class LsfCoreProcessor implements MessageProcessor {
         return gson.toJson(cmr);
     }
 
+    public ProfitResponse calculateProfit(final boolean isRollOver,final double profitPercentApplication, final int tenorId, final double orderValue) {
+        ProfitResponse profitResponse = new ProfitResponse();
+
+        log.info("===========LSF : (calculateProfit)-Profit Persentate:" + profitPercentApplication);
+        if (GlobalParameters.getInstance().getProfitCalculateMethode() == LsfConstants.PROFIT_CALC_TENOR_BASED) {
+            if (tenorId != -1) {
+                profitResponse = lsfCore.calculateProfitOnTenor(tenorId, orderValue, profitPercentApplication);
+            }
+        } else {
+            int loanPeriodInDays = 30 * tenorId;
+            profitResponse = lsfCore.calculateProfitOnStructure(orderValue, loanPeriodInDays, profitPercentApplication, isRollOver);
+        }
+        return profitResponse;
+    }
+
     private double getApplicationProfitPercentage(Map<String, Object> map) {
         try {
             if (map.containsKey("applicationId")) {
@@ -863,16 +878,16 @@ public class LsfCoreProcessor implements MessageProcessor {
             String statusComment = null;
             String statusChangedIP = "";
 
-            if (map.containsKey("orderID")) {
+            if (map.containsKey("orderID") && map.get("orderID") != null) {
                 orderId = map.get("orderID").toString();
             }
-            if (map.containsKey("approveStatus")) {
+            if (map.containsKey("approveStatus") && map.get("approveStatus") != null) {
                 approveStatus = map.get("approveStatus").toString();
             }
-            if (map.containsKey("comment")) {
+            if (map.containsKey("comment") && map.get("comment") != null) {
                 statusComment = map.get("comment").toString();
             }
-            if (map.containsKey("ipAddress")) {
+            if (map.containsKey("ipAddress") && map.get("ipAddress") != null) {
                 statusChangedIP = map.get("ipAddress").toString();
             }
             log.debug("===========LSF : (reqApproveOrderAgreement)-Request  : " + gson.toJson(map) + " , Application ID: " + applicationID);
@@ -913,7 +928,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                     adminChargeRequest.setAmount(adminFee + vatAmount);
                     adminChargeRequest.setBrokerVat(vatAmount);
                     adminChargeRequest.setTxnCode(productType.getValue());
-                    //adminChargeRequest.setExchangeVat(vatAmount);
+                    adminChargeRequest.setAppId(murabahApplication.getId());
 
                     response = helper.processOMSCommonResponseAdminFee(helper.sendMessageToOms(gson.toJson(adminChargeRequest)).toString());
 
@@ -924,9 +939,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                         lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARGED);
                         log.info("===========LSF : Admin Fee Successfully Charged , CustomerID" + murabahApplication.getCustomerId() + " , Application ID :" + murabahApplication.getId() + " , Account ID:" + murabahApplication.getCashAccount() + " , Total Amount:" + (adminFee +vatAmount) + " ,Vat Amount:" + vatAmount);
                         //update admin fee in PO level,just to keep the record
-                        lsfRepository.updateAdminFee(GlobalParameters.getInstance().getSimaCharges(),GlobalParameters.getInstance().getTransferCharges(),vatAmount,purchaseOrder.getId());
-                        // at this stage cash collaterals and shares will be transferred only for shares type or physical delivery for commodity type
-                        //if (murabahApplication.getFinanceMethod().equalsIgnoreCase("1") || (purchaseOrder.getIsPhysicalDelivery() == 1 && !murabahApplication.isRollOverApp())) {
+                        lsfRepository.updateAdminFee(adminFee, GlobalParameters.getInstance().getTransferCharges(), vatAmount, purchaseOrder.getId());
                         if (!murabahApplication.isRollOverApp()) {
                             transferCollateralsToLSFAccount(murabahApplication, purchaseOrder, collaterals);
                             transferPOToLSFAccount(murabahApplication, purchaseOrder);
@@ -1090,8 +1103,8 @@ public class LsfCoreProcessor implements MessageProcessor {
             if (po.getCustomerApproveStatus() == 1 && !(application.getLsfAccountDeletionState() == LsfConstants.REQUEST_SENT_TO_OMS || application.getLsfAccountDeletionState() == LsfConstants.ACCOUNT_DELETION_SUCCESS || application.getLsfAccountDeletionState() == LsfConstants.EXCHANGE_ACCOUNT_DELETION_FAILED_FROM_EXCHANGE || application.getLsfAccountDeletionState() == LsfConstants.SHARE_TRANSFER_FAILED_WITH_EXCHANGE)) {
                 if (application != null) {
                     MApplicationCollaterals response = application.isRollOverApp()
-                                                       ? lsfCore.reValuationProcess_RollOverApp(application, false,true)
-                                                       : lsfCore.reValuationProcess(application,false, true);
+                                                       ? lsfCore.reValuationProcess_RollOverApp(application, false,true, false)
+                                                       : lsfCore.reValuationProcess(application,false, true, false);
                     log.info("===========LSF : (reqDashBoardPFSummary)-LSF-SERVER RESPONSE  : " + gson.toJson(response));
                     getBPDetails(response, application);
                     return gson.toJson(response);
@@ -1151,7 +1164,7 @@ public class LsfCoreProcessor implements MessageProcessor {
         bpSummary.setMarginabilityType(liquidityType.getLiquidName());
 
         double marginabilityPercent = liquidityType.getMarginabilityPercent();
-        double firstMarginCallRatio = GlobalParameters.getInstance().getFirstMarginCall() / 100.0; // e.g., 160% = 1.6
+        double firstMarginCallRatio = GlobalParameters.getInstance().getOrderAcceptancelimit() / 100.0; // e.g., 160% = 1.6
 
         // If fully marginable: BP = cash
         if (marginabilityPercent >= 100.0) {

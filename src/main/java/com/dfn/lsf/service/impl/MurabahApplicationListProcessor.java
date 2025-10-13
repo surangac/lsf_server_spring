@@ -331,7 +331,7 @@ public class MurabahApplicationListProcessor implements MessageProcessor {
         if (result != null) {
             CustomerInfoResponse customerInfoResponse = gson.fromJson(
                     (String) result,
-                    CustomerInfoResponse.class); // getting the user information from OMS and
+                    CustomerInfoResponse.class);
             // overriding changed data
             LinkedTreeMap<Object, Object> resMapFromOMS =
                     (LinkedTreeMap<Object, Object>) customerInfoResponse.getResponseObject();

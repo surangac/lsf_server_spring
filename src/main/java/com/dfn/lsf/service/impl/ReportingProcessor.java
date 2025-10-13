@@ -1,13 +1,17 @@
 package com.dfn.lsf.service.impl;
 
 import java.io.OutputStream;
+import java.lang.reflect.Type;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.dfn.lsf.config.LocalDateAdapter;
 import com.dfn.lsf.util.MessageType;
-import com.google.gson.GsonBuilder;
-import org.springframework.beans.factory.annotation.Qualifier;
+import com.google.gson.*;
 import org.springframework.stereotype.Service;
 
 import com.dfn.lsf.model.report.GridResponse;
@@ -19,7 +23,6 @@ import com.dfn.lsf.service.MessageProcessor;
 import com.dfn.lsf.service.reporting.ReportFactory;
 import com.dfn.lsf.util.Helper;
 import com.dfn.lsf.util.LsfConstants;
-import com.google.gson.Gson;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +37,6 @@ public class ReportingProcessor implements MessageProcessor {
 
     private final LSFRepository lsfRepository;
     private final ReportFactory reportFactory;
-    private final Gson gson;
     private final Helper helper;
     private final AuditLogProcessor auditLogProcessor;
 
@@ -46,6 +48,13 @@ public class ReportingProcessor implements MessageProcessor {
         String rawMessage = (String) request;
         HashMap<String, String> requestMap = new HashMap<>();
         Gson gson = new GsonBuilder()
+                .registerTypeAdapter(LocalDateTime.class, new JsonSerializer<LocalDateTime>() {
+                    @Override
+                    public JsonElement serialize(LocalDateTime localDateTime, Type type, JsonSerializationContext context) {
+                        return new JsonPrimitive(localDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                    }
+                })
+                .registerTypeAdapter(LocalDate.class, new LocalDateAdapter())
                 .serializeNulls()
                 .create();
         requestMap = gson.fromJson(rawMessage, requestMap.getClass());

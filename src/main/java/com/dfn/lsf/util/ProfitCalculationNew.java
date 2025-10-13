@@ -68,8 +68,19 @@ public class ProfitCalculationNew {
         // Determine the start date for calculations
         LocalDate startDate = getCalculationStartDate(purchaseOrder, lastEntry);
         LocalDate currentDate = LocalDate.now();
-        // Handle settlement if it's settlement date
-        String settlementDate = String.valueOf(purchaseOrder.getSettlementDate());
+        // Handle settlement date - convert string to LocalDate
+        String settlementDateStr = purchaseOrder.getSettlementDate();
+        LocalDate settlementDate;
+        if (settlementDateStr == null || settlementDateStr.isEmpty()) {
+            settlementDate = LocalDate.now().plusYears(10); // Default to far future if null/empty
+        } else {
+            try {
+                settlementDate = LocalDate.parse(settlementDateStr);
+            } catch (Exception e) {
+                log.warn("Invalid settlement date format: {}, using default", settlementDateStr);
+                settlementDate = LocalDate.now().plusYears(10);
+            }
+        }
 
         log.info("===========LSF : Processing profit calculation from " + startDate + " to " + currentDate
                     + " for ApplicationID: " + applicationID);
@@ -82,8 +93,8 @@ public class ProfitCalculationNew {
         double cumulativeProfit = (lastEntry != null) ? lastEntry.getCumulativeProfitAmount() : 0.0;
 
         for (LocalDate date = startDate; !date.isAfter(currentDate); date = date.plusDays(1)) {
-            // Skip profit calculation if settlementDate < current date
-            if (date.isAfter(LocalDate.parse(settlementDate))) {
+            // Skip profit calculation if date is after settlement date
+            if (date.isAfter(settlementDate)) {
                 continue;
             }
             if (!isProfitEntryExists(applicationID, orderID, date)) {
@@ -112,7 +123,7 @@ public class ProfitCalculationNew {
         lsfRepository.updateLastProfitCycleDate(applicationID);
         OrderProfit todaysProfit = getProfitEntryForDate(applicationID, orderID, currentDate);
 
-        decideSettlementAction(settlementDate, murabahApplication, purchaseOrder, todaysProfit,
+        decideSettlementAction(settlementDateStr, murabahApplication, purchaseOrder, todaysProfit,
                                lsfCashAccount, lsfTradingAccount, masterCashAccount);
     }
 

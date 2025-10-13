@@ -13,4 +13,5 @@ public class CloseLSFAccountRequest {
     private String toTradingAccountId;
     private String fromCashAccountId;
     private String toCashAccountId;
+    private String appId;
 }

@@ -25,4 +25,5 @@ public class ShareTransferRequest {
     private String params;
     private String basketReference;
     private int txnCode;
+    private String appId;
 }
