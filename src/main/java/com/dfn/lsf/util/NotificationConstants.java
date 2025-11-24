@@ -22,7 +22,9 @@ public class NotificationConstants {
     public static final String MARGIN_NOTIFICATION_LEVEL3 = "MN_3";
     public static final String OTP = "OTP";
     public static final String ADMIN_COMMON_REJECT = "CMREJECT";
-    public static final String AUTH_ABIC_TO_SELL_AUTO = "AATSA";
-    public static final String AUTH_ABIC_TO_SELL_USER = "AATSU";
-    public static final String AUTH_ABIC_TO_SELL_AUTO_ROLLOVER = "AATSAR";
+    public static final String MARGINE_ACCPETED_TRANSFER_COLLATERAL = "AATSA";
+    public static final String AUTH_ABIC_TO_SELL_AUTO = "AATSAR";
+    public static final String SIGN_CONTRACT_COMMODITY_AFTER_PO = "AATSU";
+    public static final String AUTH_ABIC_TO_SELL = "AATSAR";
+    public static final String FINAL_COLLATERAL_TRNASFER_COMM= "AATSF";
 }

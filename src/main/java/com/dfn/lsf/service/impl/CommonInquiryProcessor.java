@@ -271,10 +271,10 @@ public class CommonInquiryProcessor implements MessageProcessor {
             for (Map<String, Object> symbol : objSymbolList) {
                 Symbol objSymbol = new Symbol();
                 objSymbol.setSymbolCode(symbol.get("S01_SYMBOL").toString());
-                objSymbol.setShortDescription(symbol.get("SHORT_DESCRIPTION").toString());
-                objSymbol.setAvailableQty(Integer.parseInt(symbol.get("NET_HOLDINGS").toString()));
-                objSymbol.setPreviousClosed(LSFUtils.ceilTwoDecimals(Double.parseDouble(symbol.get("PREVIOUSE_CLOSED").toString())));
-                objSymbol.setMarketValue(LSFUtils.ceilTwoDecimals(Double.parseDouble(symbol.get("L08_MARKET_VALUE").toString())));
+                objSymbol.setShortDescription(symbol.getOrDefault("SHORT_DESCRIPTION", "").toString());
+                objSymbol.setAvailableQty(Integer.parseInt(symbol.getOrDefault("NET_HOLDINGS", 0).toString()));
+                objSymbol.setPreviousClosed(LSFUtils.ceilTwoDecimals(Double.parseDouble(symbol.getOrDefault("PREVIOUSE_CLOSED", 0).toString())));
+                objSymbol.setMarketValue(LSFUtils.ceilTwoDecimals(Double.parseDouble(symbol.getOrDefault("L08_MARKET_VALUE", 0).toString())));
                 totalPfValue = totalPfValue + objSymbol.getMarketValue();
                 symbolList.add(objSymbol);
             }

@@ -946,6 +946,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                         } else {
                             lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_SENT);
                         }
+                        notificationManager.sendNotificationCommodity(murabahApplication, NotificationConstants.FINAL_COLLATERAL_TRNASFER_COMM);
 
                     } else {
                         lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARG_FAILED);
@@ -1562,7 +1563,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                     1,
                     false);
         }
-        notificationManager.sendNotification(fromDB);
+        notificationManager.sendNotificationCommodity(fromDB, NotificationConstants.SIGN_CONTRACT_COMMODITY_AFTER_PO);
         String message = "PO Level 2 Approved";
         lsfRepository.commodityAppStatus(po.getApplicationId(), fromDB.getCurrentLevel(), message, approvedbyId, approvedbyName, statusChangedIP);
         cmr.setResponseCode(200);
@@ -1642,8 +1643,10 @@ public class LsfCoreProcessor implements MessageProcessor {
             if (po.getSellButNotSettle() == 0 && application.isRollOverApp()) {
                 log.info("Po Sell But Not Settle is set to : {}", po.getSellButNotSettle());
                 performSettlementPreviousCommodity(application.getRollOverAppId(),  statusChangedIP);
+                notificationManager.sendAuthAbicToSellNotification(application, false, po);
             } else {
                 log.info("===========LSF : (commodityPOExecution) PO Sell But Not Settle is set to 1, so not settling the Murabah Application");
+                notificationManager.sendAuthAbicToSellNotification(application, true, po);
             }
 
             MurabahApplication fromDB = lsfRepository.getMurabahApplication(po.getApplicationId());
@@ -1741,6 +1744,11 @@ public class LsfCoreProcessor implements MessageProcessor {
             int currentLevel = 16;
             String statusMessage = "Authorized ABIC to Sell";
             lsfRepository.commodityAppStatus(appId, currentLevel, statusMessage, approvedbyId, approvedbyName, statusChangedIP);
+
+            //---Send Notification---//
+            log.info("===========LSF : Sending Auth Abic to Sell Notification for Application ID : " + appId);
+            MurabahApplication application = lsfRepository.getMurabahApplication(appId);
+            notificationManager.sendAuthAbicToSellNotification(application, true, po);
 
             cmr.setResponseCode(200);
             cmr.setResponseMessage(key+"|Confirmed");

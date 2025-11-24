@@ -29,8 +29,8 @@ public final class IntegrationConstants {
     public static final String OMS_SETTLEMENT_ENDPOINT = "/MubasherRESTAPI/api/RestSOA/processLsfRequest";
     
     // Notification endpoints
-    public static final String SMS_ENDPOINT = "/jboss/send";
-    public static final String EMAIL_ENDPOINT = "/jboss/send";
+    public static final String SMS_ENDPOINT = "/notification/send";
+    public static final String EMAIL_ENDPOINT = "/notification/send";
     
     // Producer name to endpoint mapping
     public static final String PRODUCER_IFLEX = "http_producer_to_Iflex";

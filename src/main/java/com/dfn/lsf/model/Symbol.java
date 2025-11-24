@@ -301,5 +301,6 @@ public class Symbol {
         this.setLiquidityType(sourceSymbol.getLiquidityType());
         this.setMarginabilityPercentage(sourceSymbol.getMarginabilityPercentage());
         this.setSellPending(sourceSymbol.getSellPending());
+        this.setOpenSellQty(sourceSymbol.getOpenSellQty());
     }
 }

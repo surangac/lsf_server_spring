@@ -260,6 +260,65 @@ public void sendEarlySettlementNotification(MurabahApplication murabahApplicatio
 
 }
 
+public void sendNotificationCommodity(MurabahApplication murabahApplication, String notificationType) {
+    NotificationMsgConfiguration msgConfiguration = null;
+    List<NotificationMsgConfiguration> msgConfigurations = null;
+    int tempNotificationType = 0;
+    msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(notificationType);
+    if (msgConfigurations != null && msgConfigurations.size() > 0) {
+        msgConfiguration = msgConfigurations.get(0);
+        log.debug("===========LSF; Sending Early Settlement Notifications , msgConfiguration:" + gson.toJson(msgConfiguration));
+        String webSubject = msgConfiguration.getWebSubject();
+        String webBody = msgConfiguration.getWebBody();
+        String thirdPartySMS = msgConfiguration.getThirdPartySMSTemplate();
+        String thirdPartyEmail = msgConfiguration.getThirdPartyEmailTemplate();
+        Map<String, String> paramsMap = getApplicationParameterMap(murabahApplication);
+        for (Map.Entry<String, String> entry : paramsMap.entrySet()) {
+            if (webSubject != null && webSubject.contains(entry.getKey())) {
+                webSubject = webSubject.replace(entry.getKey(), entry.getValue());
+            }
+            if (webBody != null && webBody.contains(entry.getKey())) {
+                webBody = webBody.replace(entry.getKey(), entry.getValue());
+            }
+            if (thirdPartySMS != null && thirdPartySMS.contains(entry.getKey())) {
+                thirdPartySMS = thirdPartySMS.replace(entry.getKey(), entry.getValue());
+            }
+            if (thirdPartyEmail != null && thirdPartyEmail.contains(entry.getKey())) {
+                thirdPartyEmail = thirdPartyEmail.replace(entry.getKey(), entry.getValue());
+            }
+        }
+
+        Message message = fillMessage(murabahApplication);
+        message.setSubject(webSubject);
+        message.setMessage(webBody);
+        message.setCustom(false);
+        String stringMessage = gson.toJson(message);
+        if (thirdPartySMS != null && thirdPartySMS.length() > 0) {
+            log.debug("===========LSF; Sending SMS :" + thirdPartySMS);
+            message.setThirdPartySMS(thirdPartySMS);
+            log.info("===========LSF; Sending SMS , Producer Response" + helper.sendToSMSProducer(thirdPartySMS));
+            tempNotificationType += 2;
+        }
+        if (thirdPartyEmail != null && thirdPartyEmail.length() > 0) {
+            log.debug("===========LSF; Sending EMAIl :" + thirdPartyEmail);
+            log.info("===========LSF; Sending EMAIL , Producer Response" + helper.sendToEmailProducer(thirdPartyEmail));
+            message.setThirdPartyEmail(thirdPartyEmail);
+            tempNotificationType += 3;
+        }
+        if (msgConfiguration.isWeb()) {
+            msgConfiguration.setWebSubject(webSubject);
+            msgConfiguration.setWebBody(webBody);
+            sendWebNotification(msgConfiguration, murabahApplication);
+            tempNotificationType += 4;
+        }
+        message.setNotificationType(decideMessageType(tempNotificationType));
+        lsfRepository.addMessageOut(message);
+
+    } else {
+        log.debug("No configuration found for Settlement Reminder");
+    }
+}
+
 private Map<String, String> getParameterMapForEarlySettlementNotification(MurabahApplication murabahApplication) {
 
     Map<String, String> paramMap = new HashMap<>();
@@ -269,6 +328,7 @@ private Map<String, String> getParameterMapForEarlySettlementNotification(Muraba
     paramMap.put("$prefLanguage",murabahApplication.getPreferedLanguage()!=null?murabahApplication.getPreferedLanguage():"E");
     paramMap.put("$lsfTypeTradingAccount", murabahApplication.getTradingAcc());
     paramMap.put("$tradingAccount", murabahApplication.getTradingAcc());
+    paramMap.put("$mobileNumber", murabahApplication.getMobileNo());
     return paramMap;
 }
 
@@ -362,17 +422,6 @@ public boolean sendPOAcceptanceReminders(MurabahApplication murabahApplication, 
 
 }
 
-private Map<String, String> getParameterMapForPOReminders(MurabahApplication murabahApplication, PurchaseOrder purchaseOrder) {
-
-    Map<String, String> paramMap = new HashMap<>();
-    paramMap.put("$applicationId", murabahApplication.getId());
-    paramMap.put("$customerName", murabahApplication.getFullName());
-    paramMap.put("$orderID", purchaseOrder.getId());
-    paramMap.put("$orderCompletedValue", String.valueOf(purchaseOrder.getOrderCompletedValue()));
-    paramMap.put("$prefLanguage",murabahApplication.getPreferedLanguage()!=null?murabahApplication.getPreferedLanguage():"E");
-    return paramMap;
-}
-
 /*----Send Margin Notification--*/
 public boolean sendMarginNotification(int marginLevel, MApplicationCollaterals applicationCollaterals, MurabahApplication application) {
 
@@ -419,7 +468,7 @@ public boolean sendMarginNotification(int marginLevel, MApplicationCollaterals a
                 tempNotificationType += 2;
             }
             if (thirdPartyEmail != null && thirdPartyEmail.length() > 0) {
-                log.debug("===========LSF; Sending SMS :" + thirdPartySMS);
+                log.debug("===========LSF; Sending Email :" + thirdPartyEmail);
                 helper.sendToEmailProducer(thirdPartyEmail);
                 message.setThirdPartyEmail(thirdPartyEmail);
                 tempNotificationType += 3;
@@ -488,12 +537,14 @@ private Map<String, String> getApplicationParameterMap(MurabahApplication muraba
         paramMap.put("$lsfTypeTradingAccount", lsfAccount);
     }
     if (purchaseOrderList != null && purchaseOrderList.size() != 0) {
-        paramMap.put("$poValue", String.valueOf(purchaseOrderList.get(0).getOrderValue()));
-        paramMap.put("$BanksProfit", String.valueOf(purchaseOrderList.get(0).getProfitAmount()));
-        paramMap.put("$totalFeeCharge", String.valueOf(purchaseOrderList.get(0).getProfitAmount())); //todo
-        paramMap.put("$settlementAmount", String.valueOf(purchaseOrderList.get(0).getOrderSettlementAmount()));
-        paramMap.put("$orderId", String.valueOf(purchaseOrderList.get(0).getId()));
-        paramMap.put("$orderCompletedValue", String.valueOf(purchaseOrderList.get(0).getOrderCompletedValue()));
+        var purchaseOrder = purchaseOrderList.getFirst();
+        paramMap.put("$poValue", String.valueOf(purchaseOrder.getOrderValue()));
+        paramMap.put("$BanksProfit", String.valueOf(purchaseOrder.getProfitAmount()));
+        paramMap.put("$totalFeeCharge", String.valueOf(purchaseOrder.getProfitAmount())); //todo
+        paramMap.put("$settlementAmount", String.valueOf(purchaseOrder.getOrderSettlementAmount()));
+        paramMap.put("$orderId", String.valueOf(purchaseOrder.getId()));
+        paramMap.put("$orderCompletedValue", String.valueOf(purchaseOrder.getOrderCompletedValue()));
+        paramMap.put("$contractsnnumber", purchaseOrder.getCertificateNumber());
     }
     return paramMap;
 }
@@ -708,26 +759,17 @@ public void sendCommonRejectNotifications(MurabahApplication murabahApplication)
         log.debug("===========LSF :Can't find the message configurations");
 
     }
-
 }
 
-public void sendAuthAbicToSellNotification(MurabahApplication murabahApplication, boolean isAutomatic) {
+public void sendAuthAbicToSellNotification(MurabahApplication murabahApplication, boolean isAutomatic, PurchaseOrder purchaseOrder) {
 
     NotificationMsgConfiguration msgConfiguration = null;
     List<NotificationMsgConfiguration> msgConfigurations = null;
     int tempNotificationType = 0;
     if (isAutomatic){
-        if (murabahApplication.getRollOverAppId() != null && !murabahApplication.getRollOverAppId().equalsIgnoreCase("0")){
-            msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(NotificationConstants.AUTH_ABIC_TO_SELL_AUTO_ROLLOVER);
-        } else {
-            msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(NotificationConstants.AUTH_ABIC_TO_SELL_AUTO);
-        }
+        msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(NotificationConstants.AUTH_ABIC_TO_SELL_AUTO);
     }else{
-        if (murabahApplication.getRollOverAppId() != null && !murabahApplication.getRollOverAppId().equalsIgnoreCase("0")){
-            msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(NotificationConstants.AUTH_ABIC_TO_SELL_AUTO_ROLLOVER); //todo : add data for notification types
-        }else {
-            msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(NotificationConstants.AUTH_ABIC_TO_SELL_USER);
-        }
+        msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(NotificationConstants.AUTH_ABIC_TO_SELL);
     }
 
     if (msgConfigurations != null && msgConfigurations.size() > 0) {
@@ -737,7 +779,7 @@ public void sendAuthAbicToSellNotification(MurabahApplication murabahApplication
         String webBody = msgConfiguration.getWebBody();
         String thirdPartySMS = msgConfiguration.getThirdPartySMSTemplate();
         String thirdPartyEmail = msgConfiguration.getThirdPartyEmailTemplate();
-        Map<String, String> paramsMap = getParameterMapForAuthAbicToSellNotification(murabahApplication);
+        Map<String, String> paramsMap = getParameterMapForAuthAbicToSellNotification(murabahApplication, purchaseOrder);
         for (Map.Entry<String, String> entry : paramsMap.entrySet()) {
             if (webSubject != null && webSubject.contains(entry.getKey())) {
                 webSubject = webSubject.replace(entry.getKey(), entry.getValue());
@@ -785,7 +827,7 @@ public void sendAuthAbicToSellNotification(MurabahApplication murabahApplication
 
 }
 
-private Map<String, String> getParameterMapForAuthAbicToSellNotification(MurabahApplication murabahApplication) {
+private Map<String, String> getParameterMapForAuthAbicToSellNotification(MurabahApplication murabahApplication, PurchaseOrder purchaseOrder) {
 
     Map<String, String> paramMap = new HashMap<>();
     paramMap.put("$customerName", murabahApplication.getFullName());
@@ -796,6 +838,8 @@ private Map<String, String> getParameterMapForAuthAbicToSellNotification(Murabah
     paramMap.put("$tradingAccount", murabahApplication.getTradingAcc());
     MurabahaProduct product = lsfRepository.getMurabahaProduct(murabahApplication.getProductType());
     paramMap.put("$productName",product.getProductName());
+    paramMap.put("$mobileNumber", murabahApplication.getMobileNo() != null ? murabahApplication.getMobileNo() : "");
+    paramMap.put("$contractsnnumber", purchaseOrder != null ? purchaseOrder.getCertificateNumber() : murabahApplication.getId());
     return paramMap;
 }
 

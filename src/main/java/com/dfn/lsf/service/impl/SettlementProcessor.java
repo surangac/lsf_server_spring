@@ -113,25 +113,30 @@ public class SettlementProcessor implements MessageProcessor {
                 log.info("===========LSF :(performEarlySettlement)- Cash Transfer Succeed , From(Customer Cash Account):" + lsfCashAccount.getAccountId() + ", To:(Master Cash Account)" + masterCashAccount + ", Amount :" + settlementAmount);
                 responseMessage = "Successfully Deducted Outstanding Amount.";
                 //Todo -- After Sending the Account Closure Request to OMS LSF is not waiting to the OMS Response
-                AccountDeletionRequestState accountDeletionRequestState = new AccountDeletionRequestState();
-                accountDeletionRequestState = lsfCoreService.closeLSFAccount(applicationID, lsfTradingAcc.getAccountId(), application.getTradingAcc(), lsfCashAccount.getAccountId(), application.getCashAccount());
-                if (accountDeletionRequestState.isSent()) {
-                    application.setCurrentLevel(18);
-                    application.setOverallStatus(String.valueOf(17));
-                    log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Sent to OMS, Application ID :" + applicationID);
+                if(application.isRollOverApp() || !hasRolloverApplication(application)) {
+                    AccountDeletionRequestState accountDeletionRequestState = new AccountDeletionRequestState();
+                    accountDeletionRequestState = lsfCoreService.closeLSFAccount(applicationID, lsfTradingAcc.getAccountId(), application.getTradingAcc(), lsfCashAccount.getAccountId(), application.getCashAccount());
+                    if (accountDeletionRequestState.isSent()) {
+                        application.setCurrentLevel(18);
+                        application.setOverallStatus(String.valueOf(17));
+                        log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Sent to OMS, Application ID :" + applicationID);
 
-                    try {
-                        notificationManager.sendEarlySettlementNotification(application);
-                    } catch (Exception e) {
-                        commonResponse.setResponseCode(responseCode);
-                        commonResponse.setResponseMessage(responseMessage + " , failed to send the notification.");
-                        e.printStackTrace();
+                        try {
+                            notificationManager.sendEarlySettlementNotification(application);
+                        } catch (Exception e) {
+                            commonResponse.setResponseCode(responseCode);
+                            commonResponse.setResponseMessage(responseMessage + " , failed to send the notification.");
+                            e.printStackTrace();
+                        }
+                    } else {
+                        log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Rejected from OMS, Application ID :" + applicationID + ", Reason :" + accountDeletionRequestState.getFailureReason());
+                        responseCode = 200; // since cash transfer is success response code is set to 200
+                        commonResponse.setErrorCode(accountDeletionRequestState.getErrorCode()); // "-1" error code is set since cash transfer is success and account closure is failed
+                        responseMessage = accountDeletionRequestState.getFailureReason();
                     }
                 } else {
-                    log.info("===========LSF :(performAutoSettlement)- Account Deletion Request Rejected from OMS, Application ID :" + applicationID + ", Reason :" +  accountDeletionRequestState.getFailureReason());
-                    responseCode = 200; // since cash transfer is success response code is set to 200
-                    commonResponse.setErrorCode(accountDeletionRequestState.getErrorCode()); // "-1" error code is set since cash transfer is success and account closure is failed
-                    responseMessage = accountDeletionRequestState.getFailureReason();
+                    application.setCurrentLevel(18);
+                    application.setOverallStatus(String.valueOf(17));
                 }
             } else {
                 responseCode = 500;
@@ -343,7 +348,7 @@ public class SettlementProcessor implements MessageProcessor {
         responseMessage = "Confirmed Rollover Successfully";
         try {
             //todo : Need to add seperate notification templates
-            notificationManager.sendAuthAbicToSellNotification(newApplication, true);/*---Send Notification---*/
+            notificationManager.sendAuthAbicToSellNotification(newApplication, true, newPO);/*---Send Notification---*/
         } catch (Exception e) {
             cmr.setResponseCode(responseCode);
             cmr.setResponseMessage(responseMessage + " , failed to send the notification.");
