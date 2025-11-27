@@ -2226,8 +2226,10 @@ public class OracleUnifiedRepository implements LSFRepository {
     }
 
     @Override
-    public List<Message> getNotificationHistory() {
+    public List<Message> getNotificationHistory(Map<String, Object> returnMap) {
         Map<String, Object> parameterMap = new HashMap<>();
+        parameterMap.put("fromdate", returnMap.get("fromDate").toString());
+        parameterMap.put("todate", returnMap.get("toDate").toString());
         return oracleRepository.getProcResult(DBConstants.PKG_N04_MESSAGE_OUT, DBConstants.PROC_N04_GET__MESSAGE_HISTORY, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MESSAGE));
     }   
 

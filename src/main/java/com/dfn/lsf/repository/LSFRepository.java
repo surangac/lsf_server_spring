@@ -363,7 +363,7 @@ public interface LSFRepository {
 
     List<Map<String, String>> getNotificationBody(String uid); //get notification body for a particular header;
     List<Message> getCustomMessageHistory();
-    List<Message> getNotificationHistory();
+    List<Message> getNotificationHistory(Map<String, Object> returnMap);
 
     /*-----------------------Message Related-------------------------*/
     String addMessageOut(Message message);

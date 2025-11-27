@@ -73,7 +73,7 @@ public class NotificationProcessor implements MessageProcessor {
                 case LsfConstants.VIEW_MESSAGE_HISTORY: // view the message History - Admin
                     return viewCustomMessageHistory();
                 case LsfConstants.GET_NOTIFICATION_HISTORY: //get notification history - Admin
-                    return getNotificationHistory();
+                    return getNotificationHistory(requestMap);
                 default:
                     return null;
             }
@@ -239,8 +239,9 @@ public class NotificationProcessor implements MessageProcessor {
         return gson.toJson(messageList);
     }
 
-    private String getNotificationHistory(){
-        List<Message> messageList = lsfRepository.getNotificationHistory();
+    private String getNotificationHistory(Map<String, Object> map){  //Map<String, Object> map   // String fromDate, String toDate
+       // Map<String, Object> msgConStringMap = new HashMap<>();
+        List<Message> messageList = lsfRepository.getNotificationHistory(map);
         return gson.toJson(messageList);
     }
 
