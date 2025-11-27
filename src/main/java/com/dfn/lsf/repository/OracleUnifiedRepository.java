@@ -2228,18 +2228,26 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<Message> getNotificationHistory(Map<String, Object> returnMap) {
         Map<String, Object> parameterMap = new HashMap<>();
-        String fromDate = (String) returnMap.get("fromDate");
-        String toDate   = (String) returnMap.get("toDate");
-        if (fromDate == null || fromDate.trim().isEmpty()) {
-            fromDate = LocalDate.now().minusMonths(1).toString();
-        }
-        if (toDate == null || toDate.trim().isEmpty()) {
-            toDate = LocalDate.now().toString();
+        String fromDate = LocalDate.now().minusDays(7).toString();
+        String toDate   = LocalDate.now().toString();
+        if (returnMap != null) {
+            if (returnMap.containsKey("fromDate")) {
+                Object f = returnMap.get("fromDate");
+                if (f != null && f.toString().trim().length() > 0) {
+                    fromDate = f.toString();
+                }
+            }
+            if (returnMap.containsKey("toDate")) {
+                Object t = returnMap.get("toDate");
+                if (t != null && t.toString().trim().length() > 0) {
+                    toDate = t.toString();
+                }
+            }
         }
         parameterMap.put("fromdate", fromDate);
         parameterMap.put("todate", toDate);
         return oracleRepository.getProcResult(DBConstants.PKG_N04_MESSAGE_OUT, DBConstants.PROC_N04_GET__MESSAGE_HISTORY, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MESSAGE));
-    }   
+    }
 
     @Override
     public String addMessageOut(Message message) {
