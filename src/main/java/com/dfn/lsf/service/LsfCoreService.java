@@ -631,7 +631,7 @@ public class LsfCoreService {
                 if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
                     mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
                     sendMargineNotification(2, mApplicationCollaterals, application);
-                    lsfRepository.addMarginCallLog(mApplicationCollaterals, 1);
+                    lsfRepository.addMarginCallLog(mApplicationCollaterals, 2);
                 }
             }
             else if (violateFTVwithFirstMarginLimit(mApplicationCollaterals)) {
@@ -766,6 +766,14 @@ public class LsfCoreService {
                 }
                 mApplicationCollaterals.setLiqudationCall(true);
                 lsfRepository.addMarginCallLog(mApplicationCollaterals, 3);
+            } else if (violateFTVWithSecondMargineLimit(mApplicationCollaterals)) {
+                log.debug("=========== reValuationProcess : Reached to Order Acceptance  Margin Level. AppId {}, Last Margin Call Date : {} ", application.getId(), mApplicationCollaterals.getMargineCallDate());
+                mApplicationCollaterals.setLiquidateCallDate("");
+                if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
+                    mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
+                    sendMargineNotification(2, mApplicationCollaterals, application);
+                    lsfRepository.addMarginCallLog(mApplicationCollaterals, 2);
+                }
             } else if (violateFTVwithFirstMarginLimit(mApplicationCollaterals)) {
                 log.debug("=========== reValuationProcess : Reached to First  Margin Level. AppId {}, Last Margin Call Date : {} ", application.getId(), mApplicationCollaterals.getMargineCallDate());
                 mApplicationCollaterals.setLiquidateCallDate("");
