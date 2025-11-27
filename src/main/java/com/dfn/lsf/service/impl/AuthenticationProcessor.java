@@ -345,7 +345,8 @@ public class AuthenticationProcessor implements MessageProcessor {
                                     }
                                 }
                             }
-                            if (fromDB.isRollOverApp()) {
+                            boolean isCommodityApplication = fromDB.getFinanceMethod().equalsIgnoreCase("2");
+                            if (isCommodityApplication) {
                                 if (fromDB.getCurrentLevel() == 5) {
                                     notificationManager.sendNotificationCommodity(fromDB, NotificationConstants.COM_AFTER_RISK_APPROVAL);
                                 }

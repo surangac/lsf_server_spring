@@ -1557,11 +1557,11 @@ public class LsfCoreProcessor implements MessageProcessor {
             lsfRepository.updateActivity(
                     fromDB.getId(),
                     LsfConstants.STATUS_PO_FILLED_WAITING_FOR_ACCEPTANCE);
-            notificationManager.sendPOAcceptanceReminders(
-                    fromDB,
-                    po,
-                    1,
-                    false);
+//            notificationManager.sendPOAcceptanceReminders(
+//                    fromDB,
+//                    po,
+//                    1,
+//                    false);
         }
         notificationManager.sendNotificationCommodity(fromDB, NotificationConstants.SIGN_CONTRACT_COMMODITY_AFTER_PO);
         String message = "PO Level 2 Approved";

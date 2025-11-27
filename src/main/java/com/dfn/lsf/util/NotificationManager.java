@@ -41,7 +41,8 @@ public class NotificationManager {
 
     int tempNotificationType = 0;
     NotificationMsgConfiguration msgConfiguration = null;
-     if (murabahApplication.isRollOverApp()) {
+     boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
+     if (isCommodityApplication) {
          if (murabahApplication.getCurrentLevel() == 5) {
              sendNotificationCommodity(murabahApplication, NotificationConstants.COM_AFTER_RISK_APPROVAL);
          }
@@ -106,7 +107,8 @@ public class NotificationManager {
 
 public boolean sendNotification(NotificationMsgConfiguration msgConfiguration, MurabahApplication murabahApplication, String sentBy) {
 
-    if (murabahApplication.isRollOverApp()) {
+    boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
+    if (isCommodityApplication) {
         if (murabahApplication.getCurrentLevel() == 5) {
             sendNotificationCommodity(murabahApplication, NotificationConstants.COM_AFTER_RISK_APPROVAL);
         }
