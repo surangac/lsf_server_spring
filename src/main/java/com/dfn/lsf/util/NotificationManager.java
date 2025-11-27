@@ -41,6 +41,12 @@ public class NotificationManager {
 
     int tempNotificationType = 0;
     NotificationMsgConfiguration msgConfiguration = null;
+     if (murabahApplication.isRollOverApp()) {
+         if (murabahApplication.getCurrentLevel() == 5) {
+             sendNotificationCommodity(murabahApplication, NotificationConstants.COM_AFTER_RISK_APPROVAL);
+         }
+         return;
+     }
     List<NotificationMsgConfiguration> msgConfigurations = lsfRepository.getNotificationMsgConfigurationForApplication(murabahApplication.getId());
     if (msgConfigurations != null & msgConfigurations.size() > 0) {
         msgConfiguration = msgConfigurations.get(0);
@@ -99,7 +105,14 @@ public class NotificationManager {
 }
 
 public boolean sendNotification(NotificationMsgConfiguration msgConfiguration, MurabahApplication murabahApplication, String sentBy) {
-    Boolean results = false;
+
+    if (murabahApplication.isRollOverApp()) {
+        if (murabahApplication.getCurrentLevel() == 5) {
+            sendNotificationCommodity(murabahApplication, NotificationConstants.COM_AFTER_RISK_APPROVAL);
+        }
+        return true;
+    }
+     Boolean results = false;
     int tempNotificationType = 0;
     if (msgConfiguration != null) {
         String subject = msgConfiguration.getWebSubject();
