@@ -2228,8 +2228,16 @@ public class OracleUnifiedRepository implements LSFRepository {
     @Override
     public List<Message> getNotificationHistory(Map<String, Object> returnMap) {
         Map<String, Object> parameterMap = new HashMap<>();
-        parameterMap.put("fromdate", returnMap.get("fromDate").toString());
-        parameterMap.put("todate", returnMap.get("toDate").toString());
+        String fromDate = (String) returnMap.get("fromDate");
+        String toDate   = (String) returnMap.get("toDate");
+        if (fromDate == null || fromDate.trim().isEmpty()) {
+            fromDate = LocalDate.now().minusMonths(1).toString();
+        }
+        if (toDate == null || toDate.trim().isEmpty()) {
+            toDate = LocalDate.now().toString();
+        }
+        parameterMap.put("fromdate", fromDate);
+        parameterMap.put("todate", toDate);
         return oracleRepository.getProcResult(DBConstants.PKG_N04_MESSAGE_OUT, DBConstants.PROC_N04_GET__MESSAGE_HISTORY, parameterMap, rowMapperFactory.getRowMapper(RowMapperI.MESSAGE));
     }   
 
