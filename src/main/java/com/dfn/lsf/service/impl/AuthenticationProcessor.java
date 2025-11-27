@@ -345,8 +345,13 @@ public class AuthenticationProcessor implements MessageProcessor {
                                     }
                                 }
                             }
-
-                            notificationManager.sendNotification(fromDB);
+                            if (fromDB.isRollOverApp()) {
+                                if (fromDB.getCurrentLevel() == 5) {
+                                    notificationManager.sendNotificationCommodity(fromDB, NotificationConstants.COM_AFTER_RISK_APPROVAL);
+                                }
+                            } else {
+                                notificationManager.sendNotification(fromDB);
+                            }
                             cmr.setResponseCode(200);
                             cmr.setResponseMessage(responseMessage);
                         }

@@ -1746,9 +1746,10 @@ public class LsfCoreProcessor implements MessageProcessor {
             lsfRepository.commodityAppStatus(appId, currentLevel, statusMessage, approvedbyId, approvedbyName, statusChangedIP);
 
             //---Send Notification---//
-            log.info("===========LSF : Sending Auth Abic to Sell Notification for Application ID : " + appId);
-            MurabahApplication application = lsfRepository.getMurabahApplication(appId);
-            notificationManager.sendAuthAbicToSellNotification(application, true, po);
+            // 2025-11-25 commented as per new notification duplicates with commodity PO execution notification
+//            log.info("===========LSF : Sending Auth Abic to Sell Notification for Application ID : " + appId);
+//            MurabahApplication application = lsfRepository.getMurabahApplication(appId);
+//            notificationManager.sendAuthAbicToSellNotification(application, true, po);
 
             cmr.setResponseCode(200);
             cmr.setResponseMessage(key+"|Confirmed");

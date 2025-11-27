@@ -625,7 +625,16 @@ public class LsfCoreService {
                 }
                 mApplicationCollaterals.setLiqudationCall(true);
                 lsfRepository.addMarginCallLog(mApplicationCollaterals, 3);
-            } else if (violateFTVwithFirstMarginLimit(mApplicationCollaterals)) {
+            } else if (violateFTVWithSecondMargineLimit(mApplicationCollaterals)) {
+                log.debug("=========== reValuationProcess_RollOverApp : Reached to Order Acceptance  Margin Level. AppId {}, Last Margin Call Date : {} ", application.getId(), mApplicationCollaterals.getMargineCallDate());
+                mApplicationCollaterals.setLiquidateCallDate("");
+                if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
+                    mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
+                    sendMargineNotification(2, mApplicationCollaterals, application);
+                    lsfRepository.addMarginCallLog(mApplicationCollaterals, 1);
+                }
+            }
+            else if (violateFTVwithFirstMarginLimit(mApplicationCollaterals)) {
                 log.debug("=========== reValuationProcess_RollOverApp : Reached to First  Margin Level. AppId {}, Last Margin Call Date : {} ", application.getId(), mApplicationCollaterals.getMargineCallDate());
                 mApplicationCollaterals.setLiquidateCallDate("");
                 if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
@@ -832,6 +841,21 @@ public class LsfCoreService {
         if (collaterals.getFtv() <= firstMargineCallLimit) {
             collaterals.setFirstMargineCall(true);
             collaterals.setSecondMargineCall(false);
+            collaterals.setLiqudationCall(false);
+            return true;
+        } else {
+            collaterals.setFirstMargineCall(false);
+            collaterals.setSecondMargineCall(false);
+            collaterals.setLiqudationCall(false);
+            return false;
+        }
+    }
+
+    public boolean violateFTVWithSecondMargineLimit(MApplicationCollaterals collaterals) {
+        double secondMarginCallLimit = GlobalParameters.getInstance().getSecondMarginCall();
+        if (collaterals.getFtv() <= secondMarginCallLimit) {
+            collaterals.setSecondMargineCall(true);
+            collaterals.setFirstMargineCall(false);
             collaterals.setLiqudationCall(false);
             return true;
         } else {

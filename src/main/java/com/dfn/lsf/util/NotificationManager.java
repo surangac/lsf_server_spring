@@ -138,12 +138,13 @@ public void sendSettlementNotification(MurabahApplication murabahApplication, Pu
             NotificationMsgConfiguration msgConfiguration = null;
             List<NotificationMsgConfiguration> msgConfigurations = null;
             int tempNotificationType = 0;
-            if (dateDifference == GlobalParameters.getInstance().getNoOfDaysPriorRemindingThePayment()) {
-                msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(NotificationConstants.SETTLEMENT_REMINDER_5_DAYS_REMAIN);
 
-            } else if (dateDifference == 0) {
+            if (dateDifference == 0) {
                 msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(NotificationConstants.SETTLEMENT_REMINDER_EXPIRY_DATE);
+            } else {
+                msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(NotificationConstants.SETTLEMENT_REMINDER_5_DAYS_REMAIN);
             }
+
             if (msgConfigurations != null && msgConfigurations.size() > 0) {
                 msgConfiguration = msgConfigurations.get(0);
                 log.debug("===========LSF; Sending Settlement Notifications , msgConfiguration:" + gson.toJson(msgConfiguration));
@@ -323,7 +324,7 @@ private Map<String, String> getParameterMapForEarlySettlementNotification(Muraba
 
     Map<String, String> paramMap = new HashMap<>();
     paramMap.put("$customerName", murabahApplication.getFullName());
-    paramMap.put("$applicationId", murabahApplication.getId());
+    paramMap.put("$applicationId", murabahApplication.getDisplayApplicationId());
     paramMap.put("$cifNumber", murabahApplication.getCustomerReferenceNumber());
     paramMap.put("$prefLanguage",murabahApplication.getPreferedLanguage()!=null?murabahApplication.getPreferedLanguage():"E");
     paramMap.put("$lsfTypeTradingAccount", murabahApplication.getTradingAcc());
@@ -337,7 +338,7 @@ private Map<String, String> getParameterMapForSettlementNotification(MurabahAppl
     Map<String, String> paramMap = new HashMap<>();
     String lsfAccount = murabahApplication.getTradingAcc();
     paramMap.put("$customerName", murabahApplication.getFullName());
-    paramMap.put("$applicationId", murabahApplication.getId());
+    paramMap.put("$applicationId", murabahApplication.getDisplayApplicationId());
     paramMap.put("$orderID", purchaseOrder.getId());
     paramMap.put("$settlementDate", String.valueOf(purchaseOrder.getSettlementDate()));
     paramMap.put("$settlementAmount", String.valueOf(purchaseOrder.getOrderCompletedValue() + orderProfit.getCumulativeProfitAmount()));
@@ -430,7 +431,10 @@ public boolean sendMarginNotification(int marginLevel, MApplicationCollaterals a
     if (marginLevel == 1) {
         msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(NotificationConstants.MARGIN_NOTIFICATION_LEVEL1);
 
-    }  else if (marginLevel == 3) {
+    }  else if (marginLevel == 2) {
+        msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(NotificationConstants.MARGIN_NOTIFICATION_LEVEL2);
+    }
+     else if (marginLevel == 3) {
         msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(NotificationConstants.MARGIN_NOTIFICATION_LEVEL3);
     }
     if (msgConfigurations != null && msgConfigurations.size() > 0) {
@@ -496,7 +500,7 @@ private Map<String, String> getParameterMapForMargin(int marginLevel, MApplicati
     paramMap.put("$tradingAccount", application.getTradingAcc());
     paramMap.put("$email", application.getEmail() != null ? application.getEmail() : "");
     paramMap.put("$firstMarginLevel", String.valueOf(GlobalParameters.getInstance().getFirstMarginCall()));
-    paramMap.put("$secondMarginLevel", String.valueOf(GlobalParameters.getInstance().getLiquidationCall()));
+    paramMap.put("$secondMarginLevel", String.valueOf(GlobalParameters.getInstance().getSecondMarginCall()));
     paramMap.put("$liquidationLevel", String.valueOf(GlobalParameters.getInstance().getLiquidationCall()));
     paramMap.put("$cifNumber", application.getCustomerReferenceNumber() != null ? application.getCustomerReferenceNumber() : "");
     paramMap.put("$mobileNumber", application.getMobileNo() != null ? application.getMobileNo() : "");
@@ -517,7 +521,7 @@ private Map<String, String> getApplicationParameterMap(MurabahApplication muraba
     List<PurchaseOrder> purchaseOrderList = lsfRepository.getAllPurchaseOrder(murabahApplication.getId());
     Map<String, String> paramMap = new HashMap<>();
     paramMap.put("$customerName", murabahApplication.getFullName());
-    paramMap.put("$applicationId", murabahApplication.getId());
+    paramMap.put("$applicationId", murabahApplication.getDisplayApplicationId());
     paramMap.put("$mobileNumber", murabahApplication.getMobileNo() != null ? murabahApplication.getMobileNo() : "");
     paramMap.put("$tradingAccount", murabahApplication.getTradingAcc() != null ? murabahApplication.getTradingAcc() : "");
     paramMap.put("$cifNumber", murabahApplication.getCustomerReferenceNumber() != null ? murabahApplication.getCustomerReferenceNumber() : "");
@@ -831,7 +835,7 @@ private Map<String, String> getParameterMapForAuthAbicToSellNotification(Murabah
 
     Map<String, String> paramMap = new HashMap<>();
     paramMap.put("$customerName", murabahApplication.getFullName());
-    paramMap.put("$applicationId", murabahApplication.getId());
+    paramMap.put("$applicationId", murabahApplication.getDisplayApplicationId());
     paramMap.put("$cifNumber", murabahApplication.getCustomerReferenceNumber());
     paramMap.put("$prefLanguage",murabahApplication.getPreferedLanguage()!=null?murabahApplication.getPreferedLanguage():"E");
     paramMap.put("$lsfTypeTradingAccount", murabahApplication.getTradingAcc());

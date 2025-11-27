@@ -34,7 +34,7 @@ public class SetAuthAbicToSellOrderProcessor {
                 lsfRepository.addAuthAbicToSellStatus(purchaseOrder);
                 MurabahApplication application = lsfRepository.getMurabahAppicationApplicationID(purchaseOrder.getApplicationId()).get(0);
                 notificationManager.sendAuthAbicToSellNotification(application, true, purchaseOrder);/*---Send Notification---*/
-                log.info("==========Authenticate ABIC to Sell...........!!!!");
+                log.info("Auth ABIC to Sell Processed, Sending Notification for Application ID: " + application.getDisplayApplicationId());
             }
         }
     }
