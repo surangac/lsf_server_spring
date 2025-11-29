@@ -43,9 +43,6 @@ public class NotificationManager {
     NotificationMsgConfiguration msgConfiguration = null;
      boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
      if (isCommodityApplication) {
-         if (murabahApplication.getCurrentLevel() == 5) {
-             sendNotificationCommodity(murabahApplication, NotificationConstants.COM_AFTER_RISK_APPROVAL);
-         }
          return;
      }
     List<NotificationMsgConfiguration> msgConfigurations = lsfRepository.getNotificationMsgConfigurationForApplication(murabahApplication.getId());
@@ -109,9 +106,6 @@ public boolean sendNotification(NotificationMsgConfiguration msgConfiguration, M
 
     boolean isCommodityApplication = murabahApplication.getFinanceMethod().equalsIgnoreCase("2");
     if (isCommodityApplication) {
-        if (murabahApplication.getCurrentLevel() == 5) {
-            sendNotificationCommodity(murabahApplication, NotificationConstants.COM_AFTER_RISK_APPROVAL);
-        }
         return true;
     }
      Boolean results = false;
@@ -283,7 +277,7 @@ public void sendNotificationCommodity(MurabahApplication murabahApplication, Str
     msgConfigurations = lsfRepository.getNotificationMsgConfigurationForNotificationType(notificationType);
     if (msgConfigurations != null && msgConfigurations.size() > 0) {
         msgConfiguration = msgConfigurations.get(0);
-        log.debug("===========LSF; Sending Early Settlement Notifications , msgConfiguration:" + gson.toJson(msgConfiguration));
+        log.debug("===========LSF; Sending Notifications , msgConfiguration:" + gson.toJson(msgConfiguration));
         String webSubject = msgConfiguration.getWebSubject();
         String webBody = msgConfiguration.getWebBody();
         String thirdPartySMS = msgConfiguration.getThirdPartySMSTemplate();

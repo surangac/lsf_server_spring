@@ -347,7 +347,7 @@ public class AuthenticationProcessor implements MessageProcessor {
                             }
                             boolean isCommodityApplication = fromDB.getFinanceMethod().equalsIgnoreCase("2");
                             if (isCommodityApplication) {
-                                if (fromDB.getCurrentLevel() == 5) {
+                                if (fromDB.getCurrentLevel() == 6 && appStatus == 1) {
                                     notificationManager.sendNotificationCommodity(fromDB, NotificationConstants.COM_AFTER_RISK_APPROVAL);
                                 }
                             } else {

@@ -78,4 +78,4 @@ ehthumbs.db
 /config/application-dev.yml
 /config/application-prod.yml
 /release/*.jar
-!/release/lsf-server.jar 
+!/release/lsf-server-2025112718.jar
