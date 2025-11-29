@@ -1643,10 +1643,10 @@ public class LsfCoreProcessor implements MessageProcessor {
             if (po.getSellButNotSettle() == 0 && application.isRollOverApp()) {
                 log.info("Po Sell But Not Settle is set to : {}", po.getSellButNotSettle());
                 performSettlementPreviousCommodity(application.getRollOverAppId(),  statusChangedIP);
-                notificationManager.sendAuthAbicToSellNotification(application, false, po);
+                // notificationManager.sendAuthAbicToSellNotification(application, false, po);
             } else {
                 log.info("===========LSF : (commodityPOExecution) PO Sell But Not Settle is set to 1, so not settling the Murabah Application");
-                notificationManager.sendAuthAbicToSellNotification(application, true, po);
+                // notificationManager.sendAuthAbicToSellNotification(application, true, po);
             }
 
             MurabahApplication fromDB = lsfRepository.getMurabahApplication(po.getApplicationId());
@@ -1727,7 +1727,8 @@ public class LsfCoreProcessor implements MessageProcessor {
         PurchaseOrder po = new PurchaseOrder();
 
         String authAbicToSell = map.get("authAbicToSell").toString();
-        
+        String appId = map.get("appId").toString();
+
         po.setId(map.get("poid").toString());
         po.setAuthAbicToSell(authAbicToSell);
         if (Objects.equals(authAbicToSell, "0") || authAbicToSell.equalsIgnoreCase("0")){
@@ -1735,12 +1736,15 @@ public class LsfCoreProcessor implements MessageProcessor {
         }else {
             po.setIsPhysicalDelivery(0);
         }
+
+        MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(appId);
+        notificationManager.sendAuthAbicToSellNotification(murabahApplication, true, po);
+
         String key = lsfRepository.addAuthAbicToSellStatus(po);
         if (key.equalsIgnoreCase("1")){
             String approvedbyId = map.get("customerId").toString();
             String approvedbyName = map.get("userName").toString();
             String statusChangedIP = map.get("ipAddress").toString();
-            String appId = map.get("appId").toString();
             int currentLevel = 16;
             String statusMessage = "Authorized ABIC to Sell";
             lsfRepository.commodityAppStatus(appId, currentLevel, statusMessage, approvedbyId, approvedbyName, statusChangedIP);
