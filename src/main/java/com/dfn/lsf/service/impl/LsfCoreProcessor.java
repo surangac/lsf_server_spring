@@ -948,6 +948,8 @@ public class LsfCoreProcessor implements MessageProcessor {
                         }
                         if (isCommodityApplication) {
                             notificationManager.sendNotificationCommodity(murabahApplication, NotificationConstants.FINAL_COLLATERAL_TRNASFER_COMM);
+                        } else {
+                            notificationManager.sendNotification(murabahApplication);
                         }
 
                     } else {
