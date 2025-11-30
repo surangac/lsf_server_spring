@@ -946,7 +946,9 @@ public class LsfCoreProcessor implements MessageProcessor {
                         } else {
                             lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_SENT);
                         }
-                        notificationManager.sendNotificationCommodity(murabahApplication, NotificationConstants.FINAL_COLLATERAL_TRNASFER_COMM);
+                        if (isCommodityApplication) {
+                            notificationManager.sendNotificationCommodity(murabahApplication, NotificationConstants.FINAL_COLLATERAL_TRNASFER_COMM);
+                        }
 
                     } else {
                         lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_EXCHANGE_ACCOUNT_CREATED_AND_ADMIN_FEE_CHARG_FAILED);
@@ -1737,9 +1739,6 @@ public class LsfCoreProcessor implements MessageProcessor {
             po.setIsPhysicalDelivery(0);
         }
 
-        MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(appId);
-        notificationManager.sendAuthAbicToSellNotification(murabahApplication, true, po);
-
         String key = lsfRepository.addAuthAbicToSellStatus(po);
         if (key.equalsIgnoreCase("1")){
             String approvedbyId = map.get("customerId").toString();
@@ -1749,11 +1748,9 @@ public class LsfCoreProcessor implements MessageProcessor {
             String statusMessage = "Authorized ABIC to Sell";
             lsfRepository.commodityAppStatus(appId, currentLevel, statusMessage, approvedbyId, approvedbyName, statusChangedIP);
 
-            //---Send Notification---//
-            // 2025-11-25 commented as per new notification duplicates with commodity PO execution notification
-//            log.info("===========LSF : Sending Auth Abic to Sell Notification for Application ID : " + appId);
-//            MurabahApplication application = lsfRepository.getMurabahApplication(appId);
-//            notificationManager.sendAuthAbicToSellNotification(application, true, po);
+            log.info("===========LSF : Sending Auth Abic to Sell Notification for Application ID : " + appId);
+            MurabahApplication application = lsfRepository.getMurabahApplication(appId);
+            notificationManager.sendAuthAbicToSellNotification(application, true, po);
 
             cmr.setResponseCode(200);
             cmr.setResponseMessage(key+"|Confirmed");
