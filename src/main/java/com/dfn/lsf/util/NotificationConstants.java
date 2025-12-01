@@ -28,4 +28,5 @@ public class NotificationConstants {
     public static final String SIGN_CONTRACT_COMMODITY_AFTER_PO = "AATSU";
     public static final String AUTH_ABIC_TO_SELL = "AATSAR";
     public static final String FINAL_COLLATERAL_TRNASFER_COMM= "AATSF";
+    public static final String SHARE_FINAL_CUSTOMER_APPROVE = "MN_APP";
 }

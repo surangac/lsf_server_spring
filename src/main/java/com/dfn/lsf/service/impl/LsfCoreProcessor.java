@@ -947,9 +947,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                             lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_SENT);
                         }
                         if (!isCommodityApplication) {
-                            murabahApplication.setCurrentLevel(16);
-                            murabahApplication.setOverallStatus("15");
-                            notificationManager.sendNotification(murabahApplication);
+                            notificationManager.sendNotificationCommodity(murabahApplication, NotificationConstants.SHARE_FINAL_CUSTOMER_APPROVE);
                         }
 
                     } else {
