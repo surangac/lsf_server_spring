@@ -946,9 +946,9 @@ public class LsfCoreProcessor implements MessageProcessor {
                         } else {
                             lsfRepository.updateActivity(murabahApplication.getId(), LsfConstants.STATUS_COLLATERALS_AND_PO_SYMBOL_TRANSFER_REQUEST_SENT);
                         }
-                        if (isCommodityApplication) {
-                            notificationManager.sendNotificationCommodity(murabahApplication, NotificationConstants.FINAL_COLLATERAL_TRNASFER_COMM);
-                        } else {
+                        if (!isCommodityApplication) {
+                            murabahApplication.setCurrentLevel(16);
+                            murabahApplication.setOverallStatus("15");
                             notificationManager.sendNotification(murabahApplication);
                         }
 
@@ -1652,6 +1652,7 @@ public class LsfCoreProcessor implements MessageProcessor {
                 log.info("===========LSF : (commodityPOExecution) PO Sell But Not Settle is set to 1, so not settling the Murabah Application");
                 // notificationManager.sendAuthAbicToSellNotification(application, true, po);
             }
+            notificationManager.sendNotificationCommodity(application, NotificationConstants.FINAL_COLLATERAL_TRNASFER_COMM);
 
             MurabahApplication fromDB = lsfRepository.getMurabahApplication(po.getApplicationId());
             String statusMessage = "Sold Amount Level 2 Approved";
