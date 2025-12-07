@@ -747,7 +747,8 @@ public class LsfCoreService {
                     if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
                         mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
                         sendMargineNotification(1, mApplicationCollaterals, application);
-                        lsfRepository.addMarginCallLog(mApplicationCollaterals, 1);
+                        sendMargineNotification(2, mApplicationCollaterals, application);
+                        lsfRepository.addMarginCallLog(mApplicationCollaterals, 2);
                     }
 
                     mApplicationCollaterals.setLiquidateCallDate(dateFormat.format(new Date()));
@@ -756,6 +757,10 @@ public class LsfCoreService {
                 } else {
                     if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
                         sendMargineNotification(1, mApplicationCollaterals, application);
+                        mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
+                    }
+                    if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
+                        sendMargineNotification(2, mApplicationCollaterals, application);
                         mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
                     }
                     if (isEligibleForMarginNotification(mApplicationCollaterals.getLiquidateCallDate())) {
@@ -771,6 +776,7 @@ public class LsfCoreService {
                 mApplicationCollaterals.setLiquidateCallDate("");
                 if (isEligibleForMarginNotification(mApplicationCollaterals.getMargineCallDate())) {
                     mApplicationCollaterals.setMargineCallDate(dateFormat.format(new Date()));
+                    sendMargineNotification(1, mApplicationCollaterals, application);
                     sendMargineNotification(2, mApplicationCollaterals, application);
                     lsfRepository.addMarginCallLog(mApplicationCollaterals, 2);
                 }
