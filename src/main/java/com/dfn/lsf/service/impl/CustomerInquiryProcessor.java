@@ -959,6 +959,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
             double vatAmount=LSFUtils.ceilTwoDecimals(lsfCore.calculateVatAmt(adminFee));
             contractCustomerInfo.setTransferringFee(adminFee);
             contractCustomerInfo.setTransferCharges(vatAmount);
+            contractCustomerInfo.setVatAmountforAdminFee(vatAmount);
             contractCustomerInfo.setCollaterals(collaterals);
             contractCustomerInfo.setCustomerActivityID(murabahApplication.getCustomerActivityID());
             contractCustomerInfo.setIsExchangeAccountCreated(collaterals.isExchangeAccountCreated());
