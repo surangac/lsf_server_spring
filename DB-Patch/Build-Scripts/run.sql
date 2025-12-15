@@ -1,0 +1,2 @@
+@?/rdbms/admin/utlrp
+exit

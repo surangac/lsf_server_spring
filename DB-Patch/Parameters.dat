@@ -1,0 +1,3 @@
+DB_USER=mubasher_lsf
+SYS_PWD=password
+CON_STR=192.168.14.239:1529/ABICDEV
