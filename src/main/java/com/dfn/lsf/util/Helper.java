@@ -30,6 +30,8 @@ import java.time.format.DateTimeFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.dfn.lsf.util.LsfConstants.INSTRUMENT_TYPE_BOND;
+
 
 @Slf4j
 @Component
@@ -546,9 +548,11 @@ public class Helper {
 
         if (symbolsList != null) {
             for (Map<String, Object> symbolObj : symbolsList) {
-                Symbol symbol = new Symbol();
-                symbol.setSymbolCode(symbolObj.get("symbolCode").toString());
-                symbol.setExchange(symbolObj.get("exchange").toString());
+                //Symbol symbol = new Symbol();
+                String symbolCode = symbolObj.get("symbolCode").toString();
+                String exchangeCode = symbolObj.get("exchange").toString();
+                Symbol symbol = fetchSymbol(exchangeCode, symbolCode);
+
                 symbol.setShortDescription((String) symbolObj.getOrDefault("shortDescription", ""));
                 symbol.setShortDescriptionAR((String) symbolObj.getOrDefault("shortDescriptionAR", symbolObj.getOrDefault("shortDescription", "" )));
                 symbol.setPreviousClosed(Double.parseDouble(symbolObj.get("previousClosed").toString()));
@@ -568,7 +572,7 @@ public class Helper {
                 symbol.setSellPending(sellPending);
                 symbol.setAvailableQty(Math.round(Float.parseFloat(symbolObj.get("availableQty").toString())));
                 //symbol.setAvailableQty(Math.round(Float.parseFloat(symbolObj.get("availableQty").toString())));
-                double marketPrice = symbol.getLastTradePrice() > 0 ? symbol.getLastTradePrice(): symbol.getPreviousClosed();
+                double marketPrice = getMarketPrice(symbol);// symbol.getLastTradePrice() > 0 ? symbol.getLastTradePrice(): symbol.getPreviousClosed();
                 symbol.setMarketValue(symbol.getAvailableQty() * marketPrice);
 
                 LiquidityType attachedToSymbolLiq = existingSymbolLiqudityType(symbol.getSymbolCode(), symbol.getExchange());
@@ -597,6 +601,46 @@ public class Helper {
                 if (symbol.getAvailableQty() > 0 || symbol.getOpenBuyQty() >0 || symbol.getOpenSellQty() > 0) {
                     tradingAcc.getSymbolList().add(symbol);
                 }
+            }
+        }
+    }
+    private double getMarketPrice(Symbol symbol) {
+        double currentPrice = symbol.getLastTradePrice() > 0 ? symbol.getLastTradePrice() : symbol.getPreviousClosed();
+        if (symbol.getInstrumentType() == INSTRUMENT_TYPE_BOND) {
+            currentPrice = currentPrice / 100;
+        }
+        return currentPrice;
+    }
+
+    private Map<String, Symbol> symbolMap;
+    public Symbol fetchSymbol(String exchange, String symbolCode) {
+        if (symbolMap == null) {
+            symbolMap = new HashMap<>();
+        }
+        if (symbolMap.isEmpty()) {
+            loadSymbolsToMap();
+        }
+        Symbol symbolFromMap = symbolMap.get(exchange + "|" + symbolCode);
+        Symbol symbol = new Symbol();
+        symbol.setSymbolCode(symbolCode);
+        symbol.setExchange(exchange);
+
+        // Copy only the static/master data fields that don't change
+        if (symbolFromMap != null) {
+            symbol.setInstrumentType(symbolFromMap.getInstrumentType());
+            symbol.setAllowedForCollateral(symbolFromMap.getAllowedForCollateral());
+            // Add any other master data fields that should be copied
+            // DO NOT copy: availableQty, lastTradePrice, pendingSettle, etc.
+        }
+
+        return symbol;
+    }
+    private void loadSymbolsToMap() {
+        List<Symbol> allSymbols = lsfRepository.loadAllSymbols();
+
+        if (allSymbols != null && allSymbols.size() > 0) {
+            for (Symbol symbol : allSymbols) {
+                symbolMap.put(symbol.getExchange() + "|" + symbol.getSymbolCode(), symbol);
             }
         }
     }

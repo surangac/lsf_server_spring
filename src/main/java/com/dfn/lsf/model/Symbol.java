@@ -293,9 +293,13 @@ public class Symbol {
         this.setPreviousClosed(sourceSymbol.getPreviousClosed());
         this.setLastTradePrice(sourceSymbol.getLastTradePrice());
         this.setAvailableQty(sourceSymbol.getAvailableQty());
-        this.setMarketValue(this.getAvailableQty() * (this.getLastTradePrice() > 0
-                                                                              ? this.getLastTradePrice()
-                                                                              : this.getPreviousClosed()));
+        if (sourceSymbol.getMarketValue() > 0) {
+            this.setMarketValue(sourceSymbol.getMarketValue());
+        } else {
+            this.setMarketValue(this.getAvailableQty() * (this.getLastTradePrice() > 0
+                    ? this.getLastTradePrice()
+                    : this.getPreviousClosed()));
+        }
         this.setLiquidityType(sourceSymbol.getLiquidityType());
         this.setTransferedQty(sourceSymbol.getTransferedQty());
         this.setLiquidityType(sourceSymbol.getLiquidityType());

@@ -164,9 +164,13 @@ public class LSFUtils {
 //        return response;
     }
 
-    public static boolean isPurchaseOrderCreationAllowed(boolean bypassUmessage){ /*----PO Submission should be allowed until 1h 15min before market close time---*/
+    public static boolean isPurchaseOrderCreationAllowed(boolean bypassUmessage, int financeMethod){ /*----PO Submission should be allowed until 1h 15min before market close time---*/
         boolean response = false;
         try {
+            double cutOffTime = 1.00;
+            if (financeMethod == 2) {
+                cutOffTime = 0.1;
+            }
             String closedTime = GlobalParameters.getInstance().getMarketClosedTime();
             SimpleDateFormat format = new SimpleDateFormat("HH:mm");
             java.util.Date d2 =(java.util.Date)format.parse(closedTime);
@@ -177,7 +181,7 @@ public class LSFUtils {
             java.util.Date d3 =(java.util.Date)format.parse(currentTime);
             java.sql.Time nw = new java.sql.Time(d3.getTime());
             long timeGap = close.getTime() - nw.getTime();
-            if(timeGap > 0 && timeGap > 1.25*LsfConstants.MILISECONDS_TO_HOUR){
+            if(timeGap > 0 && timeGap > cutOffTime*LsfConstants.MILISECONDS_TO_HOUR) {
                 response = true;
             }
 

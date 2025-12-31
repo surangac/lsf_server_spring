@@ -241,7 +241,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             financeMethod = Integer.parseInt(map.get("financeMethod").toString());
         }
 
-        if (LSFUtils.isPurchaseOrderCreationAllowed(bypassUmessage)) { /*----PO Submission should be allowed until 1h 15min before market close time---*/
+        if (LSFUtils.isPurchaseOrderCreationAllowed(bypassUmessage, financeMethod)) { /*----PO Submission should be allowed until 1h 15min before market close time---*/
             MurabahApplication murabahApplication = lsfRepository.getMurabahApplication(po.getApplicationId());
             if ( murabahApplication != null && murabahApplication.isRollOverApp() ) {
                 return createPurchaseOrderRollOver(po, murabahApplication);
@@ -459,7 +459,7 @@ public class LsfCoreProcessor implements MessageProcessor {
             /*----- creating investor account for LSF type cash account----*/
             if (isLsfTypeCashAccExist && isLsfTypeTradingAccExist) {
                 var lsfTradingAcc = completeCollateral.getLsfTypeTradingAccounts().getFirst();
-                var lsfCashAcc = completeCollateral.getCashAccForColleterals().getFirst();
+                var lsfCashAcc = completeCollateral.getLsfTypeCashAccounts().getFirst();
 
                 boolean isInvestorAccountCreated = application.isRollOverApp()
                                                    || createInvestorAccount(lsfCashAcc.getAccountId(), applicationId);

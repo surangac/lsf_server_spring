@@ -22,6 +22,9 @@ public class LsfConstants {
             return value;
         }
     }
+    // Symbol Instrument Types
+    public static final int INSTRUMENT_TYPE_BOND = 75;
+
     public static final int APP_LSF_CLIENT = 1;//"LSFCLIENT";
     public static final int APPLICATION_ID = 2;
 
@@ -386,6 +389,7 @@ public class LsfConstants {
     public static final int ERROR_NET_COLLATRAL_VALUE_SHOULD_BE_GREATER_THAN_CONFIGURED_PERCENTAGE = 9013;
     public static final int ERROR_COLLATRAL_CANNOT_SUBMIT_DUE_TO_MARKET_CLOSED_STATE = 9014;
     public static final int ERROR_CASH_AMOUNT_VALIDATION_FAILED = 9015;
+    public static final int ERROR_SHARE_BLOCK_FAILED_FROM_SERVER = 9039;
 
     //document upload
     public static final int ERROR_ALL_THE_DOCUMENTS_ARE_NOT_YET_UPLOADED = 9016;

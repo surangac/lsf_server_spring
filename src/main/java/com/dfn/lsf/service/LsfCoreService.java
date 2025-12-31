@@ -190,6 +190,7 @@ public class LsfCoreService {
                                         blockedSymbols.add(symbol);
                                     } else {
                                         commonResponse.setResponseCode(500);
+                                        commonResponse.setErrorCode(LsfConstants.ERROR_SHARE_BLOCK_FAILED_FROM_SERVER);
                                         commonResponse.setErrorMessage(cmr.getResponseMessage() + " , Symbol :" + shareBlockRequest.getSymbol());
                                         log.debug("===========LSF : Share Block Failed , Symbol:" + symbol.getSymbolCode() + " , Reason :" + cmr.getErrorMessage());
                                         if (blockedSymbols.size() > 0) {

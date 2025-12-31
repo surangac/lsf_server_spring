@@ -367,6 +367,7 @@ public class CustomerInquiryProcessor implements MessageProcessor {
         return gson.toJson(cmr);
     }
 
+
     private String getMurabahApplicationUserInfo(Map<String, Object> returnMap) {
 
         logger.info("===========LSF : (getMurabahApplicationUserInfo)-REQUEST, params: " + gson.toJson(returnMap));

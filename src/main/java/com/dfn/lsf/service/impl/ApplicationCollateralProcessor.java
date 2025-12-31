@@ -121,9 +121,15 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
                     tradingAcc.setExchange(tradingAccFromOms.getExchange());
                     tradingAcc.setLsfType(false);
                     tradingAcc.setApplicationId(id);
+                    //tradingAcc.setSymbolsForColleteral(new ArrayList<>());
+
                     tradingAccFromOms.getSymbolList().forEach(symbol -> {
                         Symbol symbolExt = tradingAcc.isSymbolExist(symbol.getSymbolCode(), symbol.getExchange());
+                        logger.debug("Before mapFromOms - Symbol: {}, AvailableQty: {}, PendingSettle: {}",
+                                symbolExt.getSymbolCode(), symbolExt.getAvailableQty(), symbolExt.getPendingSettle());
                         symbolExt.mapFromOms(symbol);
+                        logger.debug("After mapFromOms - Symbol: {}, AvailableQty: {}",
+                                symbolExt.getSymbolCode(), symbolExt.getAvailableQty());
                         double marginabilityPerc = helper.getSymbolMarginabilityPerc(symbol.getSymbolCode(), symbol.getExchange(), id);
                         symbolExt.setMarginabilityPercentage(marginabilityPerc);
                         if (symbolMap.containsKey(symbol.getExchange() + "|" + symbol.getSymbolCode())) {
@@ -132,6 +138,7 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
                                                                          + symbol.getSymbolCode())
                                                                     .getAllowedForCollateral());
                         }
+                        symbolExt.setPendingSettle(symbol.getPendingSettle());
                     });
                 }
 
