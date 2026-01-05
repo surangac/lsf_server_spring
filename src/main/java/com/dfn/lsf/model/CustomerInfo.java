@@ -91,6 +91,12 @@ public class CustomerInfo {
     @Column(name = "UPDATED_DATE")
     private LocalDateTime updatedDate;
 
+    @Column(name = "BIRTH_DATE")
+    private String birthDate;
+
+    @Column(name = "NATIONALITY")
+    private String nationality;
+
     @PrePersist
     protected void onCreate() {
         createdDate = LocalDateTime.now();

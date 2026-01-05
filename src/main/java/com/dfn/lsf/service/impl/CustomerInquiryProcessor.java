@@ -249,6 +249,13 @@ public class CustomerInquiryProcessor implements MessageProcessor {
         if (resMap.containsKey("email")) {
             customerInfo.setEmail(resMap.get("email").toString());
         }
+        if (resMap.containsKey("nationality")) {
+            customerInfo.setNationality(resMap.get("nationality").toString());
+        }
+        if (resMap.containsKey("birthDate")) {
+            customerInfo.setBirthDate(resMap.get("birthDate").toString());
+        }
+
         if (resMap.containsKey("occupation")) {
             customerInfo.setOccupation(resMap.get("occupation").toString());
         }
