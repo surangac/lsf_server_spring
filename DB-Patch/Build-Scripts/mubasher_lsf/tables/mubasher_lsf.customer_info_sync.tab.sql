@@ -25,3 +25,42 @@ CREATE TABLE CUSTOMER_INFO_SYNC (
       CREATED_DATE TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UPDATED_DATE TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   );
+
+
+DECLARE
+    l_count   NUMBER := 0;
+    l_ddl     VARCHAR2 (1000)
+        := 'ALTER TABLE CUSTOMER_INFO_SYNC ADD(NATIONALITY VARCHAR2(100))';
+BEGIN
+    SELECT COUNT (*)
+      INTO l_count
+      FROM all_tab_columns
+     WHERE     owner = UPPER ('MUBASHER_LSF')
+           AND table_name = UPPER ('CUSTOMER_INFO_SYNC')
+           AND column_name = UPPER ('NATIONALITY');
+
+    IF l_count = 0
+    THEN
+        EXECUTE IMMEDIATE l_ddl;
+    END IF;
+END;
+/
+
+DECLARE
+    l_count   NUMBER := 0;
+    l_ddl     VARCHAR2 (1000)
+        := 'ALTER TABLE CUSTOMER_INFO_SYNC ADD(BIRTH_DATE VARCHAR2(50))';
+BEGIN
+    SELECT COUNT (*)
+      INTO l_count
+      FROM all_tab_columns
+     WHERE     owner = UPPER ('MUBASHER_LSF')
+           AND table_name = UPPER ('CUSTOMER_INFO_SYNC')
+           AND column_name = UPPER ('BIRTH_DATE');
+
+    IF l_count = 0
+    THEN
+        EXECUTE IMMEDIATE l_ddl;
+    END IF;
+END;
+/

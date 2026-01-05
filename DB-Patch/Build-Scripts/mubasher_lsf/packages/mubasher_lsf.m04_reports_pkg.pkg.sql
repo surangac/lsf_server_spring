@@ -1,5 +1,5 @@
 -- Start of DDL Script for Package MUBASHER_LSF.M04_REPORTS_PKG
--- Generated 19-Nov-2025 15:34:28 from MUBASHER_LSF@(DESCRIPTION =(ADDRESS_LIST =(ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.14.243)(PORT = 1529)))(CONNECT_DATA =(SERVICE_NAME = ABICQA)))
+-- Generated 05-Jan-2026 10:06:39 from MUBASHER_LSF@(DESCRIPTION =(ADDRESS_LIST =(ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.14.243)(PORT = 1529)))(CONNECT_DATA =(SERVICE_NAME = ABICQA)))
 
 CREATE OR REPLACE
 PACKAGE m04_reports_pkg
@@ -148,14 +148,6 @@ procedure getCshDtl_for_rtp_today(pview                    OUT SYS_REFCURSOR);
 END;
 /
 
-
-
--- End of DDL Script for Package MUBASHER_LSF.M04_REPORTS_PKG
-
-
-
--- Start of DDL Script for Package Body MUBASHER_LSF.M04_REPORTS_PKG
--- Generated 19-Nov-2025 15:27:12 from MUBASHER_LSF@(DESCRIPTION =(ADDRESS_LIST =(ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.14.243)(PORT = 1529)))(CONNECT_DATA =(SERVICE_NAME = ABICQA)))
 
 CREATE OR REPLACE
 PACKAGE BODY m04_reports_pkg
@@ -2030,12 +2022,12 @@ order by l01_customer_id;*/
             '' AS "Payment Type",
             '' AS "Amt of Pending Installments",
             '' AS "Amount of unpaid installments",
-            'T' AS "ID type",
+            CASE cstInfo.nationality WHEN 'SA' THEN 'T' ELSE 'Q' END AS "ID type",
             cstInfo.NIN AS "Consumer ID",
             '' AS "ID Expiration Date",
             '' AS "ID/Iqama Issued Place",
             'M' AS "Marital status",
-            'SAU' AS "Nationality code",
+            cstInfo.nationality AS "Nationality code",
             '' AS "Family Name - Arabic",
             '' AS "First Name - Arabic",
             '' AS "CNM2A",
@@ -2046,7 +2038,7 @@ order by l01_customer_id;*/
             '' AS "CNM2E",
             '' AS "CNM3E",
             L01_FULL_NAME AS "Full Name - English",
-            '' AS "Date Of Birth",
+            TO_CHAR(TO_DATE(cstInfo.birth_date, 'YYYYMMDD'), 'DD-MM-YYYY') AS "Date Of Birth",
             '' AS "Gender",
             '' AS "Number of Dependence",
             'P' AS "Applicant Type",
