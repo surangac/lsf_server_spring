@@ -1,8 +1,8 @@
 -- Start of DDL Script for Package MUBASHER_LSF.L05_COLLATERALS_PKG
--- Generated 17-Nov-2025 10:52:50 from MUBASHER_LSF@Mubasher_UAT
+-- Generated 12/25/2025 12:58:23 PM from MUBASHER_LSF@(DESCRIPTION =(ADDRESS_LIST =(ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.14.243)(PORT = 1529)))(CONNECT_DATA =(SERVICE_NAME = ABICQA)))
 
 CREATE OR REPLACE
-PACKAGE mubasher_lsf.l05_collaterals_pkg
+PACKAGE l05_collaterals_pkg
 IS
     --
     -- To modify this template, edit file PKGSPEC.TXT in TEMPLATE
@@ -55,18 +55,14 @@ IS
 
     PROCEDURE l05_get_ftv_list (pview OUT refcursor);
 
-    PROCEDURE l05_get_commission_details (pview        OUT refcursor,
-                                          reportdate       VARCHAR2);
+    PROCEDURE l05_get_commission_details (pview OUT refcursor,reportDate varchar2);
 
-    PROCEDURE l05_get_ftv_detailed_info (pview       OUT refcursor,
-                                         fromdate        VARCHAR2,
-                                         todate          VARCHAR2,
-                                         stlstatus       NUMBER);
+    PROCEDURE l05_get_ftv_detailed_info (pview OUT refcursor,fromdate varchar2,todate varchar2,stlStatus number);
 
     PROCEDURE l05_update_initial_collateral (
         pl05_l01_app_id                 NUMBER,
         pl05_initial_cash_collateral    NUMBER,
-        pl05_initial_pf_collateral      NUMBER);
+        pl05_initial_pf_collateral       NUMBER);
 END;
 /
 
@@ -83,7 +79,7 @@ GRANT DEBUG ON mubasher_lsf.l05_collaterals_pkg TO mubasher_lsf_role
 /
 
 CREATE OR REPLACE
-PACKAGE BODY mubasher_lsf.l05_collaterals_pkg
+PACKAGE BODY l05_collaterals_pkg
 /* Formatted on 10/27/2016 7:02:29 PM (QP5 v5.206) */
 IS
     --
@@ -300,12 +296,13 @@ IS
             end if;
         end if;
 
-        IF fromdate IS NOT NULL AND TRIM(fromdate) <> ''
-               AND todate IS NOT NULL AND TRIM(todate) <> '' THEN
-                v_dateFilter := ' AND TO_DATE(l14.l14_settlement_date, ''ddMMyyyy'') BETWEEN TO_DATE('''
-                                || fromdate || ''', ''ddMMyyyy'') AND TO_DATE('''
-                                || todate || ''', ''ddMMyyyy'') ';
-          END IF;
+        IF NVL(TRIM(fromdate), 'X') <> 'X'
+               AND NVL(TRIM(todate), 'X') <> 'X' THEN
+
+               v_dateFilter :=
+                  ' AND l14.l14_customer_approve_date >= TO_DATE(''' || fromdate || ''', ''ddMMyyyy'')
+                    AND l14.l14_customer_approve_date <  TO_DATE(''' || todate || ''', ''ddMMyyyy'') + 1 ';
+            END IF;
 
           v_sql :='SELECT a.l01_finance_req_amt,
                    l14_ord_completed_value,
@@ -352,8 +349,7 @@ IS
                    AND a.l01_overall_status > 0 '
                   -- AND TO_DATE (l14.l14_settlement_date, ''ddMMyyyy'') BETWEEN TO_DATE ('''|| fromdate ||''', ''ddMMyyyy'')
                   --                                  AND TO_DATE ('''|| todate ||''', ''ddMMyyyy'')
-
-                   ||v_filterStr || v_dateFilter;
+                   || v_filterStr || v_dateFilter;
        OPEN pview FOR v_sql;
     END;
 
