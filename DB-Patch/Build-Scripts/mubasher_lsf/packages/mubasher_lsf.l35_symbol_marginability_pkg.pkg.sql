@@ -1,8 +1,8 @@
--- Start of DDL Script for Package MUBASHER_LSF.L35_SYMBOL_MARGINABILITY_PKG
--- Generated 17-Nov-2025 10:52:55 from MUBASHER_LSF@Mubasher_UAT
+-- Start of DDL Script for Package Body MUBASHER_LSF.L35_SYMBOL_MARGINABILITY_PKG
+-- Generated 1/6/2026 2:28:59 PM from MUBASHER_LSF@(DESCRIPTION =(ADDRESS_LIST =(ADDRESS = (PROTOCOL = TCP)(HOST = 192.168.14.243)(PORT = 1529)))(CONNECT_DATA =(SERVICE_NAME = ABICQA)))
 
-CREATE OR REPLACE 
-PACKAGE              mubasher_lsf.l35_symbol_marginability_pkg
+CREATE OR REPLACE
+PACKAGE l35_symbol_marginability_pkg
 IS
 
     TYPE refcursor IS REF CURSOR;
@@ -25,7 +25,7 @@ IS
                                      pl35_marginability_percentage NUMBER);
 
     PROCEDURE l35_get_margin_perc_by_group(groupId IN NUMBER, pview OUT SYS_REFCURSOR);
-    
+
     PROCEDURE l35_remove_frm_margin_grp(pkey OUT NUMBER,
                                      pl35_marginability_grp_id NUMBER,
                                      pl35_symbol_code VARCHAR2,
@@ -35,82 +35,65 @@ END;
 /
 
 
-CREATE OR REPLACE 
-PACKAGE BODY              mubasher_lsf.l35_symbol_marginability_pkg
+CREATE OR REPLACE
+PACKAGE BODY l35_symbol_marginability_pkg
 IS
 
-    PROCEDURE l35_get_symbol_margin_perc(appId IN NUMBER, pview OUT SYS_REFCURSOR)
-    IS
-    	default_percentage   NUMBER := 0;
-    BEGIN
-	    
-	    SELECT l11.L11_GLOBAL_MARGINABILITY_PERC INTO default_percentage
-	    from L11_MARGINABILITY_GROUP l11 WHERE l11.L11_IS_DEFAULT =1;
-	    
-	    IF appId = -1 THEN
-	     OPEN pview FOR
-	     
-	     			SELECT
-					    l08.L08_SYMBOL_CODE AS "symbol_code",
-					    default_percentage AS "marginability_percentage",
-					    l08.L08_SHORT_DESC AS "security_name",
-					    l08.L08_SHORT_DESC_AR AS "security_name_ar"
-					FROM
-					    vw_l08_symbol_base l08
-					WHERE
-						decode(l08.L08_SECURITY_TYPE,NULL,'CS',l08.L08_SECURITY_TYPE) NOT in('OPT', 'FUT');
-	    
-	    else
-	        OPEN pview FOR
-	              WITH l35_data AS (
-					    SELECT 
-					        l35.L35_L08_SYMBOL_CODE,
-					        l35.L35_MARGINABILITY_PERCENTAGE,
-					        l35.L35_L08_EXCHANGE
-					    FROM 
-					        L35_SYMBOL_MARGINABILITY_PERC l35
-					    INNER JOIN 
-					        L01_APPLICATION l01
-					        ON l35.L35_L11_MARGINABILITY_GRP_ID = l01.L01_L11_MARGINABILITY_GRP_ID
-					    WHERE 
-					        l01.L01_APP_ID = appId
-					)
-					-- First Query: Get Marginability Data
-					SELECT
-					    l35.L35_L08_SYMBOL_CODE AS "symbol_code",
-					    l35.L35_MARGINABILITY_PERCENTAGE AS "marginability_percentage",
-					    l08.L08_SHORT_DESC AS "security_name",
-					    l08.L08_SHORT_DESC_AR AS "security_name_ar"
-					FROM
-					    l35_data l35
-					INNER JOIN 
-					    vw_l08_symbol_base l08
-					    ON l35.L35_L08_SYMBOL_CODE = l08.L08_SYMBOL_CODE
-					    AND l35.L35_L08_EXCHANGE = l08.L08_EXCHANGE
-					    AND l08.L08_SECURITY_TYPE NOT IN ('OPT', 'FUT')
-					
-					UNION ALL
-					
-					-- Second Query: Default Marginability = 100, Exclude Symbols from First Query
-					SELECT
-					    l08.L08_SYMBOL_CODE AS "symbol_code",
-					    default_percentage AS "marginability_percentage",
-					    l08.L08_SHORT_DESC AS "security_name",
-					    l08.L08_SHORT_DESC_AR AS "security_name_ar"
-					FROM
-					    vw_l08_symbol_base l08
-					WHERE
-					    l08.L08_SECURITY_TYPE NOT IN ('OPT', 'FUT')
-					    AND NOT EXISTS (
-					        SELECT 1
-					        FROM l35_data l35
-					        WHERE l35.L35_L08_SYMBOL_CODE = l08.L08_SYMBOL_CODE
-					          AND l35.L35_L08_EXCHANGE = l08.L08_EXCHANGE
-					    );
+	PROCEDURE l35_get_symbol_margin_perc(appId IN NUMBER, pview OUT SYS_REFCURSOR)
+	IS
+	BEGIN
+	    OPEN pview FOR
+	    WITH params AS (
+	        -- Resolve marginability group and default percentage in one place
+	        SELECT
+	            CASE
+	                WHEN appId = -1 THEN l11.L11_MARGINABILITY_GRP_ID
+	                ELSE (SELECT L01_L11_MARGINABILITY_GRP_ID FROM L01_APPLICATION WHERE L01_APP_ID = appId)
+	            END AS target_grp_id,
+	            l11.L11_GLOBAL_MARGINABILITY_PERC AS default_percentage
+	        FROM L11_MARGINABILITY_GROUP l11
+	        WHERE l11.L11_IS_DEFAULT = 1
+	    ),
+	    l35_data AS (
+	        SELECT
+	            l35.L35_L08_SYMBOL_CODE,
+	            l35.L35_MARGINABILITY_PERCENTAGE,
+	            l35.L35_L08_EXCHANGE
+	        FROM L35_SYMBOL_MARGINABILITY_PERC l35
+	        CROSS JOIN params p
+	        WHERE l35.L35_L11_MARGINABILITY_GRP_ID = p.target_grp_id
+	    )
+	    -- Symbols with explicit marginability
+	    SELECT
+	        l35.L35_L08_SYMBOL_CODE AS "symbol_code",
+	        l35.L35_MARGINABILITY_PERCENTAGE AS "marginability_percentage",
+	        l08.L08_SHORT_DESC AS "security_name",
+	        l08.L08_SHORT_DESC_AR AS "security_name_ar"
+	    FROM l35_data l35
+	    INNER JOIN vw_l08_symbol_base l08
+	        ON l35.L35_L08_SYMBOL_CODE = l08.L08_SYMBOL_CODE
+	        AND l35.L35_L08_EXCHANGE = l08.L08_EXCHANGE
+	    WHERE l08.L08_SECURITY_TYPE NOT IN ('OPT', 'FUT')
 
-	    END IF;
-	    
-    END;
+	    UNION ALL
+
+	    -- Remaining symbols with default marginability
+	    SELECT
+	        l08.L08_SYMBOL_CODE AS "symbol_code",
+	        p.default_percentage AS "marginability_percentage",
+	        l08.L08_SHORT_DESC AS "security_name",
+	        l08.L08_SHORT_DESC_AR AS "security_name_ar"
+	    FROM vw_l08_symbol_base l08
+	    CROSS JOIN params p
+	    WHERE l08.L08_SECURITY_TYPE NOT IN ('OPT', 'FUT')
+	        AND NOT EXISTS (
+	            SELECT 1 FROM l35_data l35
+	            WHERE l35.L35_L08_SYMBOL_CODE = l08.L08_SYMBOL_CODE
+	              AND l35.L35_L08_EXCHANGE = l08.L08_EXCHANGE
+	        );
+
+	END;
+
 
     PROCEDURE l35_add_symbol_margin_perc(pkey OUT NUMBER,
                                      pl35_marginability_grp_id NUMBER,
@@ -247,7 +230,7 @@ IS
                     AND l35.L35_L08_EXCHANGE=l08.L08_EXCHANGE
                     AND l35.L35_L11_MARGINABILITY_GRP_ID=groupId;
     END;
-    
+
     PROCEDURE l35_remove_frm_margin_grp(pkey OUT NUMBER,
                                      pl35_marginability_grp_id NUMBER,
                                      pl35_symbol_code VARCHAR2,
@@ -260,11 +243,11 @@ IS
                     AND L35_L08_EXCHANGE=pl35_exchange
                     AND L35_L11_MARGINABILITY_GRP_ID=pl35_marginability_grp_id;
 	    pkey := 1;
-	    
+
 	END;
 END;
 /
 
 
--- End of DDL Script for Package MUBASHER_LSF.L35_SYMBOL_MARGINABILITY_PKG
+-- End of DDL Script for Package Body MUBASHER_LSF.L35_SYMBOL_MARGINABILITY_PKG
 
