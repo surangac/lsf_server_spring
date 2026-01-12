@@ -570,7 +570,7 @@ public class ApplicationCollateralProcessor implements MessageProcessor {
             }
 
             MurabahApplication application = lsfRepository.getMurabahApplication(collaterals.getApplicationId());
-            notificationManager.sendNotification(application);/*---Sending Notification---*/
+            // notificationManager.sendNotification(application);/*---Sending Notification---*/
 
             cmr.setResponseCode(200);
             cmr.setResponseMessage("Collateral updated");
