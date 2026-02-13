@@ -14,14 +14,14 @@ PROMPT Running data_fixes.sql
 --PROMPT Running abicml_user.sql
 --@@abicml_user.sql
 
-PROMPT Running production_users.sql
-@@production_users.sql
+--PROMPT Running production_users.sql
+--@@production_users.sql
 
-PROMPT Running function_groups.sql
-@@function_groups.sql
+--PROMPT Running function_groups.sql
+--@@function_groups.sql
 
-PROMPT Running function_groups_function.sql
-@@function_groups_function.sql
+--PROMPT Running function_groups_function.sql
+--@@function_groups_function.sql
 
 --@@l11_create_groups.sql
 --@@mp-default_0.sql

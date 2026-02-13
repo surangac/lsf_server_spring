@@ -1,15 +1,19 @@
-CREATE TABLE mubasher_lsf.l34_purchase_order_commodities
-(
-    l34_m12_commodity_code    VARCHAR2 (20 BYTE) NOT NULL,
-    l34_m12_exchange          VARCHAR2 (20 BYTE) NOT NULL,
-    l34_l16_purchase_ord_id   VARCHAR2 (20 BYTE) NOT NULL,
-    l34_percentage            NUMBER (5, 2),
-    l34_sold_amnt             NUMBER (18, 5)
-)
-    SEGMENT CREATION IMMEDIATE
-NOPARALLEL
-LOGGING
-MONITORING
+DECLARE
+    l_count   NUMBER := 0;
+    l_ddl     VARCHAR2 (1000)
+        := 'CREATE TABLE mubasher_lsf.l34_purchase_order_commodities (l34_m12_commodity_code VARCHAR2 (20 BYTE) NOT NULL, l34_m12_exchange VARCHAR2 (20 BYTE) NOT NULL, l34_l16_purchase_ord_id VARCHAR2 (20 BYTE) NOT NULL, l34_percentage NUMBER (5, 2), l34_sold_amnt NUMBER (18, 5))';
+BEGIN
+    SELECT COUNT (*)
+      INTO l_count
+      FROM all_tables
+     WHERE     owner = UPPER ('mubasher_lsf')
+           AND table_name = UPPER ('l34_purchase_order_commodities');
+
+    IF l_count = 0
+    THEN
+        EXECUTE IMMEDIATE l_ddl;
+    END IF;
+END;
 /
 
 DECLARE
